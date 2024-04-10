@@ -51,10 +51,11 @@ typedef struct {
 
 SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
 void ssablock_rename_var(SsaBlock *block, SsaVar oldn, SsaVar newn);
-/** returns true if static eval ok */
+/** returns true if static eval ok; only touches dest if true */
 bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest);
 bool ssablock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v);
 bool ssablock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v);
+void ssablock_staticeval(SsaBlock *block, SsaValue *v);
 
 typedef struct {
     char     *name;
@@ -68,6 +69,7 @@ static SsaNamedValue ssanamedvalue_copy(SsaNamedValue val) {
 void ssanamedvalue_destroy(SsaNamedValue v);
 
 typedef enum {
+    SSA_OP_NOP,
     SSA_OP_IMM, // "val"
     
     // convert
@@ -84,6 +86,7 @@ typedef enum {
     SSA_OP_SUB, // "a", "b"
     SSA_OP_MUL, // "a", "b"
     SSA_OP_DIV, // "a", "b"
+    SSA_OP_MOD, // "a", "b"
 
     // compare
     SSA_OP_GT,  // "a", "b"
@@ -102,6 +105,10 @@ typedef enum {
     SSA_OP_BITWISE_NOT, // "val"
     SSA_OP_BITWISE_AND, // "a", "b"
     SSA_OP_BITIWSE_OR,  // "a", "b"
+    
+    // misc
+    SSA_OP_SHL, // "a", "b"
+    SSA_OP_SHR, // "a", "b"
 
     // basic loop
     SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "do": (counter)->.
@@ -171,6 +178,12 @@ static const SsaOp *ssaview_take(const SsaView view) {
     return &view.block->ops[view.start];
 }
 void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar newv);
+void ssaview_substitude_var(SsaView view, SsaBlock *block, SsaVar old, SsaValue newv);
+static bool ssaview_has_next(const SsaView view) {
+    return view.start < view.end;
+}
+SsaOp *ssablock_traverse(SsaView *current);
+void ssaview_deep_traverse(SsaView top, void (*callback)(SsaOp *op, void *data), void *data);
 
 SsaValue *ssaop_param(const SsaOp *op, const char *name);
 
@@ -182,6 +195,7 @@ void ssaop_add_param(SsaOp *op, SsaNamedValue p);
 static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, const char *param) {
     ssaop_add_param_s(dest, param, *ssaop_param(src, param));
 }
+void ssaop_remove_params(SsaOp *op);
 void ssaop_destroy(SsaOp *op);
 
 #endif //SSA_H

@@ -28,7 +28,7 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
         }
 
         // if it is a less than, we can do a repeat
-        if (cond->ops_len > 0) {
+        if (cond->ops_len > 0 && cond->ops[0].id == SSA_OP_LT) {
             bool break2 = false;
             do {
                 const SsaValue *a = ssaop_param(&cond->ops[0], "a");
@@ -40,11 +40,6 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
                 if (cond->ops[0].outs[0].var != cond->outs[0])
                     break;
             
-                const SsaOpType type = cond->ops[0].id;
-
-                if (type != SSA_OP_LT)
-                    break;
-
                 const SsaValue *b = ssaop_param(&cond->ops[0], "b");
 
                 SsaOp new;

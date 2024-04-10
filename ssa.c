@@ -94,10 +94,7 @@ void ssaop_add_param_s(SsaOp *op, const char *name, const SsaValue val) {
 }
 
 void ssaop_destroy(SsaOp *op) {
-    for (size_t i = 0; i < op->params_len; i ++)
-        ssanamedvalue_destroy(op->params[i]);
-
-    free(op->params);
+    ssaop_remove_params(op);
     free(op->types);
     free(op->outs);
 }
@@ -213,4 +210,64 @@ bool ssablock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v) {
     if (!ssablock_staticeval_var(block, var, &is))
         return false;
     return memcmp(&is, &v, sizeof(SsaValue)) == 0;
+}
+
+void ssablock_staticeval(SsaBlock *block, SsaValue *v) {
+    if (v->type == SSA_VAL_VAR)
+        while (ssablock_staticeval_var(block, v->var, v));
+}
+
+void ssaop_remove_params(SsaOp *op) {
+    for (size_t i = 0; i < op->params_len; i ++)
+        ssanamedvalue_destroy(op->params[i]);
+    free(op->params);
+    op->params = NULL;
+    op->params_len = 0;
+}
+
+SsaOp *ssablock_traverse(SsaView *current) {
+    if (ssaview_has_next(*current)) {
+        SsaOp *op = &current->block->ops[current->start];
+        *current = ssaview_drop(*current, 1);
+        return op;
+    }
+
+    if (current->block->parent == NULL)
+        return NULL;
+
+    *current = ssaview_of_all(current->block->parent);
+
+    return ssablock_traverse(current);
+}
+
+void ssaview_deep_traverse(SsaView top, void (*callback)(SsaOp *op, void *data), void *data) {
+    for (size_t i = top.start; i < top.end; i ++) {
+        SsaOp *op = &top.block->ops[i];
+
+        for (size_t j = 0; j < op->params_len; j ++)
+            if (op->params[j].val.type == SSA_VAL_BLOCK)
+                ssaview_deep_traverse(ssaview_of_all(op->params[j].val.block), callback, data);
+
+        callback(op, data);
+    }
+}
+
+struct ssaview_substitude_var__data {
+    SsaBlock *block;
+    SsaVar old;
+    SsaValue new;
+};
+
+static void ssaview_substitude_var__trav(SsaOp *op, void *dataIn) {
+    struct ssaview_substitude_var__data *data = dataIn;
+
+    for (size_t i = 0; i < op->params_len; i ++)
+        if (op->params[i].val.type == SSA_VAL_VAR && op->params[i].val.var == data->old)
+            op->params[i].val = data->new;
+}
+
+void ssaview_substitude_var(SsaView view, SsaBlock *block, SsaVar old, SsaValue new) {
+    assert(block == view.block);
+    struct ssaview_substitude_var__data data = { .block = block, .old = old, .new = new };
+    ssaview_deep_traverse(view, ssaview_substitude_var__trav, &data);
 }
