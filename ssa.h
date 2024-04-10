@@ -50,7 +50,7 @@ typedef struct {
 } SsaValue;
 
 SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
-void ssablock_rename_var(SsaBlock *block, SsaVar old, SsaVar new);
+void ssablock_rename_var(SsaBlock *block, SsaVar oldn, SsaVar newn);
 /** returns true if static eval ok */
 bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest);
 bool ssablock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v);
@@ -160,17 +160,17 @@ static size_t ssaview_len(const SsaView view) {
 bool ssaview_find(SsaView *view, SsaOpType type);
 SsaView ssaview_replace(SsaBlock *viewblock, SsaView view, const SsaOp *ops, size_t ops_len);
 static SsaView ssaview_drop(const SsaView view, const size_t count) {
-    SsaView new = view;
-    new.block = view.block;
-    new.start = view.start + count;
-    if (new.start > new.end)
-        new.start = new.end;
-    return new;
+    SsaView out = view;
+    out.block = view.block;
+    out.start = view.start + count;
+    if (out.start > out.end)
+        out.start = out.end;
+    return out;
 }
 static const SsaOp *ssaview_take(const SsaView view) {
     return &view.block->ops[view.start];
 }
-void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar new);
+void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar newv);
 
 SsaValue *ssaop_param(const SsaOp *op, const char *name);
 

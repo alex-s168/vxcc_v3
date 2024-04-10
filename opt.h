@@ -4,9 +4,10 @@
 #include "ssa.h"
 
 void opt_loop_simplify(SsaView view, SsaBlock *block);
+void opt_comparisions(SsaView view, SsaBlock *block);
 
 static void opt(SsaBlock *block) {
-    // TODO optimize lte int const to lt
+    opt_comparisions(ssaview_of_all(block), block);
     opt_loop_simplify(ssaview_of_all(block), block);
 }
 
