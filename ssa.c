@@ -119,11 +119,14 @@ SsaView ssaview_replace(SsaBlock *viewblock, const SsaView view, const SsaOp *op
     const size_t new_size = view.block->ops_len - ssaview_len(view) + ops_len;
     SsaOp *new = malloc(sizeof(SsaOp) * new_size);
 
-    memcpy(new, view.block->ops, view.start);
-    memcpy(new + view.start, ops, ops_len);
-    memcpy(new + view.start + ops_len, view.block->ops + view.end, view.block->ops_len - view.end);
+    memcpy(new, view.block->ops, view.start * sizeof(SsaOp));
+    memcpy(new + view.start, ops, ops_len * sizeof(SsaOp));
+    memcpy(new + view.start + ops_len, view.block->ops + view.end, (view.block->ops_len - view.end) * sizeof(SsaOp));
 
+    for (size_t i = view.start; i < view.end; i ++)
+        ssaop_destroy(&viewblock->ops[i]);
     free(viewblock->ops);
+    
     viewblock->ops = new;
     viewblock->ops_len = new_size;
     
@@ -195,4 +198,19 @@ bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest) 
     }
     
     return false;
+}
+
+bool ssablock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v) {
+    SsaValue is;
+    if (ssablock_staticeval_var(block, var, &is)) {
+        return memcmp(&is, &v, sizeof(SsaValue)) == 0;
+    }
+    return true;
+}
+
+bool ssablock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v) {
+    SsaValue is;
+    if (!ssablock_staticeval_var(block, var, &is))
+        return false;
+    return memcmp(&is, &v, sizeof(SsaValue)) == 0;
 }

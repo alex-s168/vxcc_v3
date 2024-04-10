@@ -53,6 +53,8 @@ SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
 void ssablock_rename_var(SsaBlock *block, SsaVar old, SsaVar new);
 /** returns true if static eval ok */
 bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest);
+bool ssablock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v);
+bool ssablock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v);
 
 typedef struct {
     char     *name;
@@ -66,50 +68,51 @@ static SsaNamedValue ssanamedvalue_copy(SsaNamedValue val) {
 void ssanamedvalue_destroy(SsaNamedValue v);
 
 typedef enum {
-    SSA_OP_IMM,
+    SSA_OP_IMM, // "val"
     
     // convert
-    /** for pointers only! */ SSA_OP_REINTERPRET,
-    SSA_OP_ZEROEXT,
-    SSA_OP_SIGNEXT,
-    SSA_OP_TOFLT,
-    SSA_OP_FROMFLT,
-    SSA_OP_BITCAST,
+    /** for pointers only! */
+    SSA_OP_REINTERPRET, // "val"
+    SSA_OP_ZEROEXT,     // "val"
+    SSA_OP_SIGNEXT,     // "val"
+    SSA_OP_TOFLT,       // "val"
+    SSA_OP_FROMFLT,     // "val"
+    SSA_OP_BITCAST,     // "val"
         
     // arithm
-    SSA_OP_ADD,
-    SSA_OP_SUB,
-    SSA_OP_MUL,
-    SSA_OP_DIV,
+    SSA_OP_ADD, // "a", "b"
+    SSA_OP_SUB, // "a", "b"
+    SSA_OP_MUL, // "a", "b"
+    SSA_OP_DIV, // "a", "b"
 
     // compare
-    SSA_OP_GT,
-    SSA_OP_GTE,
-    SSA_OP_LT,
-    SSA_OP_LTE,
-    SSA_OP_EQ,
-    SSA_OP_NEQ,
+    SSA_OP_GT,  // "a", "b"
+    SSA_OP_GTE, // "a", "b"
+    SSA_OP_LT,  // "a", "b"
+    SSA_OP_LTE, // "a", "b"
+    SSA_OP_EQ,  // "a", "b"
+    SSA_OP_NEQ, // "a", "b"
 
     // boolean
-    SSA_OP_NOT,
-    SSA_OP_AND,
-    SSA_OP_OR,
+    SSA_OP_NOT, // "val"
+    SSA_OP_AND, // "val"
+    SSA_OP_OR,  // "val"
 
     // bitwise boolean
-    SSA_OP_BITWISE_NOT,
-    SSA_OP_BITWISE_AND,
-    SSA_OP_BITIWSE_OR,
+    SSA_OP_BITWISE_NOT, // "val"
+    SSA_OP_BITWISE_AND, // "a", "b"
+    SSA_OP_BITIWSE_OR,  // "a", "b"
 
     // basic loop
-    SSA_OP_FOR,
-    SSA_OP_INFINITE,
+    SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "do": (counter)->.
+    SSA_OP_INFINITE, // "init": counter, "do": (counter)->.
     SSA_OP_CONTINUE,
     SSA_OP_BREAK,
 
     // advanced loop
-    SSA_OP_FOREACH,
-    SSA_OP_FOREACH_UNTIL,
-    SSA_OP_REPEAT,
+    SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "do": (T)->.
+    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "do": (T)->.
+    SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "do": (counter)->.
 } SsaOpType;
 
 typedef struct {
@@ -176,6 +179,9 @@ void ssaop_add_type(SsaOp *op, SsaType type);
 void ssaop_add_out(SsaOp *op, SsaVar v, SsaType t);
 void ssaop_add_param_s(SsaOp *op, const char *name, SsaValue val);
 void ssaop_add_param(SsaOp *op, SsaNamedValue p);
+static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, const char *param) {
+    ssaop_add_param_s(dest, param, *ssaop_param(src, param));
+}
 void ssaop_destroy(SsaOp *op);
 
 #endif //SSA_H
