@@ -11,4 +11,5 @@ add_executable(vxcc_v3 main.c
         opt/comparisions.c
         opt/constant_eval.c
         opt/inline_vars.c
-        opt/remove_vars.c)
+        opt/remove_vars.c
+        opt/join_compute.c)

@@ -44,6 +44,7 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
 
                 SsaOp new;
                 ssaop_init(&new, SSA_OP_REPEAT);
+                ssaop_steal_param(&new, op, "do");
                 ssaop_add_param_s(&new, "start", *ssaop_param(op, "init"));
                 ssaop_add_param_s(&new, "endEx", *b);
 
