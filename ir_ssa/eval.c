@@ -6,8 +6,8 @@
 
 #include "../utils.h"
 
-bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest) {
-    const SsaOp *decl = ssablock_finddecl_var(block, var);
+bool ssablock_staticeval_var(const SsaBlock *block, const SsaVar var, SsaValue *dest) {
+    const SsaOp *decl = ssablock_root(block)->as_root.vars[var].decl;
     if (decl == NULL)
         return false;
 

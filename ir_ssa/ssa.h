@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "../common.h"
+
 struct SsaOp_s;
 typedef struct SsaOp_s SsaOp;
 
@@ -17,6 +19,14 @@ typedef struct SsaBlock_s SsaBlock;
 
 struct SsaBlock_s {
     SsaBlock *parent;
+
+    bool is_root;
+    struct {
+        struct {
+            SsaOp *decl;
+        } *vars;
+        size_t vars_len;
+    } as_root;
     
     SsaVar *ins;
     size_t  ins_len;
@@ -28,25 +38,8 @@ struct SsaBlock_s {
     size_t  outs_len;
 };
 
-typedef struct {
-    size_t *ids;
-    size_t  len;
-} OpPath;
+const SsaBlock *ssablock_root(const SsaBlock *block);
 
-typedef struct {
-    OpPath path;
-
-    const char *error;
-    const char *additional;
-} VerifyError;
-
-typedef struct {
-    VerifyError *items;
-    size_t       len;
-} VerifyErrors;
-
-void verifyerrors_free(VerifyErrors errors);
-void verifyerrors_print(VerifyErrors errors, FILE *dest);
 VerifyErrors ssablock_verify(const SsaBlock *block, OpPath path);
 
 static int ssa_verify(const SsaBlock *block) {
@@ -60,6 +53,8 @@ static int ssa_verify(const SsaBlock *block) {
 }
 
 void ssablock_init(SsaBlock *block, SsaBlock *parent);
+/** run AFTER you finished building it! */
+void ssablock_make_root(SsaBlock *block, size_t total_vars);
 void ssablock_add_in(SsaBlock *block, SsaVar var);
 void ssablock_add_op(SsaBlock *block, const SsaOp *op);
 void ssablock_add_out(SsaBlock *block, SsaVar out);
@@ -147,16 +142,18 @@ typedef enum {
     SSA_OP_SHR, // "a", "b"
 
     // basic loop
-    SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "stride": int, "do": (counter)->.
-    SSA_OP_INFINITE, // "init": counter, "stride": int, "do": (counter)->.
+    SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "stride": int, "do": (counter, States)->States, States
+    SSA_OP_INFINITE, // "init": counter, "stride": int, "do": (counter, States)->States, States
     SSA_OP_CONTINUE,
     SSA_OP_BREAK,
 
     // advanced loop
-    SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T)->.
-    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "stride": int, "do": (T)->.
-    SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter)->.
+    SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
+    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "stride": int, "do": (T, States)->States, States
+    SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
 
+    // conditional
+    SSA_OP_IF,     // "cond": bool, "then": ()->R, "else": ()->R
 
 
     SSA_OP____END,

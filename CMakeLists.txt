@@ -17,4 +17,5 @@ add_executable(vxcc_v3 main.c
         ir_ssa/verify.c
         utils.h
         ir_ssa/builder.c
-        ir_ssa/eval.c)
+        ir_ssa/eval.c
+        common.h)

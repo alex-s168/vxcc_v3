@@ -69,16 +69,28 @@ void ssablock_rename_var(SsaBlock *block, const SsaVar old, const SsaVar new) {
     }
 }
 
-SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var) {
-    while (block != NULL) {
-        for (size_t i = 0; i < block->ops_len; i ++) {
-            const SsaOp op = block->ops[i];
+/** You should use `ssablock_root(block)->as_root.vars[id].decl` instead! */
+SsaOp *ssablock_finddecl_var(const SsaBlock *block, const SsaVar var) {
+    for (size_t i = 0; i < block->ops_len; i ++) {
+        SsaOp *op = &block->ops[i];
 
-            for (size_t j = 0; j < op.outs_len; j ++)
-                if (op.outs[j].var == var)
-                    return &block->ops[i];
+        for (size_t j = 0; j < op->outs_len; j ++)
+            if (op->outs[j].var == var)
+                return op;
+
+        for (size_t j = 0; j < op->params_len; j ++) {
+            const SsaValue param = op->params[j].val;
+
+            if (param.type == SSA_VAL_BLOCK) {
+                for (size_t k = 0; k < param.block->ins_len; k ++)
+                    if (param.block->ins[k] == var)
+                        return op;
+
+                SsaOp *res = ssablock_finddecl_var(param.block, var);
+                if (res != NULL)
+                    return res;
+            }
         }
-        block = block->parent;
     }
 
     return NULL;
@@ -99,6 +111,7 @@ SsaOp *ssablock_traverse(SsaView *current) {
     return ssablock_traverse(current);
 }
 
+// TODO: add boolean to stop traverse
 void ssaview_deep_traverse(SsaView top, void (*callback)(SsaOp *op, void *data), void *data) {
     for (size_t i = top.start; i < top.end; i ++) {
         SsaOp *op = &top.block->ops[i];
@@ -129,4 +142,13 @@ void ssaview_substitude_var(SsaView view, SsaBlock *block, SsaVar old, SsaValue 
     assert(block == view.block);
     struct ssaview_substitude_var__data data = { .block = block, .old = old, .new = new };
     ssaview_deep_traverse(view, ssaview_substitude_var__trav, &data);
+}
+
+const SsaBlock *ssablock_root(const SsaBlock *block) {
+    while (!block->is_root) {
+        block = block->parent;
+        if (block == NULL)
+            return NULL;
+    }
+    return block;
 }

@@ -5,8 +5,8 @@ static bool var_used(SsaBlock *block, SsaVar var) {
         if (block->outs[i] == var)
             return true;
 
-    for (size_t i = block->ops_len - 1; i >= 0; i--) {
-        SsaOp *op = &block->ops[i];
+    for (long int i = block->ops_len - 1; i >= 0; i--) {
+        const SsaOp *op = &block->ops[i];
         for (size_t j = 0; j < op->params_len; j++) {
             if (op->params[j].val.type == SSA_VAL_BLOCK) {
                 if (var_used(op->params[j].val.block, var)) {
@@ -29,11 +29,16 @@ static void trav(SsaOp *op, void *dataIn) {
     if (op->outs_len == 0)
         return;
 
-    for (size_t i = 0; i < op->outs_len; i --)
+    // TODO: make smarter for blocks with multiple return!
+
+    for (size_t i = 0; i < op->outs_len; i ++)
         if (var_used(block, op->outs[i].var))
             return;
 
-    // no uses, remove 
+    // no uses, remove
+    for (size_t i = 0; i < op->outs_len; i ++)
+        block->as_root.vars[op->outs[i].var].decl = NULL;
+
     ssaop_destroy(op);
     ssaop_init(op, SSA_OP_NOP);
 }

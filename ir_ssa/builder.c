@@ -8,6 +8,8 @@
 void ssablock_init(SsaBlock *block, SsaBlock *parent) {
     block->parent = parent;
 
+    block->is_root = false;
+
     block->ins = NULL;
     block->ins_len = 0;
 
@@ -16,6 +18,18 @@ void ssablock_init(SsaBlock *block, SsaBlock *parent) {
 
     block->outs = NULL;
     block->outs_len = 0;
+}
+
+void ssablock_make_root(SsaBlock *block, const size_t total_vars) {
+    block->is_root = true;
+    block->as_root.vars_len = total_vars;
+    block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
+
+    for (size_t i = 0; i < total_vars; i ++) {
+        SsaOp *decl = ssablock_finddecl_var(block, i);
+        // decl can be null!
+        block->as_root.vars[i].decl = decl;
+    }
 }
 
 void ssablock_add_in(SsaBlock *block, SsaVar var) {

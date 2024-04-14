@@ -33,3 +33,5 @@ repeat<u32> start=0 end=9 stride=1 do=(%0){
     # something with %0
 }
 ```
+
+Loops can have states.
