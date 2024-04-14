@@ -14,6 +14,7 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
             ssaop_init(&new, SSA_OP_INFINITE);
             ssaop_steal_param(&new, op, "init");
             ssaop_steal_param(&new, op, "do");
+            ssaop_steal_param(&new, op, "stride");
 
             ssaview_replace(block, view, &new, 1);
             
@@ -47,6 +48,7 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
                 ssaop_steal_param(&new, op, "do");
                 ssaop_add_param_s(&new, "start", *ssaop_param(op, "init"));
                 ssaop_add_param_s(&new, "endEx", *b);
+                ssaop_steal_param(&new, op, "stride");
 
                 ssaview_replace(block, view, &new, 1);
                 

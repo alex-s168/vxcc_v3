@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "opt.h"
 #include "ssa.h"
 
@@ -32,6 +30,7 @@ int main(void) {
     ssablock_add_in(&loop, 0);
     // let's assume that this block prints the number
 
+    ssaop_add_param_s(&for_op, "stride", (SsaValue) { .type = SSA_VAL_IMM_INT, .var = 1 });
     ssaop_add_param_s(&for_op, "do", (SsaValue) { .type = SSA_VAL_BLOCK, .block = &loop });
 
     ssablock_add_op(&block, &for_op);

@@ -22,14 +22,14 @@ Is that useful for optimizations? extremely
 
 ## Loops
 ```
-for<u32> init=0 cond=(%0){ u32 %1 = lt a=%0 b=10; ^ %1; } do=(%0){
+for<u32> init=0 cond=(%0){ u32 %1 = lt a=%0 b=10; ^ %1; } stride=1 do=(%0){
     # something with %0
 }
 ```
 but there is also foreach and repeat
 don't worry, the optimizer converts those automatically
 ```
-repeat<u32> start=0 end=9 do=(%0){
+repeat<u32> start=0 end=9 stride=1 do=(%0){
     # something with %0
 }
 ```

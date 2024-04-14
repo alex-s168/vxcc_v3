@@ -111,15 +111,15 @@ typedef enum {
     SSA_OP_SHR, // "a", "b"
 
     // basic loop
-    SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "do": (counter)->.
-    SSA_OP_INFINITE, // "init": counter, "do": (counter)->.
+    SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "stride": int, "do": (counter)->.
+    SSA_OP_INFINITE, // "init": counter, "stride": int, "do": (counter)->.
     SSA_OP_CONTINUE,
     SSA_OP_BREAK,
 
     // advanced loop
-    SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "do": (T)->.
-    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "do": (T)->.
-    SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "do": (counter)->.
+    SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T)->.
+    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "stride": int, "do": (T)->.
+    SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter)->.
 } SsaOpType;
 
 typedef struct {
