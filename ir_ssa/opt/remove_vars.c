@@ -46,12 +46,23 @@ void opt_remove_vars(SsaBlock *block) {
         if (!in_outs)
             continue;
 
-        if (!var_used(block, i)) {
-            // in-place remove
-            ssaop_destroy(decl);
-            ssaop_init(decl, SSA_OP_NOP);
-
-            block->as_root.vars[i].decl = NULL;
+        // we can't optimize away if we need other results from the operation
+        bool can_rem = true;
+        for (size_t j = 0; j < decl->outs_len; j ++) {
+            if (var_used(block, decl->outs[j].var)) {
+                can_rem = false;
+                break;
+            }
         }
+
+        if (!can_rem)
+            continue;
+
+        // in-place remove
+        ssaop_destroy(decl);
+        ssaop_init(decl, SSA_OP_NOP);
+
+        for (size_t j = 0; j < decl->outs_len; j ++)
+            block->as_root.vars[decl->outs[j].var].decl = NULL;
     }
 }

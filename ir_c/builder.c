@@ -6,6 +6,15 @@
 #include "../common.h"
 #include "../utils.h"
 
+CIRBlock *cirblock_heapalloc(CIRBlock *parent) {
+    CIRBlock *block = malloc(sizeof(CIRBlock));
+    if (block == NULL)
+        return NULL;
+    cirblock_init(block, parent);
+    block->should_free = true;
+    return block;
+}
+
 void cirblock_init(CIRBlock *block, CIRBlock *parent) {
     block->parent = parent;
 

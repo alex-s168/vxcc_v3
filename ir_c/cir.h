@@ -51,6 +51,8 @@ static int cir_verify(const CIRBlock *block) {
     return errs.len > 0;
 }
 
+/** DON'T CALL cirblock_init AFTERWARDS! */
+CIRBlock *cirblock_heapalloc(CIRBlock *parent);
 void cirblock_init(CIRBlock *block, CIRBlock *parent);
 /** run AFTER you finished building it! */
 void cirblock_make_root(CIRBlock *block, size_t total_vars);
