@@ -24,5 +24,5 @@ add_executable(vxcc_v3 main.c
         ir_c/cir.c
         ir_c/verify.c
         common/verify.c
-        ir_c/transform/normaliz.c
+        ir_c/transform/normalize.c
 )

@@ -37,6 +37,7 @@ const char *ssaoptype_names[SSAOPTYPE_LEN] = {
 
     "for",
     "infinite",
+    "while",
     "continue",
     "break",
 

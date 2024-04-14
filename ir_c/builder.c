@@ -19,6 +19,8 @@ void cirblock_init(CIRBlock *block, CIRBlock *parent) {
 
     block->outs = NULL;
     block->outs_len = 0;
+
+    block->should_free = false;
 }
 
 void cirblock_make_root(CIRBlock *block, const size_t total_vars) {
@@ -68,6 +70,8 @@ CIRNamedValue cirnamedvalue_create(const char *name, CIRValue v) {
 
 void cirnamedvalue_destroy(CIRNamedValue v) {
     free(v.name);
+    if (v.val.type == CIR_VAL_BLOCK && v.val.block->should_free)
+        free(v.val.block);
 }
 
 void cirop_init(CIROp *op, const CIROpType type) {
@@ -128,5 +132,11 @@ void cirop_steal_all_params_starting_with(CIROp *dest, const CIROp *src, const c
 void cirop_steal_outs(CIROp *dest, const CIROp *src) {
     for (size_t i = 0; i < src->outs_len; i ++) {
         cirop_add_out(dest, src->outs[i].var, src->outs[i].type);
+    }
+}
+
+void cirblock_add_all_op(CIRBlock *dest, const CIRBlock *src) {
+    for (size_t i = 0; i < src->ops_len; i ++) {
+        cirblock_add_op(dest, &src->ops[i]);
     }
 }

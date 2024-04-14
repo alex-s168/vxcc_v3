@@ -33,6 +33,8 @@ struct CIRBlock_s {
 
     CIRVar *outs;
     size_t  outs_len;
+
+    bool should_free;
 };
 
 const CIRBlock *cirblock_root(const CIRBlock *block);
@@ -54,6 +56,7 @@ void cirblock_init(CIRBlock *block, CIRBlock *parent);
 void cirblock_make_root(CIRBlock *block, size_t total_vars);
 void cirblock_add_in(CIRBlock *block, CIRVar var);
 void cirblock_add_op(CIRBlock *block, const CIROp *op);
+void cirblock_add_all_op(CIRBlock *dest, const CIRBlock *src);
 void cirblock_add_out(CIRBlock *block, CIRVar out);
 void cirblock_destroy(CIRBlock *block);
 
@@ -91,6 +94,7 @@ void cirnamedvalue_destroy(CIRNamedValue v);
 typedef enum {
     CIR_OP_NOP = 0,
     CIR_OP_IMM, // "val"
+    CIR_OP_FLATTEN_PLEASE,  // "block": ()->.
 
     // convert
     /** for pointers only! */
@@ -133,10 +137,10 @@ typedef enum {
     // basic loop
     CIR_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "stride": int, "do": (counter)->.
     CIR_OP_INFINITE, // "init": counter, "stride": int, "do": (counter)->.
+    CIR_OP_WHILE,    // "cond": ()->bool, "do": (counter)->.
     CIR_OP_CONTINUE,
     CIR_OP_BREAK,
-    CIR_OP_CWHILE,   // "cond": ()->bool
-    CIR_OP_CFOR,     // "init": ()->., "cond": ()->bool, "end": ()->.
+    CIR_OP_CFOR,     // "init": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
 
     // advanced loop
     CIR_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T)->.

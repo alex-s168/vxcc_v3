@@ -144,6 +144,7 @@ typedef enum {
     // basic loop
     SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "stride": int, "do": (counter, States)->States, States
     SSA_OP_INFINITE, // "init": counter, "stride": int, "do": (counter, States)->States, States
+    SSA_OP_WHILE,    // "cond": ()->bool, "do": (counter)->States, States
     SSA_OP_CONTINUE,
     SSA_OP_BREAK,
 

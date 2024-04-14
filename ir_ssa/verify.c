@@ -43,7 +43,8 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
             op->id == SSA_OP_FOREACH ||
             op->id == SSA_OP_FOREACH_UNTIL ||
             op->id == SSA_OP_REPEAT ||
-            op->id == SSA_OP_INFINITE)
+            op->id == SSA_OP_INFINITE ||
+            op->id == SSA_OP_WHILE)
         {
             const size_t states_count = op->outs_len;
             for (size_t j = 0; j < states_count; j ++) {
