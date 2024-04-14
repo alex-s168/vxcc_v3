@@ -8,6 +8,15 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
         opt(cond); // !
         const SsaVar condVar = cond->outs[0];
 
+        // if it will always we 0, we optimize it out
+        if (ssablock_alwaysis_var(cond, condVar, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 })) {
+            ssaview_replace(block, view, NULL, 0);
+
+            goto next;
+        }
+
+        opt(ssaop_param(op, "do")->block);
+
         // if it will never be 0 (not might be 0), it is always true => infinite loop
         if (!ssablock_mightbe_var(cond, condVar, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 })) {
             SsaOp new;
@@ -19,19 +28,13 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
             ssaop_steal_outs(&new, op);
 
             ssaview_replace(block, view, &new, 1);
-            
-            goto next;
-        }
-
-        // if it will always we 0, we optimize it out
-        if (ssablock_alwaysis_var(cond, condVar, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 })) {
-            ssaview_replace(block, view, NULL, 0);
 
             goto next;
         }
 
         // if it is a less than, we can do a repeat
         if (cond->ops_len > 0 && cond->ops[0].id == SSA_OP_LT) {
+
             bool break2 = false;
             do {
                 const SsaValue *a = ssaop_param(&cond->ops[0], "a");

@@ -25,4 +25,5 @@ add_executable(vxcc_v3 main.c
         ir_c/verify.c
         common/verify.c
         ir_c/transform/normalize.c
+        ir_ssa/opt/reduce_if.c
 )

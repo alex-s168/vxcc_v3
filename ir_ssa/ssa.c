@@ -43,6 +43,8 @@ SsaView ssaview_replace(SsaBlock *viewblock, const SsaView view, const SsaOp *op
 
 void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar new) {
     assert(block == view.block);
+
+    ssablock_root(block)->as_root.vars[old].decl = NULL;
     
     for (size_t i = view.start; i < view.end; i ++) {
         const SsaOp op = block->ops[i];
@@ -63,6 +65,8 @@ void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar new) {
 }
 
 void ssablock_rename_var(SsaBlock *block, const SsaVar old, const SsaVar new) {
+    ssablock_root(block)->as_root.vars[old].decl = NULL;
+
     while (block != NULL) {
         ssaview_rename_var(ssaview_of_all(block), block, old, new);
         block = block->parent;
@@ -145,10 +149,31 @@ void ssaview_substitude_var(SsaView view, SsaBlock *block, SsaVar old, SsaValue 
 }
 
 const SsaBlock *ssablock_root(const SsaBlock *block) {
-    while (!block->is_root) {
+    while (block != NULL && !block->is_root) {
         block = block->parent;
-        if (block == NULL)
-            return NULL;
     }
     return block;
+}
+
+bool ssablock_var_used(const SsaBlock *block, const SsaVar var) {
+    for (size_t i = 0; i < block->outs_len; i++)
+        if (block->outs[i] == var)
+            return true;
+
+    for (long int i = block->ops_len - 1; i >= 0; i--) {
+        const SsaOp *op = &block->ops[i];
+        for (size_t j = 0; j < op->params_len; j++) {
+            if (op->params[j].val.type == SSA_VAL_BLOCK) {
+                if (ssablock_var_used(op->params[j].val.block, var)) {
+                    return true;
+                }
+            } else if (op->params[j].val.type == SSA_VAL_VAR) {
+                if (op->params[j].val.var == var) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }

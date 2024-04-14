@@ -57,8 +57,13 @@ void ssablock_init(SsaBlock *block, SsaBlock *parent);
 void ssablock_make_root(SsaBlock *block, size_t total_vars);
 void ssablock_add_in(SsaBlock *block, SsaVar var);
 void ssablock_add_op(SsaBlock *block, const SsaOp *op);
+void ssablock_add_all_op(SsaBlock *dest, const SsaBlock *src);
 void ssablock_add_out(SsaBlock *block, SsaVar out);
 void ssablock_destroy(SsaBlock *block);
+
+void ssablock_remove_out(SsaBlock *block, size_t id);
+
+bool ssablock_var_used(const SsaBlock *block, SsaVar var);
 
 void ssablock_dump(const SsaBlock *block, FILE *out, size_t indent);
 
@@ -81,6 +86,7 @@ typedef struct {
 void ssavalue_dump(SsaValue value, FILE *out, size_t indent);
 
 SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
+/** ONLY SEARCHES UPWARDS!! */ // TODO: remove
 void ssablock_rename_var(SsaBlock *block, SsaVar oldn, SsaVar newn);
 /** returns true if static eval ok; only touches dest if true */
 bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest);
@@ -241,6 +247,7 @@ static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, const char *param) 
 }
 void ssaop_steal_all_params_starting_with(SsaOp *dest, const SsaOp *src, const char *start);
 void ssaop_remove_params(SsaOp *op);
+void ssaop_remove_out(SsaOp *op, size_t id);
 void ssaop_steal_outs(SsaOp *dest, const SsaOp *src);
 void ssaop_destroy(SsaOp *op);
 

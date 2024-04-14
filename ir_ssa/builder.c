@@ -42,6 +42,12 @@ void ssablock_add_op(SsaBlock *block, const SsaOp *op) {
     block->ops[block->ops_len ++] = *op;
 }
 
+void ssablock_add_all_op(SsaBlock *dest, const SsaBlock *src) {
+    dest->ops = realloc(dest->ops, sizeof(SsaOp) * (dest->ops_len + src->ops_len));
+    memcpy(dest->ops + dest->ops_len, src->ops, src->ops_len);
+    dest->ops_len += src->ops_len;
+}
+
 void ssablock_add_out(SsaBlock *block, SsaVar out) {
     block->outs = realloc(block->outs, sizeof(SsaVar) * (block->outs_len + 1));
     block->outs[block->outs_len ++] = out;
@@ -137,4 +143,14 @@ void ssaop_steal_outs(SsaOp *dest, const SsaOp *src) {
     for (size_t i = 0; i < src->outs_len; i ++) {
         ssaop_add_out(dest, src->outs[i].var, src->outs[i].type);
     }
+}
+
+void ssaop_remove_out(SsaOp *op, const size_t id) {
+    memmove(op->outs + id, op->outs + id + 1, sizeof(SsaTypedVar) * (op->outs_len - id - 1));
+    op->outs_len --;
+}
+
+void ssablock_remove_out(SsaBlock *block, size_t id) {
+    memmove(block->outs + id, block->outs + id + 1, sizeof(SsaVar) * (block->outs_len - id - 1));
+    block->outs_len --;
 }
