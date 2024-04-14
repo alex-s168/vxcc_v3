@@ -8,7 +8,7 @@ int main(void) {
     SsaOp for_op;
     ssaop_init(&for_op, SSA_OP_FOR);
     ssaop_add_param_s(&for_op, "init", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 });
-    
+
     SsaBlock cond;
     ssablock_init(&cond, &block);
     ssablock_add_in(&cond, 2);
@@ -18,11 +18,11 @@ int main(void) {
         ssaop_add_out(&cmp_op, 1, "bool");
         ssaop_add_param_s(&cmp_op, "a", (SsaValue) { .type = SSA_VAL_VAR, .var = 2 });
         ssaop_add_param_s(&cmp_op, "b", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 10 });
-        
+
         ssablock_add_op(&cond, &cmp_op);
     }
     ssablock_add_out(&cond, 1);
-    
+
     ssaop_add_param_s(&for_op, "cond", (SsaValue) { .type = SSA_VAL_BLOCK, .block = &cond });
 
     SsaBlock loop;
@@ -43,6 +43,6 @@ int main(void) {
     opt(&block);
 
     ssablock_dump(&block, stdout, 0);
-    
+
     return 0;
 }

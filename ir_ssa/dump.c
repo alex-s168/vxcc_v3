@@ -118,7 +118,17 @@ void ssaop_dump(const SsaOp *op, FILE *out, size_t indent) {
 
     fprintf(out, "%s ", ssaoptype_names[op->id]);
 
-    // TODO: type parameters
+    if (op->types_len > 0) {
+        fputc('<', out);
+
+        for (size_t i = 0; i < op->types_len; i ++) {
+            if (i > 0)
+                fputc(',', out);
+            fputs(op->types[i], out);
+        }
+
+        fputc('>', out);
+    }
 
     for (size_t j = 0; j < op->params_len; j ++) {
         if (j > 0)

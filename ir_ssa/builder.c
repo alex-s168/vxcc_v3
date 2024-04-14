@@ -51,6 +51,8 @@ void ssablock_destroy(SsaBlock *block) {
     free(block->ins);
     free(block->ops);
     free(block->outs);
+    if (block->is_root)
+        free(block->as_root.vars);
 }
 
 SsaValue *ssaop_param(const SsaOp *op, const char *name) {

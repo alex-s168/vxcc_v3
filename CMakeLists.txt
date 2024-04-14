@@ -18,4 +18,11 @@ add_executable(vxcc_v3 main.c
         utils.h
         ir_ssa/builder.c
         ir_ssa/eval.c
-        common.h)
+        common.h
+        ir_c/cir.h
+        ir_c/builder.c
+        ir_c/cir.c
+        ir_c/verify.c
+        common/verify.c
+        ir_c/transform/normaliz.c
+)
