@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../utils.h"
+
 void ssablock_init(SsaBlock *block, SsaBlock *parent) {
     block->parent = parent;
     
@@ -214,7 +216,7 @@ bool ssablock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v) {
 
 void ssablock_staticeval(SsaBlock *block, SsaValue *v) {
     if (v->type == SSA_VAL_VAR)
-        while (ssablock_staticeval_var(block, v->var, v));
+        while (ssablock_staticeval_var(block, v->var, v)) {}
 }
 
 void ssaop_remove_params(SsaOp *op) {
@@ -270,4 +272,19 @@ void ssaview_substitude_var(SsaView view, SsaBlock *block, SsaVar old, SsaValue 
     assert(block == view.block);
     struct ssaview_substitude_var__data data = { .block = block, .old = old, .new = new };
     ssaview_deep_traverse(view, ssaview_substitude_var__trav, &data);
+}
+
+void ssaop_steal_all_params_starting_with(SsaOp *dest, const SsaOp *src, const char *start) {
+    for (size_t i = 0; i < src->params_len; i ++) {
+        if (!strstarts(src->params[i].name, start))
+            continue;
+
+        ssaop_add_param(dest, src->params[i]);
+    }
+}
+
+void ssaop_steal_outs(SsaOp *dest, const SsaOp *src) {
+    for (size_t i = 0; i < src->outs_len; i ++) {
+        ssaop_add_out(dest, src->outs[i].var, src->outs[i].type);
+    }
 }

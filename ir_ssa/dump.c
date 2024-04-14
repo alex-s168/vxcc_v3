@@ -140,7 +140,7 @@ void ssablock_dump(const SsaBlock *block, FILE *out, const size_t indent) {
         const SsaVar in = block->ins[i];
         fprintf(out, " %%%zu", in);
     }
-    fputs(":\n", out);
+    fputc('\n', out);
 
     for (size_t i = 0; i < block->ops_len; i ++) {
         ssaop_dump(block->ops + i, out, indent + 1);

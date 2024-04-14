@@ -28,6 +28,37 @@ struct SsaBlock_s {
     size_t  outs_len;
 };
 
+typedef struct {
+    size_t *ids;
+    size_t  len;
+} OpPath;
+
+typedef struct {
+    OpPath path;
+
+    const char *error;
+    const char *additional;
+} VerifyError;
+
+typedef struct {
+    VerifyError *items;
+    size_t       len;
+} VerifyErrors;
+
+void verifyerrors_free(VerifyErrors errors);
+void verifyerrors_print(VerifyErrors errors, FILE *dest);
+VerifyErrors ssablock_verify(const SsaBlock *block, OpPath path);
+
+static int ssa_verify(const SsaBlock *block) {
+    OpPath path;
+    path.ids = NULL;
+    path.len = 0;
+    const VerifyErrors errs = ssablock_verify(block, path);
+    verifyerrors_print(errs, stderr);
+    verifyerrors_free(errs);
+    return errs.len > 0;
+}
+
 void ssablock_init(SsaBlock *block, SsaBlock *parent);
 void ssablock_add_in(SsaBlock *block, SsaVar var);
 void ssablock_add_op(SsaBlock *block, const SsaOp *op);
@@ -210,7 +241,9 @@ void ssaop_add_param(SsaOp *op, SsaNamedValue p);
 static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, const char *param) {
     ssaop_add_param_s(dest, param, *ssaop_param(src, param));
 }
+void ssaop_steal_all_params_starting_with(SsaOp *dest, const SsaOp *src, const char *start);
 void ssaop_remove_params(SsaOp *op);
+void ssaop_steal_outs(SsaOp *dest, const SsaOp *src);
 void ssaop_destroy(SsaOp *op);
 
 #endif //SSA_H

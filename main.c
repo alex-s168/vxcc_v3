@@ -35,6 +35,9 @@ int main(void) {
 
     ssablock_add_op(&block, &for_op);
 
+    if (ssa_verify(&block) != 0)
+        return 1;
+
     opt(&block);
 
     ssablock_dump(&block, stdout, 0);
