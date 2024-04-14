@@ -80,7 +80,11 @@ typedef struct {
     };
 } CIRValue;
 
-CIROp *cirblock_finddecl_var(const CIRBlock *block, CIRVar var);
+CIRVar cirblock_new_var(CIRBlock *block);
+void cirblock_rename_var_after(CIRBlock *block, size_t i, CIRVar old, CIRVar newd);
+static void cirblock_rename_var(CIRBlock *block, const CIRVar old, const CIRVar newd) {
+    cirblock_rename_var_after(block, 0, old, newd);
+}
 
 typedef struct {
     char     *name;
@@ -190,5 +194,17 @@ void cirop_steal_all_params_starting_with(CIROp *dest, const CIROp *src, const c
 void cirop_remove_params(CIROp *op);
 void cirop_steal_outs(CIROp *dest, const CIROp *src);
 void cirop_destroy(CIROp *op);
+
+/**
+ * Go trough
+ */
+void cirblock_mksa_states(CIRBlock *block);
+
+/**
+ * Go trough every unconditional assignement in the block (no traverse),
+ * change the id of the vars to new,
+ * unused vars and refactor every use AFTER the declaration
+ */
+void cirblock_mksa_final(CIRBlock *block);
 
 #endif //CIR_H

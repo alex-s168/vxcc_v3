@@ -26,4 +26,5 @@ add_executable(vxcc_v3 main.c
         common/verify.c
         ir_c/transform/normalize.c
         ir_ssa/opt/reduce_if.c
+        ir_c/transform/single_assign.c
 )
