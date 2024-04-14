@@ -19,6 +19,7 @@ typedef struct CIRBlock_s CIRBlock;
 
 struct CIRBlock_s {
     CIRBlock *parent;
+    size_t parent_index;
 
     bool is_root;
     struct {
@@ -52,8 +53,8 @@ static int cir_verify(const CIRBlock *block) {
 }
 
 /** DON'T CALL cirblock_init AFTERWARDS! */
-CIRBlock *cirblock_heapalloc(CIRBlock *parent);
-void cirblock_init(CIRBlock *block, CIRBlock *parent);
+CIRBlock *cirblock_heapalloc(CIRBlock *parent, size_t parent_index);
+void cirblock_init(CIRBlock *block, CIRBlock *parent, size_t parent_index);
 /** run AFTER you finished building it! */
 void cirblock_make_root(CIRBlock *block, size_t total_vars);
 void cirblock_add_in(CIRBlock *block, CIRVar var);
@@ -178,6 +179,8 @@ struct CIROp_s {
 
     CIRNamedValue *params;
     size_t         params_len;
+
+    CIRBlock *parent;
 };
 
 CIRValue *cirop_param(const CIROp *op, const char *name);
@@ -195,16 +198,9 @@ void cirop_remove_params(CIROp *op);
 void cirop_steal_outs(CIROp *dest, const CIROp *src);
 void cirop_destroy(CIROp *op);
 
-/**
- * Go trough
- */
-void cirblock_mksa_states(CIRBlock *block);
+CIROp *cirblock_inside_out_vardecl_before(const CIRBlock *block, CIRVar var, size_t before);
 
-/**
- * Go trough every unconditional assignement in the block (no traverse),
- * change the id of the vars to new,
- * unused vars and refactor every use AFTER the declaration
- */
+void cirblock_mksa_states(CIRBlock *block);
 void cirblock_mksa_final(CIRBlock *block);
 
 #endif //CIR_H

@@ -41,3 +41,18 @@ CIRVar cirblock_new_var(CIRBlock *block) {
 
     return block->as_root.vars_len ++;
 }
+
+CIROp *cirblock_inside_out_vardecl_before(const CIRBlock *block, const CIRVar var, size_t before) {
+    while (before --> 0) {
+        CIROp *op = &block->ops[before];
+
+        for (size_t i = 0; i < op->outs_len; i ++)
+            if (op->outs[i].var == var)
+                return op;
+    }
+
+    if (block->parent == NULL)
+        return NULL;
+
+    return cirblock_inside_out_vardecl_before(block->parent, var, block->parent_index);
+}

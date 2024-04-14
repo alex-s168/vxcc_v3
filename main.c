@@ -1,7 +1,8 @@
+#include "ir_c/cir.h"
 #include "ir_ssa/opt.h"
 #include "ir_ssa/ssa.h"
 
-int main(void) {
+static int ssa_test(void) {
     SsaBlock block;
     ssablock_init(&block, NULL);
 
@@ -43,6 +44,61 @@ int main(void) {
     opt(&block);
 
     ssablock_dump(&block, stdout, 0);
+
+    return 0;
+}
+
+static int cir_test(void) {
+    CIRBlock block;
+    cirblock_init(&block, NULL, 0);
+
+    {
+        CIROp op;
+        cirop_init(&op, CIR_OP_IMM);
+        cirop_add_out(&op, 0, "int");
+        cirop_add_param_s(&op, "val", (CIRValue) { .type = CIR_VAL_IMM_INT, .imm_int = 1 });
+        cirblock_add_op(&block, &op);
+    }
+
+    {
+        CIROp op;
+        cirop_init(&op, CIR_OP_IF);
+
+        CIRBlock *then = cirblock_heapalloc(&block, block.ops_len);
+        {
+            CIROp op2;
+            cirop_init(&op2, CIR_OP_IMM);
+            cirop_add_out(&op2, 0, "int");
+            cirop_add_param_s(&op2, "val", (CIRValue) { .type = CIR_VAL_IMM_INT, .imm_int = 2 });
+            cirblock_add_op(then, &op2);
+        }
+        cirop_add_param_s(&op, "then", (CIRValue) { .type = CIR_VAL_BLOCK, .block = then });
+
+        CIRBlock *cond = cirblock_heapalloc(&block, block.ops_len);
+        cirop_add_param_s(&op, "cond", (CIRValue) { .type = CIR_VAL_BLOCK, .block = cond });
+
+        cirblock_add_op(&block, &op);
+    }
+
+    cirblock_make_root(&block, 1);
+
+    if (cir_verify(&block) != 0)
+        return 1;
+
+    cirblock_mksa_states(&block);
+    // cirblock_mksa_final(&block);
+
+    return 0;
+}
+
+int main(void) {
+    printf("CIR test:\n");
+    if (cir_test() != 0)
+        return 1;
+
+    printf("\nSSA test:\n");
+    if (ssa_test() != 0)
+        return 1;
 
     return 0;
 }

@@ -6,17 +6,18 @@
 #include "../common.h"
 #include "../utils.h"
 
-CIRBlock *cirblock_heapalloc(CIRBlock *parent) {
+CIRBlock *cirblock_heapalloc(CIRBlock *parent, size_t parent_index) {
     CIRBlock *block = malloc(sizeof(CIRBlock));
     if (block == NULL)
         return NULL;
-    cirblock_init(block, parent);
+    cirblock_init(block, parent, parent_index);
     block->should_free = true;
     return block;
 }
 
-void cirblock_init(CIRBlock *block, CIRBlock *parent) {
+void cirblock_init(CIRBlock *block, CIRBlock *parent, size_t parent_index) {
     block->parent = parent;
+    block->parent_index = parent_index;
 
     block->is_root = false;
 
@@ -44,7 +45,8 @@ void cirblock_add_in(CIRBlock *block, CIRVar var) {
 
 void cirblock_add_op(CIRBlock *block, const CIROp *op) {
     block->ops = realloc(block->ops, sizeof(CIROp) * (block->ops_len + 1));
-    block->ops[block->ops_len ++] = *op;
+    block->ops[block->ops_len] = *op;
+    block->ops[block->ops_len ++].parent = block;
 }
 
 void cirblock_add_out(CIRBlock *block, CIRVar out) {
@@ -94,6 +96,8 @@ void cirop_init(CIROp *op, const CIROpType type) {
     op->params_len = 0;
 
     op->id = type;
+
+    op->parent = NULL;
 }
 
 void cirop_add_type(CIROp *op, CIRType type) {

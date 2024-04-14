@@ -11,7 +11,7 @@ void cirblock_normalize(CIRBlock *block) {
         CIROp *op = block->ops;
 
         if (op->id == CIR_OP_CFOR) {
-            CIRBlock *new = cirblock_heapalloc(block);
+            CIRBlock *new = cirblock_heapalloc(block, i);
 
             CIRBlock *b_init = cirop_param(op, "init")->block;
             CIRBlock *b_cond = cirop_param(op, "cond")->block;
@@ -33,7 +33,7 @@ void cirblock_normalize(CIRBlock *block) {
             cirop_init(&opwhile, CIR_OP_WHILE);
             cirop_add_param_s(&opwhile, "cond", (CIRValue) { .type = CIR_VAL_BLOCK, .block = b_cond });
 
-            CIRBlock *doblock = cirblock_heapalloc(new);
+            CIRBlock *doblock = cirblock_heapalloc(new, new->ops_len);
             {
                 CIROp opdo;
                 cirop_init(&opdo, CIR_OP_FLATTEN_PLEASE);
