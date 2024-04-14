@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 struct SsaOp_s;
 typedef struct SsaOp_s SsaOp;
@@ -33,6 +34,8 @@ void ssablock_add_op(SsaBlock *block, const SsaOp *op);
 void ssablock_add_out(SsaBlock *block, SsaVar out);
 void ssablock_destroy(SsaBlock *block);
 
+void ssablock_dump(const SsaBlock *block, FILE *out, size_t indent);
+
 typedef struct {
     enum {
         SSA_VAL_IMM_INT,
@@ -48,6 +51,8 @@ typedef struct {
         SsaBlock *block;
     };
 } SsaValue;
+
+void ssavalue_dump(SsaValue value, FILE *out, size_t indent);
 
 SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
 void ssablock_rename_var(SsaBlock *block, SsaVar oldn, SsaVar newn);
@@ -69,7 +74,7 @@ static SsaNamedValue ssanamedvalue_copy(SsaNamedValue val) {
 void ssanamedvalue_destroy(SsaNamedValue v);
 
 typedef enum {
-    SSA_OP_NOP,
+    SSA_OP_NOP = 0,
     SSA_OP_IMM, // "val"
     
     // convert
@@ -120,7 +125,15 @@ typedef enum {
     SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T)->.
     SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "stride": int, "do": (T)->.
     SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter)->.
+
+
+
+    SSA_OP____END,
 } SsaOpType;
+
+#define SSAOPTYPE_LEN (SSA_OP____END - SSA_OP_NOP)
+
+extern const char *ssaoptype_names[SSAOPTYPE_LEN];
 
 typedef struct {
     SsaVar var;
@@ -139,6 +152,8 @@ struct SsaOp_s {
     SsaNamedValue *params;
     size_t         params_len;
 };
+
+void ssaop_dump(const SsaOp *op, FILE *out, size_t indent);
 
 typedef struct {
     const SsaBlock *block;

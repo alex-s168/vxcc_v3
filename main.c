@@ -1,5 +1,5 @@
-#include "opt.h"
-#include "ssa.h"
+#include "ir_ssa/opt.h"
+#include "ir_ssa/ssa.h"
 
 int main(void) {
     SsaBlock block;
@@ -36,6 +36,8 @@ int main(void) {
     ssablock_add_op(&block, &for_op);
 
     opt(&block);
+
+    ssablock_dump(&block, stdout, 0);
     
     return 0;
 }
