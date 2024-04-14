@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "../opt.h"
 
 static bool var_used(SsaBlock *block, SsaVar var) {
@@ -23,26 +25,33 @@ static bool var_used(SsaBlock *block, SsaVar var) {
     return false;
 }
 
-static void trav(SsaOp *op, void *dataIn) {
-    SsaBlock *block = dataIn;
+void opt_remove_vars(SsaBlock *block) {
+    assert(block->is_root);
 
-    if (op->outs_len == 0)
-        return;
+    for (size_t i = 0; i < block->as_root.vars_len; i ++) {
+        SsaOp *decl = block->as_root.vars[i].decl;
+        if (decl == NULL)
+            continue;
 
-    // TODO: make smarter for blocks with multiple return!
+        // TODO: optimize away states and similar
 
-    for (size_t i = 0; i < op->outs_len; i ++)
-        if (var_used(block, op->outs[i].var))
-            return;
+        // we can't optimize away loop counters and similar
+        bool in_outs = false;
+        for (size_t j = 0; j < decl->outs_len; j ++) {
+            if (decl->outs[j].var == i) {
+                in_outs = true;
+                break;
+            }
+        }
+        if (!in_outs)
+            continue;
 
-    // no uses, remove
-    for (size_t i = 0; i < op->outs_len; i ++)
-        block->as_root.vars[op->outs[i].var].decl = NULL;
+        if (!var_used(block, i)) {
+            // in-place remove
+            ssaop_destroy(decl);
+            ssaop_init(decl, SSA_OP_NOP);
 
-    ssaop_destroy(op);
-    ssaop_init(op, SSA_OP_NOP);
-}
-
-void opt_remove_vars(SsaView view, SsaBlock *block) {
-    ssaview_deep_traverse(view, trav, block);
+            block->as_root.vars[i].decl = NULL;
+        }
+    }
 }
