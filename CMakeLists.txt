@@ -15,4 +15,6 @@ add_executable(vxcc_v3 main.c
         ir_ssa/opt/join_compute.c
         ir_ssa/dump.c
         ir_ssa/verify.c
-        utils.h)
+        utils.h
+        ir_ssa/builder.c
+        ir_ssa/eval.c)
