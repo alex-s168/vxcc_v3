@@ -26,6 +26,28 @@ static void verify_vardecls_deeptraverse(SsaOp *op, void *dataIn) {
     }
 }
 
+static void error_param_type(VerifyErrors *errors, const OpPath path, const char *expected) {
+    static char buf[256];
+    sprintf(buf, "Expected parameter type %s", expected);
+    const VerifyError error = {
+        .path = path,
+        .error = "Incorrect type",
+        .additional = buf
+    };
+    verifyerrors_add(errors, &error);
+}
+
+static void error_param_missing(VerifyErrors *errors, const OpPath path, const char *param) {
+    static char buf[256];
+    sprintf(buf, "Missing required parameter %s", param);
+    const VerifyError error = {
+        .path = path,
+        .error = "Missing parameter",
+        .additional = buf
+    };
+    verifyerrors_add(errors, &error);
+}
+
 VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
     VerifyErrors errors;
     errors.len = 0;
@@ -60,7 +82,8 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                         .additional = buf
                     };
                     verifyerrors_add(&errors, &error);
-                }
+                } else if (state_init->type == SSA_VAL_BLOCK)
+                    error_param_type(&errors, oppath_copy_add(path, i), "!block");
             }
 
             const SsaValue *doblock_v = ssaop_param(op, "do");
@@ -74,14 +97,75 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                 verifyerrors_add(&errors, &error);
             }
             else {
-                const SsaBlock *doblock = doblock_v->block;
+                if (doblock_v->type != SSA_VAL_BLOCK) {
+                    error_param_type(&errors, oppath_copy_add(path, i), "block");
+                } else {
+                    const SsaBlock *doblock = doblock_v->block;
 
-                if (doblock->outs_len != states_count) {
+                    if (doblock->outs_len != states_count) {
+                        const OpPath newpath = oppath_copy_add(path, i);
+                        VerifyError error = {
+                            .path = newpath,
+                            .error = "Do block is missing state changes",
+                            .additional = "Loop do-block is missing state-updates for all states!"
+                        };
+                        verifyerrors_add(&errors, &error);
+                    }
+                }
+            }
+        }
+
+        if (op->id == SSA_OP_IF) {
+            bool err = false;
+
+            const SsaValue *vcond = ssaop_param(op, "cond");
+            if (vcond == NULL) {
+                error_param_missing(&errors, oppath_copy_add(path, i), "cond");
+                err = true;
+            } else if (vcond->type != SSA_VAL_BLOCK) {
+                error_param_type(&errors, oppath_copy_add(path, i), "block");
+                err = true;
+            }
+
+            const SsaValue *vthen = ssaop_param(op, "then");
+            if (vthen == NULL) {
+                error_param_missing(&errors, oppath_copy_add(path, i), "then");
+                err = true;
+            } else if (vthen->type != SSA_VAL_BLOCK) {
+                error_param_type(&errors, oppath_copy_add(path, i), "block");
+                err = true;
+            }
+
+            const SsaValue *velse = ssaop_param(op, "else");
+            if (velse == NULL) {
+                error_param_missing(&errors, oppath_copy_add(path, i), "else");
+                err = true;
+            } else if (velse->type != SSA_VAL_BLOCK) {
+                error_param_type(&errors, oppath_copy_add(path, i), "block");
+                err = true;
+            }
+
+            if (!err) {
+                SsaBlock *bcond = vcond->block;
+                SsaBlock *bthen = vthen->block;
+                SsaBlock *belse = velse->block;
+
+                if (bcond->outs_len != 1) {
                     const OpPath newpath = oppath_copy_add(path, i);
                     VerifyError error = {
                         .path = newpath,
-                        .error = "Do block is missing state changes",
-                        .additional = "Loop do-block is missing state-updates for all states!"
+                        .error = "If block is missing a condition",
+                        .additional = "If block is missing a condition! Example: `cond=(){ ^ 1 }`"
+                    };
+                    verifyerrors_add(&errors, &error);
+                }
+
+                if (!(bthen->outs_len == belse->outs_len && bthen->outs_len == op->outs_len)) {
+                    const OpPath newpath = oppath_copy_add(path, i);
+                    VerifyError error = {
+                        .path = newpath,
+                        .error = "If block invalid outputs",
+                        .additional = "Expected every branch in the if block to have the same amount of outputs!"
                     };
                     verifyerrors_add(&errors, &error);
                 }

@@ -5,5 +5,8 @@ VerifyErrors cirblock_verify(const CIRBlock *block, OpPath path) {
     errors.items = NULL;
     errors.len = 0;
 
+    (void) block;
+    (void) path;
+
     return errors;
 }
