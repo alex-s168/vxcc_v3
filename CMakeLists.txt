@@ -28,4 +28,5 @@ add_executable(vxcc_v3 main.c
         ir_ssa/opt/reduce_if.c
         ir_c/transform/single_assign.c
         ir_c/transform/single_assign_conditional.c
+        ir_ssa/opt/reduce_loops.c
 )

@@ -32,7 +32,7 @@ void ssablock_make_root(SsaBlock *block, const size_t total_vars) {
     }
 }
 
-void ssablock_add_in(SsaBlock *block, SsaVar var) {
+void ssablock_add_in(SsaBlock *block, const SsaVar var) {
     block->ins = realloc(block->ins, sizeof(SsaVar) * (block->ins_len + 1));
     block->ins[block->ins_len ++] = var;
 }
@@ -54,6 +54,8 @@ void ssablock_add_out(SsaBlock *block, SsaVar out) {
 }
 
 void ssablock_destroy(SsaBlock *block) {
+    if (block == NULL)
+        return;
     free(block->ins);
     free(block->ops);
     free(block->outs);
@@ -82,6 +84,8 @@ SsaNamedValue ssanamedvalue_create(const char *name, SsaValue v) {
 
 void ssanamedvalue_destroy(SsaNamedValue v) {
     free(v.name);
+    if (v.val.type == SSA_VAL_BLOCK)
+        ssablock_destroy(v.val.block);
 }
 
 void ssaop_init(SsaOp *op, const SsaOpType type) {
@@ -110,6 +114,16 @@ void ssaop_add_out(SsaOp *op, SsaVar v, SsaType t) {
 void ssaop_add_param(SsaOp *op, SsaNamedValue p) {
     op->params = realloc(op->params, sizeof(SsaNamedValue) * (op->params_len + 1));
     op->params[op->params_len ++] = p;
+}
+
+void ssanamedvalue_rename(SsaNamedValue *value, const char *newn) {
+    free(value->name);
+    
+    const size_t len = strlen(newn);
+    char *new = malloc(len + 1);
+    memcpy(new, newn, len + 1);
+    
+    value->name = new;
 }
 
 void ssaop_add_param_s(SsaOp *op, const char *name, const SsaValue val) {
@@ -153,4 +167,9 @@ void ssaop_remove_out(SsaOp *op, const size_t id) {
 void ssablock_remove_out(SsaBlock *block, size_t id) {
     memmove(block->outs + id, block->outs + id + 1, sizeof(SsaVar) * (block->outs_len - id - 1));
     block->outs_len --;
+}
+
+void ssaop_remove_param(SsaOp *op, const size_t id) {
+    memmove(op->params + id, op->params + id + 1, sizeof(SsaNamedValue) * (op->params_len - id - 1));
+    op->params_len --;
 }

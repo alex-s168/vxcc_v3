@@ -177,3 +177,48 @@ bool ssablock_var_used(const SsaBlock *block, const SsaVar var) {
 
     return false;
 }
+
+// TODO: search more paths
+bool ssaop_anyparam_hasvar(SsaOp *op, SsaVar var) {
+    for (size_t i = 0; i < op->params_len; i ++)
+        if (op->params[i].val.type == SSA_VAL_VAR && op->params[i].val.var == var)
+            return true;
+    return false;
+}
+
+void ssablock_swap_in(SsaBlock *block, const size_t a, const size_t b) {
+    if (a == b)
+        return;
+
+    const SsaVar va = block->ins[a];
+    block->ins[a] = block->ins[b];
+    block->ins[b] = va;
+}
+
+void ssablock_swap_out(SsaBlock *block, size_t a, size_t b) {
+    if (a == b)
+        return;
+
+    const SsaVar va = block->outs[a];
+    block->outs[a] = block->outs[b];
+    block->outs[b] = va;
+}
+
+// TODO: we really need to make state params separate!!
+void ssaop_drop_state_param(SsaOp *op, size_t torem) {
+    for (size_t i = 0; i < op->params_len; i ++) {
+        size_t id;
+        if (sscanf(op->params[i].name, "state%zu", &id) == EOF)
+            continue;
+        
+        if (id == torem) {
+            ssaop_remove_param(op, id);
+            i --;
+        } else if (id > torem) {
+            id --;
+            static char buf[64];
+            sprintf(buf, "state%zu", id);
+            ssanamedvalue_rename(&op->params[i], buf);
+        }
+    }
+}

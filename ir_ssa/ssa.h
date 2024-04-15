@@ -61,6 +61,12 @@ void ssablock_add_all_op(SsaBlock *dest, const SsaBlock *src);
 void ssablock_add_out(SsaBlock *block, SsaVar out);
 void ssablock_destroy(SsaBlock *block);
 
+void ssablock_swap_in(SsaBlock *block, size_t a, size_t b);
+void ssablock_swap_out(SsaBlock *block, size_t a, size_t b);
+static void ssablock_swap_state(SsaBlock *block, size_t a, size_t b) {
+    ssablock_swap_in(block, a, b);
+    ssablock_swap_out(block, a, b);
+}
 void ssablock_remove_out(SsaBlock *block, size_t id);
 
 bool ssablock_var_used(const SsaBlock *block, SsaVar var);
@@ -103,6 +109,7 @@ SsaNamedValue ssanamedvalue_create(const char *name, SsaValue v);
 static SsaNamedValue ssanamedvalue_copy(SsaNamedValue val) {
     return ssanamedvalue_create(val.name, val.val);
 }
+void ssanamedvalue_rename(SsaNamedValue *value, const char *newn);
 void ssanamedvalue_destroy(SsaNamedValue v);
 
 typedef enum {
@@ -148,15 +155,15 @@ typedef enum {
     SSA_OP_SHR, // "a", "b"
 
     // basic loop
-    SSA_OP_FOR,      // "init": counter, "cond": (counter)->continue?, "stride": int, "do": (counter, States)->States, States
+    SSA_OP_FOR,      // "init": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
     SSA_OP_INFINITE, // "init": counter, "stride": int, "do": (counter, States)->States, States
-    SSA_OP_WHILE,    // "cond": ()->bool, "do": (counter)->States, States
+    SSA_OP_WHILE,    // "cond": (States)->bool, "do": (counter)->States, States
     SSA_OP_CONTINUE,
     SSA_OP_BREAK,
 
     // advanced loop
     SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
-    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T)->break?, "stride": int, "do": (T, States)->States, States
+    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
     SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
 
     // conditional
@@ -246,9 +253,22 @@ static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, const char *param) 
     ssaop_add_param_s(dest, param, *ssaop_param(src, param));
 }
 void ssaop_steal_all_params_starting_with(SsaOp *dest, const SsaOp *src, const char *start);
+static void ssaop_steal_state_params(SsaOp *dest, const SsaOp *src) {
+    ssaop_steal_all_params_starting_with(dest, src, "state");
+}
+void ssaop_drop_state_param(SsaOp *op, size_t i);
 void ssaop_remove_params(SsaOp *op);
 void ssaop_remove_out(SsaOp *op, size_t id);
+void ssaop_remove_param(SsaOp *op, size_t id);
 void ssaop_steal_outs(SsaOp *dest, const SsaOp *src);
 void ssaop_destroy(SsaOp *op);
+bool ssaop_anyparam_hasvar(SsaOp *op, SsaVar var);
+
+struct SsaStaticIncrement {
+    bool detected;
+    SsaVar var;
+    long long by;
+};
+struct SsaStaticIncrement ssaop_detect_static_increment(const SsaOp *op);
 
 #endif //SSA_H

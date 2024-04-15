@@ -9,6 +9,7 @@ void opt_constant_eval(SsaView view, SsaBlock *block);
 void opt_inline_vars(SsaView view, SsaBlock *block);
 void opt_join_compute(SsaView view, SsaBlock *block);
 void opt_reduce_if(SsaView view, SsaBlock *block);
+void opt_reduce_loops(SsaView view, SsaBlock *block);
 
 // CALL ONLY ON ROOT BLOCKS:
 void opt_remove_vars(SsaBlock *block);
@@ -36,6 +37,7 @@ static void opt(SsaBlock *block) {
     opt_join_compute(ssaview_of_all(block), block);
     opt_reduce_if(ssaview_of_all(block), block);
     opt_pre(block);
+    opt_reduce_loops(ssaview_of_all(block), block);
     opt_loop_simplify(ssaview_of_all(block), block);
 }
 
