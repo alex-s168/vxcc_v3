@@ -83,9 +83,7 @@ typedef struct {
 
 CIRVar cirblock_new_var(CIRBlock *block);
 void cirblock_rename_var_after(CIRBlock *block, size_t i, CIRVar old, CIRVar newd);
-static void cirblock_rename_var(CIRBlock *block, const CIRVar old, const CIRVar newd) {
-    cirblock_rename_var_after(block, 0, old, newd);
-}
+void cirblock_rename_var(CIRBlock *block, CIRVar old, CIRVar newd);
 
 typedef struct {
     char     *name;

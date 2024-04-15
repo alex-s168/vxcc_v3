@@ -16,6 +16,11 @@ const CIRBlock *cirblock_root(const CIRBlock *block) {
 }
 
 void cirblock_rename_var_after(CIRBlock *block, size_t i, const CIRVar old, const CIRVar newd) {
+    if (i == 0)
+        for (size_t j = 0; j < block->ins_len; j ++)
+            if (block->ins[j] == old)
+                block->ins[j] = newd;
+    
     for (; i < block->ops_len; i ++) {
         const CIROp *op = &block->ops[i];
 
@@ -33,6 +38,14 @@ void cirblock_rename_var_after(CIRBlock *block, size_t i, const CIRVar old, cons
                 cirblock_rename_var(v->block, old, newd);
         }
     }
+
+    for (size_t j = 0; j < block->outs_len; j ++)
+        if (block->outs[j] == old)
+            block->outs[j] = newd;
+}
+
+void cirblock_rename_var(CIRBlock *block, const CIRVar old, const CIRVar newd) {
+    cirblock_rename_var_after(block, 0, old, newd);
 }
 
 CIRVar cirblock_new_var(CIRBlock *block) {

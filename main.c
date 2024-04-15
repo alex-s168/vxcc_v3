@@ -86,7 +86,7 @@ static int cir_test(void) {
         return 1;
 
     cirblock_mksa_states(&block);
-    // cirblock_mksa_final(&block);
+    cirblock_mksa_final(&block);
 
     return 0;
 }
