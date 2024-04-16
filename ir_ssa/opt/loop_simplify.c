@@ -2,7 +2,7 @@
 
 void opt_loop_simplify(SsaView view, SsaBlock *block) {
     while (ssaview_find(&view, SSA_OP_FOR)) {
-        const SsaOp *op = ssaview_take(view);
+        SsaOp *op = (SsaOp *) ssaview_take(view);
 
         SsaBlock *cond = ssaop_param(op, SSA_NAME_COND)->block;
         opt(cond); // !
@@ -56,8 +56,8 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
                 ssaop_steal_param(&new, op, SSA_NAME_LOOP_STRIDE);
                 ssaop_steal_states(&new, op); // steal all state init params
                 ssaop_steal_outs(&new, op);
-
-                ssaview_replace(block, view, &new, 1);
+                // we probably do a bit of memory leaking here...
+                *op = new;
                 
                 break2 = true;
             } while(0);
