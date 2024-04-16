@@ -12,7 +12,7 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
 
         switch (op->id) {
             case SSA_OP_LTE: {
-                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
+                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
                 if (b->type == SSA_VAL_IMM_INT) {
                     b->imm_int ++;
                     op->id = SSA_OP_LT;
@@ -20,7 +20,7 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
             } break;
 
             case SSA_OP_GTE: {
-                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
+                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
                 if (b->type == SSA_VAL_IMM_INT) {
                     b->imm_int --;
                     op->id = SSA_OP_GT;
@@ -28,8 +28,8 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
             } break;
 
             case SSA_OP_LT: {
-                SsaValue *a = ssaop_param(op, SSA_NAME_OPERAND_A);
-                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
+                SsaValue *a = irop_param(op, SSA_NAME_OPERAND_A);
+                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
                 if (a->type == SSA_VAL_IMM_INT) {
                     const SsaValue tmp = *a;
                     *a = *b;
@@ -39,8 +39,8 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
             } break;
 
             case SSA_OP_GT: {
-                SsaValue *a = ssaop_param(op, SSA_NAME_OPERAND_A);
-                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
+                SsaValue *a = irop_param(op, SSA_NAME_OPERAND_A);
+                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
                 if (a->type == SSA_VAL_IMM_INT) {
                     const SsaValue tmp = *a;
                     *a = *b;

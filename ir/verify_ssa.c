@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "ssa.h"
+#include "ir.h"
 
 struct verify_vardecls_deeptraverse__data {
     size_t declcount;
@@ -48,12 +48,12 @@ static void error_param_missing(VerifyErrors *errors, const OpPath path, const c
     verifyerrors_add(errors, &error);
 }
 
-VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
+VerifyErrors irblock_verify(const SsaBlock *block, const OpPath path) {
     VerifyErrors errors;
     errors.len = 0;
     errors.items = NULL;
 
-    const SsaBlock *root = ssablock_root(block);
+    const SsaBlock *root = irblock_root(block);
 
     for (size_t i = 0; i < block->ops_len; i++) {
         const SsaOp *op = &block->ops[i];
@@ -92,7 +92,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                 verifyerrors_add(&errors, &error);
             }
 
-            const SsaValue *doblock_v = ssaop_param(op, SSA_NAME_LOOP_DO);
+            const SsaValue *doblock_v = irop_param(op, SSA_NAME_LOOP_DO);
             if (doblock_v == NULL) {
                 const OpPath newpath = oppath_copy_add(path, i);
                 VerifyError error = {
@@ -124,7 +124,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
         if (op->id == SSA_OP_IF) {
             bool err = false;
 
-            const SsaValue *vcond = ssaop_param(op, SSA_NAME_COND);
+            const SsaValue *vcond = irop_param(op, SSA_NAME_COND);
             if (vcond == NULL) {
                 error_param_missing(&errors, oppath_copy_add(path, i), "cond");
                 err = true;
@@ -133,7 +133,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                 err = true;
             }
 
-            const SsaValue *vthen = ssaop_param(op, SSA_NAME_COND_THEN);
+            const SsaValue *vthen = irop_param(op, SSA_NAME_COND_THEN);
             if (vthen == NULL) {
                 error_param_missing(&errors, oppath_copy_add(path, i), "then");
                 err = true;
@@ -142,7 +142,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                 err = true;
             }
 
-            const SsaValue *velse = ssaop_param(op, SSA_NAME_COND_ELSE);
+            const SsaValue *velse = irop_param(op, SSA_NAME_COND_ELSE);
             if (velse == NULL) {
                 error_param_missing(&errors, oppath_copy_add(path, i), "else");
                 err = true;
@@ -183,7 +183,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
 
             if (val.type == SSA_VAL_BLOCK) {
                 const OpPath newpath = oppath_copy_add(path, i);
-                VerifyErrors errs = ssablock_verify(val.block, newpath);
+                VerifyErrors errs = irblock_verify(val.block, newpath);
                 free(newpath.ids);
                 verifyerrors_add_all_and_free(&errors, &errs);
             }
@@ -222,7 +222,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
             struct verify_vardecls_deeptraverse__data dat;
             dat.var = i;
             dat.declcount = 0;
-            ssaview_deep_traverse(ssaview_of_all(block), verify_vardecls_deeptraverse, &dat);
+            irview_deep_traverse(irview_of_all(block), verify_vardecls_deeptraverse, &dat);
 
             assert(dat.declcount > 0 /* WE REMOVED VARIABLE DECLARATION WITHOUT REMOVING IT FROM DB!!! */);
 

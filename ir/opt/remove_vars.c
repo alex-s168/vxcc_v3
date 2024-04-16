@@ -29,7 +29,7 @@ void opt_remove_vars(SsaBlock *block) {
         // we can't optimize away if we need other results from the operation
         bool can_rem = true;
         for (size_t j = 0; j < decl->outs_len; j ++) {
-            if (ssablock_var_used(block, decl->outs[j].var)) {
+            if (irblock_var_used(block, decl->outs[j].var)) {
                 can_rem = false;
                 break;
             }
@@ -39,8 +39,8 @@ void opt_remove_vars(SsaBlock *block) {
             continue;
 
         // in-place remove
-        ssaop_destroy(decl);
-        ssaop_init(decl, SSA_OP_NOP, decl->parent);
+        irop_destroy(decl);
+        irop_init(decl, SSA_OP_NOP, decl->parent);
 
         for (size_t j = 0; j < decl->outs_len; j ++)
             block->as_root.vars[decl->outs[j].var].decl = NULL;

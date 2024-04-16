@@ -1,0 +1,14 @@
+name: Analyze code
+
+on: [push]
+
+jobs:
+  run_tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run script file
+        run: |
+          chmod +x build.sh
+          ./build.sh analyze
+        shell: bash

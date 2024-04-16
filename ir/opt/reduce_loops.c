@@ -32,13 +32,13 @@
 void opt_reduce_loops(SsaView view, SsaBlock *block) {
     assert(view.block == block);
     
-    while (ssaview_find(&view, SSA_OP_FOR)) {
-        SsaOp *op = (SsaOp *) ssaview_take(view);
+    while (irview_find(&view, SSA_OP_FOR)) {
+        SsaOp *op = (SsaOp *) irview_take(view);
 
         if (op->id == SSA_OP_WHILE && op->outs_len > 0) { // "fast path" for when we don't even have states
-            SsaBlock **bdo = &ssaop_param(op, SSA_NAME_LOOP_DO)->block;
+            SsaBlock **bdo = &irop_param(op, SSA_NAME_LOOP_DO)->block;
             SsaBlock *newdo = *bdo;
-            SsaBlock **bcond = &ssaop_param(op, SSA_NAME_COND)->block;
+            SsaBlock **bcond = &irop_param(op, SSA_NAME_COND)->block;
             SsaBlock *newcond = *bcond;
 
             // TODO: if we detect multiple counters here, chose the one which is single present in the condition
@@ -50,7 +50,7 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
                 bool found = false;
                 for (size_t j = 0; j < newdo->ops_len; j ++) {
                     incOp = &newdo->ops[j];
-                    si = ssaop_detect_static_increment(incOp);
+                    si = irop_detect_static_increment(incOp);
                     if (si.detected &&
                         incOp->outs[0].var == op->outs[stateId].var &&
                         si.var == newcond->ins[stateId])
@@ -73,24 +73,24 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
             const SsaValue init = op->states[stateId];
 
             // counter needs to be at pos 0 oviously
-            ssablock_swap_state_at(newcond, stateId, 0);
-            ssaop_remove_state_at(op, stateId);
+            irblock_swap_state_at(newcond, stateId, 0);
+            irop_remove_state_at(op, stateId);
 
             SsaOp new;
-            ssaop_init(&new, SSA_OP_FOR, block);
-            ssaop_add_param_s(&new, SSA_NAME_LOOP_START, init);
-            ssaop_add_param_s(&new, SSA_NAME_LOOP_STRIDE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = si.by });
-            ssaop_steal_states(&new, op);
-            ssaop_add_param_s(&new, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newcond });
-            ssaop_add_param_s(&new, SSA_NAME_LOOP_DO, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newdo });
+            irop_init(&new, SSA_OP_FOR, block);
+            irop_add_param_s(&new, SSA_NAME_LOOP_START, init);
+            irop_add_param_s(&new, SSA_NAME_LOOP_STRIDE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = si.by });
+            irop_steal_states(&new, op);
+            irop_add_param_s(&new, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newcond });
+            irop_add_param_s(&new, SSA_NAME_LOOP_DO, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newdo });
 
-            ssaop_destroy(incOp);
-            ssaop_init(incOp, SSA_OP_NOP, block);
+            irop_destroy(incOp);
+            irop_init(incOp, SSA_OP_NOP, block);
 
-            ssaop_destroy(op);
-            (void) ssaview_replace(block, view, &new, 1);
+            irop_destroy(op);
+            (void) irview_replace(block, view, &new, 1);
         }
         
-        view = ssaview_drop(view, 1);
+        view = irview_drop(view, 1);
     }
 }

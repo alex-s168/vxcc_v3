@@ -18,11 +18,11 @@ void cirblock_mksa_final(SsaBlock *block) {
         for (size_t j = 0; j < op->outs_len; j ++) {
             SsaVar *var = &op->outs[j].var;
             const SsaVar old = *var;
-            const SsaVar new = ssablock_new_var(block, op);
+            const SsaVar new = irblock_new_var(block, op);
             *var = new;
-            SsaView view = ssaview_of_all(block);
+            SsaView view = irview_of_all(block);
             view.start = i + 1;
-            ssaview_rename_var(view, block, old, new);
+            irview_rename_var(view, block, old, new);
         }
     }
 }

@@ -1,6 +1,6 @@
-#include "ssa.h"
+#include "ir.h"
 
-const char *ssaoptype_names[SSAOPTYPE_LEN] = {
+const char *iroptype_names[SSAOPTYPE_LEN] = {
     [SSA_OP_NOP] = "nop",
     [SSA_OP_IMM] = "imm",
     [SSA_OP_FLATTEN_PLEASE] = ".",
@@ -50,7 +50,7 @@ const char *ssaoptype_names[SSAOPTYPE_LEN] = {
     [SSA_OP_IF] = "if"
 };
 
-const char *ssaname_str[] = {
+const char *irname_str[] = {
     [SSA_NAME_OPERAND_A] = "a",
     [SSA_NAME_OPERAND_B] = "b",
 
@@ -70,7 +70,7 @@ const char *ssaname_str[] = {
     [SSA_NAME_ALTERNATIVE_B] = "b",
 };
 
-void ssavalue_dump(SsaValue value, FILE *out, const size_t indent) {
+void irvalue_dump(SsaValue value, FILE *out, const size_t indent) {
     switch (value.type) {
         case SSA_VAL_IMM_INT: {
             fprintf(out, "%lld", value.imm_int);
@@ -100,7 +100,7 @@ void ssavalue_dump(SsaValue value, FILE *out, const size_t indent) {
             fputs("){\n", out);
 
             for (size_t i = 0; i < block->ops_len; i ++) {
-                ssaop_dump(block->ops + i, out, indent + 1);
+                irop_dump(block->ops + i, out, indent + 1);
             }
 
             if (block->outs_len > 0) {
@@ -127,7 +127,7 @@ void ssavalue_dump(SsaValue value, FILE *out, const size_t indent) {
     }
 }
 
-void ssaop_dump(const SsaOp *op, FILE *out, size_t indent) {
+void irop_dump(const SsaOp *op, FILE *out, size_t indent) {
     for (size_t j = 0; j < indent; j ++)
         fputs("  ", out);
 
@@ -141,7 +141,7 @@ void ssaop_dump(const SsaOp *op, FILE *out, size_t indent) {
     if (op->outs_len > 0)
         fputs(" = ", out);
 
-    fprintf(out, "%s ", ssaoptype_names[op->id]);
+    fprintf(out, "%s ", iroptype_names[op->id]);
 
     if (op->types_len > 0) {
         fputc('<', out);
@@ -159,14 +159,14 @@ void ssaop_dump(const SsaOp *op, FILE *out, size_t indent) {
         if (j > 0)
             fputc(' ', out);
         const SsaNamedValue param = op->params[j];
-        fprintf(out, "%s=", ssaname_str[param.name]);
-        ssavalue_dump(param.val, out, indent);
+        fprintf(out, "%s=", irname_str[param.name]);
+        irvalue_dump(param.val, out, indent);
     }
 
     fputs(";\n", out);
 }
 
-void ssablock_dump(const SsaBlock *block, FILE *out, const size_t indent) {
+void irblock_dump(const SsaBlock *block, FILE *out, const size_t indent) {
     for (size_t i = 0; i < indent; i ++)
         fputs("  ", out);
 
@@ -178,7 +178,7 @@ void ssablock_dump(const SsaBlock *block, FILE *out, const size_t indent) {
     fputc('\n', out);
 
     for (size_t i = 0; i < block->ops_len; i ++) {
-        ssaop_dump(block->ops + i, out, indent + 1);
+        irop_dump(block->ops + i, out, indent + 1);
     }
 
     for (size_t i = 0; i < indent; i ++)

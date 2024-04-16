@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "../ssa.h"
+#include "../ir.h"
 
 /**
  * megic
@@ -27,7 +27,7 @@
  * stage 2:
  * we don't have an example for this so here is an explanation:
  * when the variable gets set multiple times in the conditional block,
- * we need to do the same thing as in \see ssablock_mksa_final but capture the last assignment and operate with that.
+ * we need to do the same thing as in \see irblock_mksa_final but capture the last assignment and operate with that.
  *
  * stage 3:
  * \code
@@ -48,11 +48,11 @@
  */
 static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional, const size_t condOff, SsaOp *ifOp, const SsaVar var) {
     // stage 1
-    const SsaVar manipulate = ssablock_new_var(outer, ifOp);
+    const SsaVar manipulate = irblock_new_var(outer, ifOp);
     {
-        SsaView rename = ssaview_of_all(outer);
+        SsaView rename = irview_of_all(outer);
         rename.start = outerOff + 1;
-        ssaview_rename_var(rename, outer, var, manipulate);
+        irview_rename_var(rename, outer, var, manipulate);
     }
         
     // stage 2
@@ -73,11 +73,11 @@ static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional,
 
         // we don't have to check children because megic gets called from the inside out
 
-        const SsaVar new = ssablock_new_var(outer, op);
+        const SsaVar new = irblock_new_var(outer, op);
         // we include the current index on purpose
-        SsaView rename = ssaview_of_all(conditional);
+        SsaView rename = irview_of_all(conditional);
         rename.start = i;
-        ssaview_rename_var(rename, conditional, last_cond_assign, new);
+        irview_rename_var(rename, conditional, last_cond_assign, new);
         last_cond_assign = new;
     }
 
@@ -94,13 +94,13 @@ static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional,
         if (orig_assign->outs[i].var == var)
             type = orig_assign->outs[i].type;
 
-    SsaBlock *then = ssaop_param(ifOp, SSA_NAME_COND_THEN)->block;
-    const SsaValue *pels = ssaop_param(ifOp, SSA_NAME_COND_ELSE);
+    SsaBlock *then = irop_param(ifOp, SSA_NAME_COND_THEN)->block;
+    const SsaValue *pels = irop_param(ifOp, SSA_NAME_COND_ELSE);
 
     SsaBlock *els;
     if (pels == NULL) {
-        els = ssablock_heapalloc(then->parent, then->parent_index); // lazyness
-        ssaop_add_param_s(ifOp, SSA_NAME_COND_ELSE, (SsaValue) { .type = SSA_VAL_BLOCK, .block = els });
+        els = irblock_heapalloc(then->parent, then->parent_index); // lazyness
+        irop_add_param_s(ifOp, SSA_NAME_COND_ELSE, (SsaValue) { .type = SSA_VAL_BLOCK, .block = els });
     } else {
         els = pels->block;
     }
@@ -111,9 +111,9 @@ static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional,
         els = temp;
     }
 
-    ssaop_add_out(ifOp, manipulate, type);
-    ssablock_add_out(then, last_cond_assign);
-    ssablock_add_out(els, var);
+    irop_add_out(ifOp, manipulate, type);
+    irblock_add_out(then, last_cond_assign);
+    irblock_add_out(els, var);
 }
 
 // call megic somehow
@@ -142,7 +142,7 @@ void cirblock_mksa_states(SsaBlock *block) {
                 for (size_t l = 0; l < condAssignOp->outs_len; l ++) {
                     const SsaVar var = condAssignOp->outs[l].var;
 
-                    const SsaOp *alwaysAssignOp = ssablock_inside_out_vardecl_before(block, var, i);
+                    const SsaOp *alwaysAssignOp = irblock_inside_out_vardecl_before(block, var, i);
                     if (alwaysAssignOp == NULL)
                         continue;
 

@@ -1,9 +1,9 @@
 #ifndef CIR_H
 #define CIR_H
 
-#include "ssa.h"
+#include "ir.h"
 
-/** transform cfor to c ir primitives that are representable in ssa ir */
+/** transform cfor to c ir primitives that are representable in ir ir */
 void cirblock_normalize(SsaBlock *block);
 
 void cirblock_mksa_states(SsaBlock *block);
