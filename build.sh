@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/bash
 set -e
 FILES="main.c ir/opt/*.c ir/*.c common/*.c ir/transform/*.c"
 CFLAGS="-Wall -Wextra -Wno-unused -Wpedantic -Werror -std=c11"
