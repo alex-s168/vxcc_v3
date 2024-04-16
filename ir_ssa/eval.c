@@ -12,7 +12,7 @@ bool ssablock_staticeval_var(const SsaBlock *block, const SsaVar var, SsaValue *
         return false;
 
     if (decl->id == SSA_OP_IMM) {
-        const SsaValue *value = ssaop_param(decl, "val");
+        const SsaValue *value = ssaop_param(decl, SSA_NAME_VALUE);
         if (value == NULL)
             return false;
 
@@ -51,8 +51,8 @@ struct SsaStaticIncrement ssaop_detect_static_increment(const SsaOp *op) {
     if (op->id != SSA_OP_ADD && op->id != SSA_OP_SUB)
         return (struct SsaStaticIncrement) { .detected = false };
 
-    const SsaValue a = *ssaop_param(op, "a");
-    const SsaValue b = *ssaop_param(op, "b");
+    const SsaValue a = *ssaop_param(op, SSA_NAME_OPERAND_A);
+    const SsaValue b = *ssaop_param(op, SSA_NAME_OPERAND_B);
 
     if (a.type == SSA_VAL_VAR && b.type == SSA_VAL_IMM_INT) {
         long long by = b.imm_int;

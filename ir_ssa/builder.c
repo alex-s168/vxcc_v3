@@ -27,6 +27,8 @@ void ssablock_init(SsaBlock *block, SsaBlock *parent, size_t parent_index) {
 
 SsaBlock *ssablock_heapalloc(SsaBlock *parent, size_t parent_index) {
     SsaBlock *new = malloc(sizeof(SsaBlock));
+    if (new == NULL)
+        return NULL;
     ssablock_init(new, parent, parent_index);
     new->should_free = true;
     return new;
@@ -81,27 +83,15 @@ void ssablock_destroy(SsaBlock *block) {
         free(block);
 }
 
-SsaValue *ssaop_param(const SsaOp *op, const char *name) {
+SsaValue *ssaop_param(const SsaOp *op, SsaName name) {
     for (size_t i = 0; i < op->params_len; i ++)
-        if (strcmp(op->params[i].name, name) == 0)
+        if (op->params[i].name == name)
             return &op->params[i].val;
 
     return NULL;
 }
 
-SsaNamedValue ssanamedvalue_create(const char *name, SsaValue v) {
-    const size_t len = strlen(name);
-    char *new = malloc(len + 1);
-    memcpy(new, name, len + 1);
-
-    return (SsaNamedValue) {
-        .name = new,
-        .val = v,
-    };
-}
-
 void ssanamedvalue_destroy(SsaNamedValue v) {
-    free(v.name);
     if (v.val.type == SSA_VAL_BLOCK)
         ssablock_destroy(v.val.block);
 }
@@ -119,6 +109,9 @@ void ssaop_init(SsaOp *op, const SsaOpType type, SsaBlock *parent) {
     op->id = type;
 
     op->parent = parent;
+
+    op->states = NULL;
+    op->states_len = 0;
 }
 
 void ssaop_add_type(SsaOp *op, SsaType type) {
@@ -136,17 +129,11 @@ void ssaop_add_param(SsaOp *op, SsaNamedValue p) {
     op->params[op->params_len ++] = p;
 }
 
-void ssanamedvalue_rename(SsaNamedValue *value, const char *newn) {
-    free(value->name);
-    
-    const size_t len = strlen(newn);
-    char *new = malloc(len + 1);
-    memcpy(new, newn, len + 1);
-    
-    value->name = new;
+void ssanamedvalue_rename(SsaNamedValue *value, SsaName newn) {
+    value->name = newn;
 }
 
-void ssaop_add_param_s(SsaOp *op, const char *name, const SsaValue val) {
+void ssaop_add_param_s(SsaOp *op, SsaName name, const SsaValue val) {
     ssaop_add_param(op, ssanamedvalue_create(name, val));
 }
 
@@ -154,6 +141,7 @@ void ssaop_destroy(SsaOp *op) {
     ssaop_remove_params(op);
     free(op->types);
     free(op->outs);
+    free(op->states);
 }
 
 void ssaop_remove_params(SsaOp *op) {
@@ -164,14 +152,6 @@ void ssaop_remove_params(SsaOp *op) {
     op->params_len = 0;
 }
 
-void ssaop_steal_all_params_starting_with(SsaOp *dest, const SsaOp *src, const char *start) {
-    for (size_t i = 0; i < src->params_len; i ++) {
-        if (!strstarts(src->params[i].name, start))
-            continue;
-
-        ssaop_add_param(dest, src->params[i]);
-    }
-}
 
 void ssaop_steal_outs(SsaOp *dest, const SsaOp *src) {
     for (size_t i = 0; i < src->outs_len; i ++) {
@@ -179,17 +159,36 @@ void ssaop_steal_outs(SsaOp *dest, const SsaOp *src) {
     }
 }
 
-void ssaop_remove_out(SsaOp *op, const size_t id) {
+void ssaop_remove_out_at(SsaOp *op, const size_t id) {
     memmove(op->outs + id, op->outs + id + 1, sizeof(SsaTypedVar) * (op->outs_len - id - 1));
     op->outs_len --;
 }
 
-void ssablock_remove_out(SsaBlock *block, size_t id) {
+void ssablock_remove_out_at(SsaBlock *block, size_t id) {
     memmove(block->outs + id, block->outs + id + 1, sizeof(SsaVar) * (block->outs_len - id - 1));
     block->outs_len --;
 }
 
-void ssaop_remove_param(SsaOp *op, const size_t id) {
+void ssaop_remove_param_at(SsaOp *op, const size_t id) {
     memmove(op->params + id, op->params + id + 1, sizeof(SsaNamedValue) * (op->params_len - id - 1));
     op->params_len --;
+}
+
+
+void ssaop_remove_state_at(SsaOp *op, const size_t id) {
+    memmove(op->states + id, op->states + id + 1, sizeof(SsaNamedValue) * (op->states_len - id - 1));
+    op->states_len --;
+}
+
+SsaValue ssavalue_clone(const SsaValue value) {
+    // TODO
+    return value;
+}
+
+void ssaop_steal_states(SsaOp *dest, const SsaOp *src) {
+    free(dest->states);
+    dest->states = malloc(sizeof(SsaNamedValue) * src->states_len);
+    for (size_t i = 0; i < src->states_len; i ++)
+        dest->states[i] = ssavalue_clone(src->states[i]);
+    dest->states_len = src->states_len;
 }

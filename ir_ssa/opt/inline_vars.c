@@ -6,7 +6,7 @@ static void trav(SsaOp *op, void *data) {
     if (op->id != SSA_OP_IMM)
         return;
 
-    const SsaValue value = *ssaop_param(op, "val");
+    const SsaValue value = *ssaop_param(op, SSA_NAME_VALUE);
 
     for (size_t i = 0; i < op->outs_len; i ++) {
         const SsaVar out = op->outs[i].var;

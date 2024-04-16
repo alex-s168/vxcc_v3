@@ -50,6 +50,26 @@ const char *ssaoptype_names[SSAOPTYPE_LEN] = {
     [SSA_OP_IF] = "if"
 };
 
+const char *ssaname_str[] = {
+    [SSA_NAME_OPERAND_A] = "a",
+    [SSA_NAME_OPERAND_B] = "b",
+
+    [SSA_NAME_BLOCK] = "block",
+    [SSA_NAME_VALUE] = "val",
+    [SSA_NAME_COND] = "cond",
+
+    [SSA_NAME_COND_THEN] = "then",
+    [SSA_NAME_COND_ELSE] = "else",
+
+    [SSA_NAME_LOOP_DO] = "do",
+    [SSA_NAME_LOOP_START] = "start",
+    [SSA_NAME_LOOP_ENDEX] = "endex",
+    [SSA_NAME_LOOP_STRIDE] = "stride",
+
+    [SSA_NAME_ALTERNATIVE_A] = "a",
+    [SSA_NAME_ALTERNATIVE_B] = "b",
+};
+
 void ssavalue_dump(SsaValue value, FILE *out, const size_t indent) {
     switch (value.type) {
         case SSA_VAL_IMM_INT: {
@@ -139,7 +159,7 @@ void ssaop_dump(const SsaOp *op, FILE *out, size_t indent) {
         if (j > 0)
             fputc(' ', out);
         const SsaNamedValue param = op->params[j];
-        fprintf(out, "%s=", param.name);
+        fprintf(out, "%s=", ssaname_str[param.name]);
         ssavalue_dump(param.val, out, indent);
     }
 

@@ -8,7 +8,7 @@ static int ssa_test(void) {
 
     SsaOp for_op;
     ssaop_init(&for_op, SSA_OP_FOR, &block);
-    ssaop_add_param_s(&for_op, "init", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 });
+    ssaop_add_param_s(&for_op, SSA_NAME_LOOP_START, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 });
 
     SsaBlock cond;
     ssablock_init(&cond, &block, block.ops_len);
@@ -17,22 +17,22 @@ static int ssa_test(void) {
         SsaOp cmp_op;
         ssaop_init(&cmp_op, SSA_OP_LT, &cond);
         ssaop_add_out(&cmp_op, 1, "bool");
-        ssaop_add_param_s(&cmp_op, "a", (SsaValue) { .type = SSA_VAL_VAR, .var = 2 });
-        ssaop_add_param_s(&cmp_op, "b", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 10 });
+        ssaop_add_param_s(&cmp_op, SSA_NAME_OPERAND_A, (SsaValue) { .type = SSA_VAL_VAR, .var = 2 });
+        ssaop_add_param_s(&cmp_op, SSA_NAME_OPERAND_B, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 10 });
 
         ssablock_add_op(&cond, &cmp_op);
     }
     ssablock_add_out(&cond, 1);
 
-    ssaop_add_param_s(&for_op, "cond", (SsaValue) { .type = SSA_VAL_BLOCK, .block = &cond });
+    ssaop_add_param_s(&for_op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = &cond });
 
     SsaBlock loop;
     ssablock_init(&loop, &block, block.ops_len);
     ssablock_add_in(&loop, 0);
     // let's assume that this block prints the number
 
-    ssaop_add_param_s(&for_op, "stride", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
-    ssaop_add_param_s(&for_op, "do", (SsaValue) { .type = SSA_VAL_BLOCK, .block = &loop });
+    ssaop_add_param_s(&for_op, SSA_NAME_LOOP_STRIDE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
+    ssaop_add_param_s(&for_op, SSA_NAME_LOOP_DO, (SsaValue) { .type = SSA_VAL_BLOCK, .block = &loop });
 
     ssablock_add_op(&block, &for_op);
 
@@ -56,7 +56,7 @@ static int cir_test(void) {
         SsaOp op;
         ssaop_init(&op, SSA_OP_IMM, &block);
         ssaop_add_out(&op, 0, "int");
-        ssaop_add_param_s(&op, "val", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
+        ssaop_add_param_s(&op, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
         ssablock_add_op(&block, &op);
     }
 
@@ -69,13 +69,13 @@ static int cir_test(void) {
             SsaOp op2;
             ssaop_init(&op2, SSA_OP_IMM, &block);
             ssaop_add_out(&op2, 0, "int");
-            ssaop_add_param_s(&op2, "val", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
+            ssaop_add_param_s(&op2, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
             ssablock_add_op(then, &op2);
         }
-        ssaop_add_param_s(&op, "then", (SsaValue) { .type = SSA_VAL_BLOCK, .block = then });
+        ssaop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = then });
 
         SsaBlock *cond = ssablock_heapalloc(&block, block.ops_len);
-        ssaop_add_param_s(&op, "cond", (SsaValue) { .type = SSA_VAL_BLOCK, .block = cond });
+        ssaop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = cond });
 
         ssablock_add_op(&block, &op);
     }

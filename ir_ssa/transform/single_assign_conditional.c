@@ -94,13 +94,13 @@ static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional,
         if (orig_assign->outs[i].var == var)
             type = orig_assign->outs[i].type;
 
-    SsaBlock *then = ssaop_param(ifOp, "then")->block;
-    const SsaValue *pels = ssaop_param(ifOp, "else");
+    SsaBlock *then = ssaop_param(ifOp, SSA_NAME_COND_THEN)->block;
+    const SsaValue *pels = ssaop_param(ifOp, SSA_NAME_COND_ELSE);
 
     SsaBlock *els;
     if (pels == NULL) {
         els = ssablock_heapalloc(then->parent, then->parent_index); // lazyness
-        ssaop_add_param_s(ifOp, "else", (SsaValue) { .type = SSA_VAL_BLOCK, .block = els });
+        ssaop_add_param_s(ifOp, SSA_NAME_COND_ELSE, (SsaValue) { .type = SSA_VAL_BLOCK, .block = els });
     } else {
         els = pels->block;
     }

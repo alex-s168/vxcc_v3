@@ -12,8 +12,7 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
 
         switch (op->id) {
             case SSA_OP_LTE: {
-                SsaValue *a = ssaop_param(op, "a");
-                SsaValue *b = ssaop_param(op, "b");
+                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
                 if (b->type == SSA_VAL_IMM_INT) {
                     b->imm_int ++;
                     op->id = SSA_OP_LT;
@@ -21,8 +20,7 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
             } break;
 
             case SSA_OP_GTE: {
-                SsaValue *a = ssaop_param(op, "a");
-                SsaValue *b = ssaop_param(op, "b");
+                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
                 if (b->type == SSA_VAL_IMM_INT) {
                     b->imm_int --;
                     op->id = SSA_OP_GT;
@@ -30,10 +28,10 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
             } break;
 
             case SSA_OP_LT: {
-                SsaValue *a = ssaop_param(op, "a");
-                SsaValue *b = ssaop_param(op, "b");
+                SsaValue *a = ssaop_param(op, SSA_NAME_OPERAND_A);
+                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
                 if (a->type == SSA_VAL_IMM_INT) {
-                    SsaValue tmp = *a;
+                    const SsaValue tmp = *a;
                     *a = *b;
                     *b = tmp;
                     op->id = SSA_OP_GT;
@@ -41,10 +39,10 @@ void opt_comparisions(SsaView view, SsaBlock *block) {
             } break;
 
             case SSA_OP_GT: {
-                SsaValue *a = ssaop_param(op, "a");
-                SsaValue *b = ssaop_param(op, "b");
+                SsaValue *a = ssaop_param(op, SSA_NAME_OPERAND_A);
+                SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B);
                 if (a->type == SSA_VAL_IMM_INT) {
-                    SsaValue tmp = *a;
+                    const SsaValue tmp = *a;
                     *a = *b;
                     *b = tmp;
                     op->id = SSA_OP_LT;

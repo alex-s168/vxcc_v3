@@ -68,13 +68,13 @@ void ssablock_destroy(SsaBlock *block);
 
 SsaVar ssablock_new_var(SsaBlock *block, SsaOp *decl);
 void ssablock_flatten(SsaBlock *block);
-void ssablock_swap_in(SsaBlock *block, size_t a, size_t b);
-void ssablock_swap_out(SsaBlock *block, size_t a, size_t b);
-static void ssablock_swap_state(SsaBlock *block, size_t a, size_t b) {
-    ssablock_swap_in(block, a, b);
-    ssablock_swap_out(block, a, b);
+void ssablock_swap_in_at(SsaBlock *block, size_t a, size_t b);
+void ssablock_swap_out_at(SsaBlock *block, size_t a, size_t b);
+static void ssablock_swap_state_at(SsaBlock *block, size_t a, size_t b) {
+    ssablock_swap_in_at(block, a, b);
+    ssablock_swap_out_at(block, a, b);
 }
-void ssablock_remove_out(SsaBlock *block, size_t id);
+void ssablock_remove_out_at(SsaBlock *block, size_t id);
 
 bool ssablock_var_used(const SsaBlock *block, SsaVar var);
 
@@ -96,6 +96,7 @@ typedef struct {
     };
 } SsaValue;
 
+SsaValue ssavalue_clone(SsaValue value);
 void ssavalue_dump(SsaValue value, FILE *out, size_t indent);
 
 SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
@@ -105,16 +106,43 @@ bool ssablock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v);
 bool ssablock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v);
 void ssablock_staticeval(SsaBlock *block, SsaValue *v);
 
+typedef enum {
+    SSA_NAME_OPERAND_A,
+    SSA_NAME_OPERAND_B,
+
+    SSA_NAME_BLOCK,
+    SSA_NAME_VALUE,
+    SSA_NAME_COND,
+
+    SSA_NAME_COND_THEN,
+    SSA_NAME_COND_ELSE,
+
+    SSA_NAME_LOOP_DO,
+    SSA_NAME_LOOP_START,
+    SSA_NAME_LOOP_ENDEX,
+    SSA_NAME_LOOP_STRIDE,
+
+    SSA_NAME_ALTERNATIVE_A,
+    SSA_NAME_ALTERNATIVE_B,
+} SsaName;
+
+extern const char *ssaname_str[];
+
 typedef struct {
-    char     *name;
+    SsaName   name;
     SsaValue  val;
 } SsaNamedValue;
 
-SsaNamedValue ssanamedvalue_create(const char *name, SsaValue v);
-static SsaNamedValue ssanamedvalue_copy(SsaNamedValue val) {
-    return ssanamedvalue_create(val.name, val.val);
+static SsaNamedValue ssanamedvalue_create(SsaName name, SsaValue v) {
+    return (SsaNamedValue) {
+        .name = name,
+        .val = v,
+    };
 }
-void ssanamedvalue_rename(SsaNamedValue *value, const char *newn);
+static SsaNamedValue ssanamedvalue_clone(SsaNamedValue val) {
+    return ssanamedvalue_create(val.name, ssavalue_clone(val.val));
+}
+void ssanamedvalue_rename(SsaNamedValue *value, SsaName newn);
 void ssanamedvalue_destroy(SsaNamedValue v);
 
 typedef enum {
@@ -161,8 +189,8 @@ typedef enum {
     SSA_OP_SHR, // "a", "b"
 
     // basic loop
-    SSA_OP_FOR,      // "init": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
-    SSA_OP_INFINITE, // "init": counter, "stride": int, "do": (counter, States)->States, States
+    SSA_OP_FOR,      // "start": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
+    SSA_OP_INFINITE, // "start": counter, "stride": int, "do": (counter, States)->States, States
     SSA_OP_WHILE,    // "cond": (States)->bool, "do": (counter)->States, States
     SSA_OP_CONTINUE,
     SSA_OP_BREAK,
@@ -171,7 +199,7 @@ typedef enum {
     SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
     SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
     SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
-    CIR_OP_CFOR,           // "init": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
+    CIR_OP_CFOR,           // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
     
     // conditional
     SSA_OP_IF,     // "cond": bool, "then": ()->R, ("else": ()->R)
@@ -202,6 +230,9 @@ struct SsaOp_s {
 
     SsaNamedValue *params;
     size_t         params_len;
+
+    SsaValue *states;
+    size_t    states_len;
 };
 
 void ssaop_dump(const SsaOp *op, FILE *out, size_t indent);
@@ -251,27 +282,25 @@ static bool ssaview_has_next(const SsaView view) {
 SsaOp *ssablock_traverse(SsaView *current);
 void ssaview_deep_traverse(SsaView top, void (*callback)(SsaOp *op, void *data), void *data);
 
-SsaValue *ssaop_param(const SsaOp *op, const char *name);
+SsaValue *ssaop_param(const SsaOp *op, SsaName name);
 
 void ssaop_init(SsaOp *op, SsaOpType type, SsaBlock *parent);
 void ssaop_add_type(SsaOp *op, SsaType type);
 void ssaop_add_out(SsaOp *op, SsaVar v, SsaType t);
-void ssaop_add_param_s(SsaOp *op, const char *name, SsaValue val);
+void ssaop_add_param_s(SsaOp *op, SsaName name, SsaValue val);
 void ssaop_add_param(SsaOp *op, SsaNamedValue p);
-static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, const char *param) {
-    ssaop_add_param_s(dest, param, *ssaop_param(src, param));
+static void ssaop_steal_param(SsaOp *dest, const SsaOp *src, SsaName param) {
+    ssaop_add_param_s(dest, param, ssavalue_clone(*ssaop_param(src, param)));
 }
-void ssaop_steal_all_params_starting_with(SsaOp *dest, const SsaOp *src, const char *start);
-static void ssaop_steal_state_params(SsaOp *dest, const SsaOp *src) {
-    ssaop_steal_all_params_starting_with(dest, src, "state");
-}
-void ssaop_drop_state_param(SsaOp *op, size_t i);
 void ssaop_remove_params(SsaOp *op);
-void ssaop_remove_out(SsaOp *op, size_t id);
-void ssaop_remove_param(SsaOp *op, size_t id);
+void ssaop_remove_out_at(SsaOp *op, size_t id);
+void ssaop_remove_param_at(SsaOp *op, size_t id);
 void ssaop_steal_outs(SsaOp *dest, const SsaOp *src);
 void ssaop_destroy(SsaOp *op);
 bool ssaop_anyparam_hasvar(SsaOp *op, SsaVar var);
+void ssaop_remove_state_at(SsaOp *op, size_t id);
+bool ssaop_is_pure(SsaOp *op);
+void ssaop_steal_states(SsaOp *dest, const SsaOp *src);
 
 struct SsaStaticIncrement {
     bool detected;

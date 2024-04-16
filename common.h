@@ -23,7 +23,7 @@ typedef struct {
 
 void verifyerrors_free(VerifyErrors errors);
 void verifyerrors_print(VerifyErrors errors, FILE *dest);
-OpPath oppath_copy_add(const OpPath path, const size_t id);
+OpPath oppath_copy_add(OpPath path, size_t id);
 void verifyerrors_add(VerifyErrors *errors, const VerifyError *error);
 void verifyerrors_add_all_and_free(VerifyErrors *dest, VerifyErrors *src);
 

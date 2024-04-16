@@ -10,22 +10,22 @@ void opt_constant_eval(SsaView view, SsaBlock *block) {
         SsaOp *op = (SsaOp *) ssaview_take(view);
 
 #define BINARY(what) { \
-    SsaValue *a = ssaop_param(op, "a"); \
-    SsaValue *b = ssaop_param(op, "b"); \
+    SsaValue *a = ssaop_param(op, SSA_NAME_OPERAND_A); \
+    SsaValue *b = ssaop_param(op, SSA_NAME_OPERAND_B); \
     ssablock_staticeval(block, a);      \
     ssablock_staticeval(block, b);      \
                                         \
     if (a->type == SSA_VAL_IMM_INT && b->type == SSA_VAL_IMM_INT) { \
         op->id = SSA_OP_IMM; \
         ssaop_remove_params(op); \
-        ssaop_add_param_s(op, "val", (SsaValue) { \
+        ssaop_add_param_s(op, SSA_NAME_VALUE, (SsaValue) { \
             .type = SSA_VAL_IMM_INT, \
             .imm_int = a->imm_int what b->imm_int \
         }); \
     } else if (a->type == SSA_VAL_IMM_FLT && b->type == SSA_VAL_IMM_FLT) { \
         op->id = SSA_OP_IMM; \
         ssaop_remove_params(op); \
-        ssaop_add_param_s(op, "val", (SsaValue) { \
+        ssaop_add_param_s(op, SSA_NAME_VALUE, (SsaValue) { \
             .type = SSA_VAL_IMM_FLT, \
             .imm_flt = a->imm_flt + b->imm_flt \
         }); \
@@ -33,7 +33,7 @@ void opt_constant_eval(SsaView view, SsaBlock *block) {
 }
 
 #define UNARY(what) { \
-    SsaValue *val = ssaop_param(op, "val"); \
+    SsaValue *val = ssaop_param(op, SSA_NAME_VALUE); \
     ssablock_staticeval(block, val); \
     if (val->type == SSA_VAL_IMM_INT) { \
         op->id = SSA_OP_IMM; \
@@ -100,7 +100,7 @@ void opt_constant_eval(SsaView view, SsaBlock *block) {
                 break;
 
             case SSA_OP_BITWISE_NOT: {
-                SsaValue *val = ssaop_param(op, "val");
+                SsaValue *val = ssaop_param(op, SSA_NAME_VALUE);
                 ssablock_staticeval(block, val);
                 if (val->type == SSA_VAL_IMM_INT) {
                     op->id = SSA_OP_IMM;

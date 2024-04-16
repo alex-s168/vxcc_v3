@@ -36,9 +36,9 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
         SsaOp *op = (SsaOp *) ssaview_take(view);
 
         if (op->id == SSA_OP_WHILE && op->outs_len > 0) { // "fast path" for when we don't even have states
-            SsaBlock **bdo = &ssaop_param(op, "do")->block;
+            SsaBlock **bdo = &ssaop_param(op, SSA_NAME_LOOP_DO)->block;
             SsaBlock *newdo = *bdo;
-            SsaBlock **bcond = &ssaop_param(op, "cond")->block;
+            SsaBlock **bcond = &ssaop_param(op, SSA_NAME_COND)->block;
             SsaBlock *newcond = *bcond;
 
             // TODO: if we detect multiple counters here, chose the one which is single present in the condition
@@ -70,21 +70,19 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
             *bcond = NULL;
             *bdo = NULL;
 
-            static char buf[256];
-            sprintf(buf, "state%zu", stateId);
-            const SsaValue init = *ssaop_param(op, buf);
+            const SsaValue init = op->states[stateId];
 
             // counter needs to be at pos 0 oviously
-            ssablock_swap_state(newcond, stateId, 0);
-            ssaop_drop_state_param(op, stateId);
+            ssablock_swap_state_at(newcond, stateId, 0);
+            ssaop_remove_state_at(op, stateId);
 
             SsaOp new;
             ssaop_init(&new, SSA_OP_FOR, block);
-            ssaop_add_param_s(&new, "init", init);
-            ssaop_add_param_s(&new, "stride", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = si.by });
-            ssaop_steal_state_params(&new, op);
-            ssaop_add_param_s(&new, "cond", (SsaValue) { .type = SSA_VAL_BLOCK, .block = newcond });
-            ssaop_add_param_s(&new, "do", (SsaValue) { .type = SSA_VAL_BLOCK, .block = newdo });
+            ssaop_add_param_s(&new, SSA_NAME_LOOP_START, init);
+            ssaop_add_param_s(&new, SSA_NAME_LOOP_STRIDE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = si.by });
+            ssaop_steal_states(&new, op);
+            ssaop_add_param_s(&new, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newcond });
+            ssaop_add_param_s(&new, SSA_NAME_LOOP_DO, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newdo });
 
             ssaop_destroy(incOp);
             ssaop_init(incOp, SSA_OP_NOP, block);

@@ -188,7 +188,7 @@ bool ssaop_anyparam_hasvar(SsaOp *op, SsaVar var) {
     return false;
 }
 
-void ssablock_swap_in(SsaBlock *block, const size_t a, const size_t b) {
+void ssablock_swap_in_at(SsaBlock *block, const size_t a, const size_t b) {
     if (a == b)
         return;
 
@@ -197,32 +197,13 @@ void ssablock_swap_in(SsaBlock *block, const size_t a, const size_t b) {
     block->ins[b] = va;
 }
 
-void ssablock_swap_out(SsaBlock *block, size_t a, size_t b) {
+void ssablock_swap_out_at(SsaBlock *block, size_t a, size_t b) {
     if (a == b)
         return;
 
     const SsaVar va = block->outs[a];
     block->outs[a] = block->outs[b];
     block->outs[b] = va;
-}
-
-// TODO: we really need to make state params separate!!
-void ssaop_drop_state_param(SsaOp *op, size_t torem) {
-    for (size_t i = 0; i < op->params_len; i ++) {
-        size_t id;
-        if (sscanf(op->params[i].name, "state%zu", &id) == EOF)
-            continue;
-        
-        if (id == torem) {
-            ssaop_remove_param(op, id);
-            i --;
-        } else if (id > torem) {
-            id --;
-            static char buf[64];
-            sprintf(buf, "state%zu", id);
-            ssanamedvalue_rename(&op->params[i], buf);
-        }
-    }
 }
 
 SsaOp *ssablock_inside_out_vardecl_before(const SsaBlock *block, const SsaVar var, size_t before) {
@@ -246,4 +227,56 @@ SsaVar ssablock_new_var(SsaBlock *block, SsaOp *decl) {
     SsaVar new = root->as_root.vars_len ++;
     root->as_root.vars[new].decl = decl;
     return new;
+}
+
+bool ssaop_is_pure(SsaOp *op) {
+    switch (op->id) {
+        case SSA_OP_NOP:
+        case SSA_OP_IMM:
+        case SSA_OP_REINTERPRET:
+        case SSA_OP_ZEROEXT:
+        case SSA_OP_SIGNEXT:
+        case SSA_OP_TOFLT:
+        case SSA_OP_FROMFLT:
+        case SSA_OP_BITCAST:
+        case SSA_OP_ADD:
+        case SSA_OP_SUB:
+        case SSA_OP_MUL:
+        case SSA_OP_DIV:
+        case SSA_OP_MOD:
+        case SSA_OP_GT:
+        case SSA_OP_GTE:
+        case SSA_OP_LT:
+        case SSA_OP_LTE:
+        case SSA_OP_EQ:
+        case SSA_OP_NEQ:
+        case SSA_OP_NOT:
+        case SSA_OP_AND:
+        case SSA_OP_OR:
+        case SSA_OP_BITWISE_NOT:
+        case SSA_OP_BITWISE_AND:
+        case SSA_OP_BITIWSE_OR:
+        case SSA_OP_SHL:
+        case SSA_OP_SHR:
+        case SSA_OP_FOR:
+            return true;
+
+        case SSA_OP_REPEAT:
+        case CIR_OP_CFOR:
+        case SSA_OP_IF:
+        case SSA_OP_FLATTEN_PLEASE:
+        case SSA_OP_INFINITE:
+        case SSA_OP_WHILE:
+        case SSA_OP_FOREACH:
+        case SSA_OP_FOREACH_UNTIL:
+            for (size_t i = 0; i < op->params_len; i ++)
+                if (op->params[i].val.type == SSA_VAL_BLOCK)
+                    for (size_t j = 0; j < op->params[i].val.block->ops_len; j ++)
+                        if (!ssaop_is_pure(&op->params[i].val.block->ops[j]))
+                            return false;
+            return true;
+
+        default:
+            return false;
+    }
 }

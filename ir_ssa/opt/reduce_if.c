@@ -8,14 +8,14 @@ void opt_reduce_if(SsaView view, SsaBlock *block) {
     while (ssaview_find(&view, SSA_OP_IF)) {
         SsaOp *op = (SsaOp *) ssaview_take(view);
 
-        SsaBlock *cond = ssaop_param(op, "cond")->block;
+        SsaBlock *cond = ssaop_param(op, SSA_NAME_COND)->block;
         opt(cond); // !
         const SsaVar condVar = cond->outs[0];
 
-        SsaBlock *then = ssaop_param(op, "then")->block;
+        SsaBlock *then = ssaop_param(op, SSA_NAME_COND_THEN)->block;
         opt(then);
 
-        SsaBlock *els = ssaop_param(op, "else")->block;
+        SsaBlock *els = ssaop_param(op, SSA_NAME_COND_ELSE)->block;
         opt(els);
 
         // if it will never be 0 (not might be 0), it is always true => only execute then block
@@ -46,9 +46,9 @@ void opt_reduce_if(SsaView view, SsaBlock *block) {
 
         for (size_t i = 0; i < op->outs_len; i ++) {
             if (!ssablock_var_used(root, op->outs[i].var)) {
-                ssablock_remove_out(then, i);
-                ssablock_remove_out(els, i);
-                ssaop_remove_out(op, i);
+                ssablock_remove_out_at(then, i);
+                ssablock_remove_out_at(els, i);
+                ssaop_remove_out_at(op, i);
                 i --;
             }
         }

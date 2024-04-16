@@ -60,6 +60,19 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
 
         // TODO: implement for more types
 
+        // verify states in general
+        for (size_t j = 0; j < op->states_len; j ++) {
+            if (op->states[j].type == SSA_VAL_BLOCK) {
+                const OpPath newpath = oppath_copy_add(path, i);
+                const VerifyError error = {
+                    .path = newpath,
+                    .error = "Invalid state",
+                    .additional = "States cannot be blocks!"
+                };
+                verifyerrors_add(&errors, &error);
+            }
+        }
+
         // verify loop state
         if (op->id == SSA_OP_FOR ||
             op->id == SSA_OP_FOREACH ||
@@ -69,24 +82,17 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
             op->id == SSA_OP_WHILE)
         {
             const size_t states_count = op->outs_len;
-            for (size_t j = 0; j < states_count; j ++) {
-                static char buf[256];
-                sprintf(buf, "state%zu", j);
-                const SsaValue *state_init = ssaop_param(op, buf);
-                if (state_init == NULL) {
-                    const OpPath newpath = oppath_copy_add(path, i);
-                    sprintf(buf, "Loop state %zu needs to be initialized! Example: `state0=1234`", j);
-                    VerifyError error = {
-                        .path = newpath,
-                        .error = "Loop state not initialized",
-                        .additional = buf
-                    };
-                    verifyerrors_add(&errors, &error);
-                } else if (state_init->type == SSA_VAL_BLOCK)
-                    error_param_type(&errors, oppath_copy_add(path, i), "!block");
+            if (states_count != op->states_len) {
+                const OpPath newpath = oppath_copy_add(path, i);
+                VerifyError error = {
+                    .path = newpath,
+                    .error = "Loop state not initialized",
+                    .additional = "Loop states do not match! Example: `state0=1234`"
+                };
+                verifyerrors_add(&errors, &error);
             }
 
-            const SsaValue *doblock_v = ssaop_param(op, "do");
+            const SsaValue *doblock_v = ssaop_param(op, SSA_NAME_LOOP_DO);
             if (doblock_v == NULL) {
                 const OpPath newpath = oppath_copy_add(path, i);
                 VerifyError error = {
@@ -118,7 +124,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
         if (op->id == SSA_OP_IF) {
             bool err = false;
 
-            const SsaValue *vcond = ssaop_param(op, "cond");
+            const SsaValue *vcond = ssaop_param(op, SSA_NAME_COND);
             if (vcond == NULL) {
                 error_param_missing(&errors, oppath_copy_add(path, i), "cond");
                 err = true;
@@ -127,7 +133,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                 err = true;
             }
 
-            const SsaValue *vthen = ssaop_param(op, "then");
+            const SsaValue *vthen = ssaop_param(op, SSA_NAME_COND_THEN);
             if (vthen == NULL) {
                 error_param_missing(&errors, oppath_copy_add(path, i), "then");
                 err = true;
@@ -136,7 +142,7 @@ VerifyErrors ssablock_verify(const SsaBlock *block, const OpPath path) {
                 err = true;
             }
 
-            const SsaValue *velse = ssaop_param(op, "else");
+            const SsaValue *velse = ssaop_param(op, SSA_NAME_COND_ELSE);
             if (velse == NULL) {
                 error_param_missing(&errors, oppath_copy_add(path, i), "else");
                 err = true;
