@@ -19,6 +19,7 @@ typedef struct SsaBlock_s SsaBlock;
 
 struct SsaBlock_s {
     SsaBlock *parent;
+    size_t parent_index;
 
     bool is_root;
     struct {
@@ -55,8 +56,8 @@ static int ssa_verify(const SsaBlock *block) {
 }
 
 /** DON'T RUN INIT AFTERWARDS */
-SsaBlock *ssablock_heapalloc(SsaBlock *parent);
-void ssablock_init(SsaBlock *block, SsaBlock *parent);
+SsaBlock *ssablock_heapalloc(SsaBlock *parent, size_t parent_index);
+void ssablock_init(SsaBlock *block, SsaBlock *parent, size_t parent_index);
 /** run AFTER you finished building it! */
 void ssablock_make_root(SsaBlock *block, size_t total_vars);
 void ssablock_add_in(SsaBlock *block, SsaVar var);
@@ -64,6 +65,8 @@ void ssablock_add_op(SsaBlock *block, const SsaOp *op);
 void ssablock_add_all_op(SsaBlock *dest, const SsaBlock *src);
 void ssablock_add_out(SsaBlock *block, SsaVar out);
 void ssablock_destroy(SsaBlock *block);
+
+SsaVar ssablock_new_var(SsaBlock *block, SsaOp *decl);
 
 void ssablock_swap_in(SsaBlock *block, size_t a, size_t b);
 void ssablock_swap_out(SsaBlock *block, size_t a, size_t b);
@@ -96,8 +99,6 @@ typedef struct {
 void ssavalue_dump(SsaValue value, FILE *out, size_t indent);
 
 SsaOp *ssablock_finddecl_var(const SsaBlock *block, SsaVar var);
-/** ONLY SEARCHES UPWARDS!! */ // TODO: remove
-void ssablock_rename_var(SsaBlock *block, SsaVar oldn, SsaVar newn);
 /** returns true if static eval ok; only touches dest if true */
 bool ssablock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest);
 bool ssablock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v);
@@ -118,7 +119,8 @@ void ssanamedvalue_destroy(SsaNamedValue v);
 
 typedef enum {
     SSA_OP_NOP = 0,
-    SSA_OP_IMM, // "val"
+    SSA_OP_IMM,            // "val"
+    SSA_OP_FLATTEN_PLEASE, // "block"
     
     // convert
     /** for pointers only! */
@@ -169,9 +171,10 @@ typedef enum {
     SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
     SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
     SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
-
+    CIR_OP_CFOR,           // "init": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
+    
     // conditional
-    SSA_OP_IF,     // "cond": bool, "then": ()->R, "else": ()->R
+    SSA_OP_IF,     // "cond": bool, "then": ()->R, ("else": ()->R)
 
 
     SSA_OP____END,
@@ -274,5 +277,7 @@ struct SsaStaticIncrement {
     long long by;
 };
 struct SsaStaticIncrement ssaop_detect_static_increment(const SsaOp *op);
+
+SsaOp *ssablock_inside_out_vardecl_before(const SsaBlock *block, SsaVar var, size_t before);
 
 #endif //SSA_H

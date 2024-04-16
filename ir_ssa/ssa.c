@@ -44,6 +44,16 @@ SsaView ssaview_replace(SsaBlock *viewblock, const SsaView view, const SsaOp *op
 void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar new) {
     assert(block == view.block);
 
+    if (view.start == 0)
+        for (size_t j = 0; j < block->ins_len; j ++)
+            if (block->ins[j] == old)
+                block->ins[j] = new;
+
+    if (view.end == block->ops_len)
+        for (size_t j = 0; j < block->outs_len; j ++)
+            if (block->outs[j] == old)
+                block->outs[j] = new;
+    
     ssablock_root(block)->as_root.vars[old].decl = NULL;
     
     for (size_t i = view.start; i < view.end; i ++) {
@@ -56,20 +66,12 @@ void ssaview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar new) {
         for (size_t j = 0; j < op.params_len; j ++) {
             if (op.params[j].val.type == SSA_VAL_VAR && op.params[j].val.var == old) {
                 op.params[j].val.var = new;
-            } else if (op.params[j].val.type == SSA_VAL_BLOCK) {
+            }
+            else if (op.params[j].val.type == SSA_VAL_BLOCK) {
                 SsaBlock *child = op.params[j].val.block;
                 ssaview_rename_var(ssaview_of_all(child), child, old, new);
             }
         }
-    }
-}
-
-void ssablock_rename_var(SsaBlock *block, const SsaVar old, const SsaVar new) {
-    ssablock_root(block)->as_root.vars[old].decl = NULL;
-
-    while (block != NULL) {
-        ssaview_rename_var(ssaview_of_all(block), block, old, new);
-        block = block->parent;
     }
 }
 
@@ -221,4 +223,27 @@ void ssaop_drop_state_param(SsaOp *op, size_t torem) {
             ssanamedvalue_rename(&op->params[i], buf);
         }
     }
+}
+
+SsaOp *ssablock_inside_out_vardecl_before(const SsaBlock *block, const SsaVar var, size_t before) {
+    while (before --> 0) {
+        SsaOp *op = &block->ops[before];
+
+        for (size_t i = 0; i < op->outs_len; i ++)
+            if (op->outs[i].var == var)
+                return op;
+    }
+
+    if (block->parent == NULL)
+        return NULL;
+
+    return ssablock_inside_out_vardecl_before(block->parent, var, block->parent_index);
+}
+
+SsaVar ssablock_new_var(SsaBlock *block, SsaOp *decl) {
+    SsaBlock *root = (SsaBlock *) ssablock_root(block);
+    root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
+    SsaVar new = root->as_root.vars_len ++;
+    root->as_root.vars[new].decl = decl;
+    return new;
 }

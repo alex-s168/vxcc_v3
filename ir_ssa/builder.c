@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "ssa.h"
 
 #include <stdlib.h>
@@ -5,8 +7,9 @@
 
 #include "../utils.h"
 
-void ssablock_init(SsaBlock *block, SsaBlock *parent) {
+void ssablock_init(SsaBlock *block, SsaBlock *parent, size_t parent_index) {
     block->parent = parent;
+    block->parent_index = parent_index;
 
     block->is_root = false;
 
@@ -22,14 +25,16 @@ void ssablock_init(SsaBlock *block, SsaBlock *parent) {
     block->should_free = false;
 }
 
-SsaBlock *ssablock_heapalloc(SsaBlock *parent) {
+SsaBlock *ssablock_heapalloc(SsaBlock *parent, size_t parent_index) {
     SsaBlock *new = malloc(sizeof(SsaBlock));
-    ssablock_init(new, parent);
+    ssablock_init(new, parent, parent_index);
     new->should_free = true;
     return new;
 }
 
 void ssablock_make_root(SsaBlock *block, const size_t total_vars) {
+    assert(block->parent == NULL);
+
     block->is_root = true;
     block->as_root.vars_len = total_vars;
     block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
