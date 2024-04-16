@@ -7,6 +7,11 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
+      - name: Info
+        run: |
+          chmod +x build.sh
+          ./build.sh info
+        shell: bash
       - name: Analyze
         run: |
           chmod +x build.sh
