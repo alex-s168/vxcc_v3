@@ -79,7 +79,7 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
             ssaop_drop_state_param(op, stateId);
 
             SsaOp new;
-            ssaop_init(&new, SSA_OP_FOR);
+            ssaop_init(&new, SSA_OP_FOR, block);
             ssaop_add_param_s(&new, "init", init);
             ssaop_add_param_s(&new, "stride", (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = si.by });
             ssaop_steal_state_params(&new, op);
@@ -87,7 +87,7 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
             ssaop_add_param_s(&new, "do", (SsaValue) { .type = SSA_VAL_BLOCK, .block = newdo });
 
             ssaop_destroy(incOp);
-            ssaop_init(incOp, SSA_OP_NOP);
+            ssaop_init(incOp, SSA_OP_NOP, block);
 
             ssaop_destroy(op);
             (void) ssaview_replace(block, view, &new, 1);

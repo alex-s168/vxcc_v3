@@ -1,49 +1,53 @@
 #include "ssa.h"
 
 const char *ssaoptype_names[SSAOPTYPE_LEN] = {
-    "nop",
-    "imm",
+    [SSA_OP_NOP] = "nop",
+    [SSA_OP_IMM] = "imm",
+    [SSA_OP_FLATTEN_PLEASE] = ".",
+    
+    [SSA_OP_REINTERPRET] = "reinterpret",
+    [SSA_OP_ZEROEXT] = "zext",
+    [SSA_OP_SIGNEXT] = "sext",
+    [SSA_OP_TOFLT] = "toflt",
+    [SSA_OP_FROMFLT] = "fromflt",
+    [SSA_OP_BITCAST] = "bitcast",
 
-    "reinterpret",
-    "zext",
-    "sext",
-    "toflt",
-    "fromflt",
-    "bitcast",
+    [SSA_OP_ADD] = "add",
+    [SSA_OP_SUB] = "sub",
+    [SSA_OP_MUL] = "mul",
+    [SSA_OP_DIV] = "div",
+    [SSA_OP_MOD] = "mod",
 
-    "add",
-    "sub",
-    "mul",
-    "div",
-    "mod",
+    [SSA_OP_GT] = "gt",
+    [SSA_OP_GTE] = "gte",
+    [SSA_OP_LT] = "lt",
+    [SSA_OP_LTE] = "lte",
+    [SSA_OP_EQ] = "eq",
+    [SSA_OP_NEQ] = "neq",
 
-    "gt",
-    "gte",
-    "lt",
-    "lte",
-    "eq",
-    "neq",
+    [SSA_OP_NOT] = "not",
+    [SSA_OP_AND] = "and",
+    [SSA_OP_OR] = "or",
 
-    "not",
-    "and",
-    "or",
+    [SSA_OP_BITWISE_NOT] = "bwnot",
+    [SSA_OP_BITWISE_AND] = "bwand",
+    [SSA_OP_BITIWSE_OR] = "bwor",
 
-    "bwnot",
-    "bwand",
-    "bwor",
+    [SSA_OP_SHL] = "shl",
+    [SSA_OP_SHR] = "shr",
 
-    "shl",
-    "shr",
+    [SSA_OP_FOR] = "for",
+    [SSA_OP_INFINITE] = "infinite",
+    [SSA_OP_WHILE] = "while",
+    [SSA_OP_CONTINUE] = "continue",
+    [SSA_OP_BREAK] = "break",
 
-    "for",
-    "infinite",
-    "while",
-    "continue",
-    "break",
+    [SSA_OP_FOREACH] = "foreach",
+    [SSA_OP_FOREACH_UNTIL] = "foreach_until",
+    [SSA_OP_REPEAT] = "repeat",
+    [CIR_OP_CFOR] = "cfor",
 
-    "foreach",
-    "foreach_until",
-    "repeat",
+    [SSA_OP_IF] = "if"
 };
 
 void ssavalue_dump(SsaValue value, FILE *out, const size_t indent) {

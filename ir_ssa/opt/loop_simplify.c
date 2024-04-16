@@ -20,7 +20,7 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
         // if it will never be 0 (not might be 0), it is always true => infinite loop
         if (!ssablock_mightbe_var(cond, condVar, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 })) {
             SsaOp new;
-            ssaop_init(&new, SSA_OP_INFINITE);
+            ssaop_init(&new, SSA_OP_INFINITE, block);
             ssaop_steal_param(&new, op, "init");
             ssaop_steal_param(&new, op, "do");
             ssaop_steal_param(&new, op, "stride");
@@ -49,7 +49,7 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
                 const SsaValue *b = ssaop_param(&cond->ops[0], "b");
 
                 SsaOp new;
-                ssaop_init(&new, SSA_OP_REPEAT);
+                ssaop_init(&new, SSA_OP_REPEAT, block);
                 ssaop_steal_param(&new, op, "do");
                 ssaop_add_param_s(&new, "start", *ssaop_param(op, "init"));
                 ssaop_add_param_s(&new, "endEx", *b);

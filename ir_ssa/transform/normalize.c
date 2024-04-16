@@ -23,25 +23,25 @@ void cirblock_normalize(SsaBlock *block) {
 
             {
                 SsaOp opdo;
-                ssaop_init(&opdo, SSA_OP_FLATTEN_PLEASE);
+                ssaop_init(&opdo, SSA_OP_FLATTEN_PLEASE, new);
                 ssaop_add_param_s(&opdo, "block", (SsaValue) { .type = SSA_VAL_BLOCK, .block = b_init });
                 ssablock_add_op(new, &opdo);
             }
 
             SsaOp opwhile;
-            ssaop_init(&opwhile, SSA_OP_WHILE);
+            ssaop_init(&opwhile, SSA_OP_WHILE, new);
             ssaop_add_param_s(&opwhile, "cond", (SsaValue) { .type = SSA_VAL_BLOCK, .block = b_cond });
 
             SsaBlock *doblock = ssablock_heapalloc(new, new->ops_len);
             {
                 SsaOp opdo;
-                ssaop_init(&opdo, SSA_OP_FLATTEN_PLEASE);
+                ssaop_init(&opdo, SSA_OP_FLATTEN_PLEASE, new);
                 ssaop_add_param_s(&opdo, "block", (SsaValue) { .type = SSA_VAL_BLOCK, .block = b_do });
                 ssablock_add_op(doblock, &opdo);
             }
             {
                 SsaOp opdo;
-                ssaop_init(&opdo, SSA_OP_FLATTEN_PLEASE);
+                ssaop_init(&opdo, SSA_OP_FLATTEN_PLEASE, new);
                 ssaop_add_param_s(&opdo, "block", (SsaValue) { .type = SSA_VAL_BLOCK, .block = b_end });
                 ssablock_add_op(doblock, &opdo);
             }

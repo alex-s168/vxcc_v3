@@ -67,7 +67,7 @@ void ssablock_add_out(SsaBlock *block, SsaVar out);
 void ssablock_destroy(SsaBlock *block);
 
 SsaVar ssablock_new_var(SsaBlock *block, SsaOp *decl);
-
+void ssablock_flatten(SsaBlock *block);
 void ssablock_swap_in(SsaBlock *block, size_t a, size_t b);
 void ssablock_swap_out(SsaBlock *block, size_t a, size_t b);
 static void ssablock_swap_state(SsaBlock *block, size_t a, size_t b) {
@@ -190,6 +190,8 @@ typedef struct {
 } SsaTypedVar;
 
 struct SsaOp_s {
+    SsaBlock *parent;
+    
     SsaType *types;
     size_t   types_len;
 
@@ -251,7 +253,7 @@ void ssaview_deep_traverse(SsaView top, void (*callback)(SsaOp *op, void *data),
 
 SsaValue *ssaop_param(const SsaOp *op, const char *name);
 
-void ssaop_init(SsaOp *op, SsaOpType type);
+void ssaop_init(SsaOp *op, SsaOpType type, SsaBlock *parent);
 void ssaop_add_type(SsaOp *op, SsaType type);
 void ssaop_add_out(SsaOp *op, SsaVar v, SsaType t);
 void ssaop_add_param_s(SsaOp *op, const char *name, SsaValue val);

@@ -27,4 +27,5 @@ add_executable(vxcc_v3 main.c
         ir_ssa/opt/reduce_loops.c
         ir_ssa/cir.h
         ir_ssa/verify_cir.c
+        ir_ssa/transform/flatten.c
 )

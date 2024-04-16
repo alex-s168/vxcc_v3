@@ -106,7 +106,7 @@ void ssanamedvalue_destroy(SsaNamedValue v) {
         ssablock_destroy(v.val.block);
 }
 
-void ssaop_init(SsaOp *op, const SsaOpType type) {
+void ssaop_init(SsaOp *op, const SsaOpType type, SsaBlock *parent) {
     op->types = NULL;
     op->types_len = 0;
 
@@ -117,6 +117,8 @@ void ssaop_init(SsaOp *op, const SsaOpType type) {
     op->params_len = 0;
 
     op->id = type;
+
+    op->parent = parent;
 }
 
 void ssaop_add_type(SsaOp *op, SsaType type) {

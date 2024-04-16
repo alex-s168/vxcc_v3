@@ -40,7 +40,7 @@ void opt_remove_vars(SsaBlock *block) {
 
         // in-place remove
         ssaop_destroy(decl);
-        ssaop_init(decl, SSA_OP_NOP);
+        ssaop_init(decl, SSA_OP_NOP, decl->parent);
 
         for (size_t j = 0; j < decl->outs_len; j ++)
             block->as_root.vars[decl->outs[j].var].decl = NULL;
