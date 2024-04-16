@@ -36,6 +36,8 @@ struct SsaBlock_s {
     
     SsaVar *outs;
     size_t  outs_len;
+
+    bool should_free;
 };
 
 const SsaBlock *ssablock_root(const SsaBlock *block);
@@ -52,6 +54,8 @@ static int ssa_verify(const SsaBlock *block) {
     return errs.len > 0;
 }
 
+/** DON'T RUN INIT AFTERWARDS */
+SsaBlock *ssablock_heapalloc(SsaBlock *parent);
 void ssablock_init(SsaBlock *block, SsaBlock *parent);
 /** run AFTER you finished building it! */
 void ssablock_make_root(SsaBlock *block, size_t total_vars);

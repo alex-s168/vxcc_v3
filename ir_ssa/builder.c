@@ -18,6 +18,15 @@ void ssablock_init(SsaBlock *block, SsaBlock *parent) {
 
     block->outs = NULL;
     block->outs_len = 0;
+
+    block->should_free = false;
+}
+
+SsaBlock *ssablock_heapalloc(SsaBlock *parent) {
+    SsaBlock *new = malloc(sizeof(SsaBlock));
+    ssablock_init(new, parent);
+    new->should_free = true;
+    return new;
 }
 
 void ssablock_make_root(SsaBlock *block, const size_t total_vars) {
@@ -57,10 +66,14 @@ void ssablock_destroy(SsaBlock *block) {
     if (block == NULL)
         return;
     free(block->ins);
+    for (size_t i = 0; i < block->ops_len; i ++)
+        ssaop_destroy(&block->ops[i]);
     free(block->ops);
     free(block->outs);
     if (block->is_root)
         free(block->as_root.vars);
+    if (block->should_free)
+        free(block);
 }
 
 SsaValue *ssaop_param(const SsaOp *op, const char *name) {

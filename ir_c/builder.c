@@ -55,6 +55,8 @@ void cirblock_add_out(CIRBlock *block, CIRVar out) {
 }
 
 void cirblock_destroy(CIRBlock *block) {
+    for (size_t i = 0; i < block->ops_len; i ++)
+        cirop_destroy(&block->ops[i]);
     free(block->ins);
     free(block->ops);
     free(block->outs);
