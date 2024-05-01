@@ -46,7 +46,7 @@
  * @param ifOp the if op that contains the conditional block
  * @param var affected variable
  */
-static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional, const size_t condOff, SsaOp *ifOp, const SsaVar var) {
+static SsaVar megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional, const size_t condOff, SsaOp *ifOp, const SsaVar var, const OptSsaVar manipIn) {
     // stage 1
     const SsaVar manipulate = irblock_new_var(outer, ifOp);
     {
@@ -112,13 +112,20 @@ static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional,
     }
 
     irop_add_out(ifOp, manipulate, type);
-    irblock_add_out(then, last_cond_assign);
+    if (manipIn.present)
+        irblock_add_out(then, manipIn.var);
+    else
+        irblock_add_out(then, last_cond_assign);
     irblock_add_out(els, var);
+
+    return manipulate;
 }
 
 // call megic somehow
 // detect the patter from the inside out!!
-void cirblock_mksa_states(SsaBlock *block) {
+OptSsaVar cirblock_mksa_states(SsaBlock *block) {
+    OptSsaVar rvar = SSAVAR_OPT_NONE;
+
     for (size_t i = 0; i < block->ops_len; i ++) {
         SsaOp *ifOp = &block->ops[i];
         if (ifOp->id != SSA_OP_IF)
@@ -132,7 +139,7 @@ void cirblock_mksa_states(SsaBlock *block) {
                 continue;
 
             SsaBlock *conditional = ifOp->params[j].val.block;
-            cirblock_mksa_states(conditional);
+            OptSsaVar manip = cirblock_mksa_states(conditional);
 
             // TODO: make work if we have a else block and assign there too!!!!
 
@@ -145,9 +152,11 @@ void cirblock_mksa_states(SsaBlock *block) {
                     const SsaOp *alwaysAssignOp = irblock_inside_out_vardecl_before(block, var, i);
                     if (alwaysAssignOp == NULL)
                         continue;
-                    megic(alwaysAssignOp->parent, alwaysAssignOp->parent->ops - alwaysAssignOp, conditional, k, ifOp, var);
+                    rvar = SSAVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp->parent->ops - alwaysAssignOp, conditional, k, ifOp, var, manip));
                 }
             }
         }
     }
+
+    return rvar;
 }

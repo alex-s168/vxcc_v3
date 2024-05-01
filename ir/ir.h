@@ -12,6 +12,14 @@ typedef struct SsaOp_s SsaOp;
 
 typedef size_t SsaVar;
 
+typedef struct {
+    SsaVar var;
+    bool present;
+} OptSsaVar;
+
+#define SSAVAR_OPT_NONE (OptSsaVar) {.present = false,.var = 0}
+#define SSAVAR_OPT_SOME(v) (OptSsaVar) {.present = true,.var = v}
+
 typedef const char *SsaType;
 
 struct SsaBlock_s;
