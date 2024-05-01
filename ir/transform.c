@@ -36,7 +36,7 @@ void irview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar new) {
             if (block->ins[j] == old)
                 block->ins[j] = new;
 
-    if (view.end == block->ops_len)
+    if (view.end >= block->ops_len)
         for (size_t j = 0; j < block->outs_len; j ++)
             if (block->outs[j] == old)
                 block->outs[j] = new;

@@ -84,9 +84,9 @@ static void megic(SsaBlock *outer, const size_t outerOff, SsaBlock *conditional,
     // stage 3
 
     // for people that can't keep track of shit, like me, here is a short summary of the current state:
-    // var <=> the unconditional var that we need to return in the else block
-    // last_cond_assign <=> the conditional var that we need to return in the then block
-    // manipulate <=> the new target var
+    //  var              <=> the unconditional var that we need to return in the else block
+    //  last_cond_assign <=> the conditional var that we need to return in the then block
+    //  manipulate       <=> the new target var
 
     const SsaOp *orig_assign = &outer->ops[outerOff];
     SsaType type = NULL;
@@ -145,7 +145,6 @@ void cirblock_mksa_states(SsaBlock *block) {
                     const SsaOp *alwaysAssignOp = irblock_inside_out_vardecl_before(block, var, i);
                     if (alwaysAssignOp == NULL)
                         continue;
-
                     megic(alwaysAssignOp->parent, alwaysAssignOp->parent->ops - alwaysAssignOp, conditional, k, ifOp, var);
                 }
             }

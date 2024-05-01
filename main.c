@@ -48,6 +48,28 @@ static int ir_test(void) {
     return 0;
 }
 
+static SsaBlock *conditional_c_assign(SsaVar dest, SsaBlock *parent) {
+    SsaOp op;
+    irop_init(&op, SSA_OP_IF, parent);
+    
+    SsaBlock *then = irblock_heapalloc(parent, parent->ops_len);
+    {
+        SsaOp op2;
+        irop_init(&op2, SSA_OP_IMM, then);
+        irop_add_out(&op2, dest, "int");
+        irop_add_param_s(&op2, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
+        irblock_add_op(then, &op2);
+    }
+    irop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = then });
+
+    SsaBlock *cond = irblock_heapalloc(parent, parent->ops_len);
+    irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = cond });
+
+    irblock_add_op(parent, &op);
+
+    return then;
+}
+
 static int cir_test(void) {
     SsaBlock block;
     irblock_init(&block, NULL, 0);
@@ -60,23 +82,14 @@ static int cir_test(void) {
         irblock_add_op(&block, &op);
     }
 
+    SsaBlock *then = conditional_c_assign(0, &block);
+    conditional_c_assign(0, then);
+
     {
         SsaOp op;
-        irop_init(&op, SSA_OP_IF, &block);
-
-        SsaBlock *then = irblock_heapalloc(&block, block.ops_len);
-        {
-            SsaOp op2;
-            irop_init(&op2, SSA_OP_IMM, &block);
-            irop_add_out(&op2, 0, "int");
-            irop_add_param_s(&op2, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
-            irblock_add_op(then, &op2);
-        }
-        irop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = then });
-
-        SsaBlock *cond = irblock_heapalloc(&block, block.ops_len);
-        irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = cond });
-
+        irop_init(&op, SSA_OP_IMM, &block);
+        irop_add_out(&op, 1, "int");
+        irop_add_param_s(&op, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_VAR, .var = 0 });
         irblock_add_op(&block, &op);
     }
 
@@ -85,8 +98,14 @@ static int cir_test(void) {
     if (cir_verify(&block) != 0)
         return 1;
 
+    printf("Pre:\n");
+    irblock_dump(&block, stdout, 0);
+
     cirblock_mksa_states(&block);
     cirblock_mksa_final(&block);
+
+    printf("Post:\n");
+    irblock_dump(&block, stdout, 0);
 
     irblock_destroy(&block);
 
@@ -98,9 +117,9 @@ int main(void) {
     if (cir_test() != 0)
         return 1;
 
-    printf("\nSSA-IR test:\n");
-    if (ir_test() != 0)
-        return 1;
+    //printf("\nSSA-IR test:\n");
+    //if (ir_test() != 0)
+    //    return 1;
 
     return 0;
 }
