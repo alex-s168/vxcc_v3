@@ -58,7 +58,10 @@ void irblock_swap_out_at(SsaBlock *block, size_t a, size_t b) {
 }
 
 SsaVar irblock_new_var(SsaBlock *block, SsaOp *decl) {
+    assert(block != NULL);
+    assert(decl != NULL);
     SsaBlock *root = (SsaBlock *) irblock_root(block);
+    assert(root != NULL);
     root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
     SsaVar new = root->as_root.vars_len ++;
     root->as_root.vars[new].decl = decl;

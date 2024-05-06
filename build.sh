@@ -13,8 +13,8 @@ elif [[ $1 == "info" ]]; then
   echo cflags: $CFLAGS
   echo files: $FILES
 else
-  echo "compile DebugOpt"
-  clang -g -ggdb -O3 $CFLAGS $FILES -o vxcc
+  echo "compile Debug"
+  clang -g -ggdb -O0 $CFLAGS $FILES -o vxcc
 fi
 
 # shellcheck enable=SC2086

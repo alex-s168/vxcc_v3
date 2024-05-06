@@ -317,5 +317,6 @@ struct SsaStaticIncrement {
 struct SsaStaticIncrement irop_detect_static_increment(const SsaOp *op);
 
 SsaOp *irblock_inside_out_vardecl_before(const SsaBlock *block, SsaVar var, size_t before);
+bool irblock_is_pure(const SsaBlock *block);
 
 #endif //SSA_H

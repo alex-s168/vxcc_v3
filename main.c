@@ -48,7 +48,20 @@ static int ir_test(void) {
     return 0;
 }
 
-static SsaBlock *conditional_c_assign(SsaVar dest, SsaBlock *parent) {
+static SsaBlock *always_true_block(SsaBlock *parent, SsaVar temp_var) {
+    SsaBlock *block = irblock_heapalloc(parent, parent->ops_len);
+
+    SsaOp assign;
+    irop_init(&assign, SSA_OP_IMM, block);
+    irop_add_out(&assign, temp_var, "int");
+    irop_add_param_s(&assign, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
+    irblock_add_op(block, &assign);
+
+    irblock_add_out(block, temp_var);
+    return block;
+}
+
+static SsaBlock *conditional_c_assign(SsaVar dest, SsaBlock *parent, SsaVar temp_var) {
     SsaOp op;
     irop_init(&op, SSA_OP_IF, parent);
     
@@ -62,12 +75,34 @@ static SsaBlock *conditional_c_assign(SsaVar dest, SsaBlock *parent) {
     }
     irop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = then });
 
-    SsaBlock *cond = irblock_heapalloc(parent, parent->ops_len);
-    irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = cond });
+    irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = always_true_block(parent, temp_var) });
 
     irblock_add_op(parent, &op);
 
     return then;
+}
+
+static SsaBlock *conditional_c_assign_else(SsaVar dest, SsaBlock *parent, SsaVar temp_var) {
+    SsaOp op;
+    irop_init(&op, SSA_OP_IF, parent);
+    
+    irop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = irblock_heapalloc(parent, parent->ops_len) });
+
+    SsaBlock *els = irblock_heapalloc(parent, parent->ops_len);
+    {
+        SsaOp op2;
+        irop_init(&op2, SSA_OP_IMM, els);
+        irop_add_out(&op2, dest, "int");
+        irop_add_param_s(&op2, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
+        irblock_add_op(els, &op2);
+    }
+    irop_add_param_s(&op, SSA_NAME_COND_ELSE, (SsaValue) { .type = SSA_VAL_BLOCK, .block = els });
+
+    irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = always_true_block(parent, temp_var) });
+
+    irblock_add_op(parent, &op);
+
+    return els;
 }
 
 static int cir_test(void) {
@@ -82,8 +117,8 @@ static int cir_test(void) {
         irblock_add_op(&block, &op);
     }
 
-    SsaBlock *then = conditional_c_assign(0, &block);
-    conditional_c_assign(0, then);
+    SsaBlock *els = conditional_c_assign_else(0, &block, 1);
+    conditional_c_assign_else(0, els, 2);
 
     {
         SsaOp op;

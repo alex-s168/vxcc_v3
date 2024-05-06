@@ -127,12 +127,18 @@ bool irop_is_pure(SsaOp *op) {
         case SSA_OP_FOREACH_UNTIL:
             for (size_t i = 0; i < op->params_len; i ++)
                 if (op->params[i].val.type == SSA_VAL_BLOCK)
-                    for (size_t j = 0; j < op->params[i].val.block->ops_len; j ++)
-                        if (!irop_is_pure(&op->params[i].val.block->ops[j]))
-                            return false;
-        return true;
+                    if (!irblock_is_pure(op->params[i].val.block))
+                        return false;
+            return true;
 
         default:
             return false;
     }
+}
+
+bool irblock_is_pure(const SsaBlock *block) {
+    for (size_t j = 0; j < block->ops_len; j ++)
+        if (!irop_is_pure(&block->ops[j]))
+            return false;
+    return true;
 }

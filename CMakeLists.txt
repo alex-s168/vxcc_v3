@@ -30,4 +30,5 @@ add_executable(vxcc_v3 main.c
         ir/transform/flatten.c
         ir/analysis.c
         ir/transform.c
+        ir/verify_common.c
 )
