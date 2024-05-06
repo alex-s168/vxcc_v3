@@ -6,7 +6,7 @@
 /** transform cfor to c ir primitives that are representable in ir ir */
 void cirblock_normalize(SsaBlock *block);
 
-void cirblock_mksa_states(SsaBlock *block);
+OptSsaVar cirblock_mksa_states(SsaBlock *block);
 
 void cirblock_mksa_final(SsaBlock *block);
 
