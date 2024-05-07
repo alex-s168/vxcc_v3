@@ -83,10 +83,10 @@ void vx_opt_reduce_loops(view, block)
             vx_IrOp new;
             vx_IrOp_init(&new, VX_IR_OP_FOR, block);
             vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_START, init);
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_STRIDE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = si.by });
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_STRIDE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = si.by });
             vx_IrOp_steal_states(&new, op);
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = newcond });
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = newdo });
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = newcond });
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = newdo });
 
             vx_IrOp_destroy(incOp);
             vx_IrOp_init(incOp, VX_IR_OP_NOP, block);

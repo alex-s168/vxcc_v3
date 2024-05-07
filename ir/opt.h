@@ -3,16 +3,16 @@
 
 #include "ir.h"
 
-void vx_opt_loop_simplify(vx_IrView view, vx_IrBlock *block);
-void vx_opt_comparisions(vx_IrView view, vx_IrBlock *block);
-void vx_opt_constant_eval(vx_IrView view, vx_IrBlock *block);
-void vx_opt_inline_vars(vx_IrView view, vx_IrBlock *block);
-void vx_opt_join_compute(vx_IrView view, vx_IrBlock *block);
-void vx_opt_reduce_if(vx_IrView view, vx_IrBlock *block);
-void vx_opt_reduce_loops(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_loop_simplify(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_comparisions(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_constant_eval(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_inline_vars(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_join_compute(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_reduce_if(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_reduce_loops(vx_IrView view, vx_IrBlock *block);
 
 /** Can only be applied to root blocks */
-void vx_opt_remove_vars(vx_IrBlock *block);
+OPT_PASS void vx_opt_remove_vars(vx_IrBlock *block);
 
 #define CONSTEVAL_ITER 6
 

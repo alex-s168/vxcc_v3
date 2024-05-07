@@ -16,7 +16,7 @@ bool vx_IrBlock_eval_var(const vx_IrBlock *block, const vx_IrVar var, vx_IrValue
         if (value == NULL)
             return false;
 
-        if (value->type == VX_IR_VALVAR)
+        if (value->type == VX_IR_VAL_VAR)
             return vx_IrBlock_eval_var(block, value->var, dest);
 
         *dest = *value;
@@ -42,7 +42,7 @@ bool vx_Irblock_alwaysis_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v
 }
 
 void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v) {
-    if (v->type == VX_IR_VALVAR)
+    if (v->type == VX_IR_VAL_VAR)
         while (vx_IrBlock_eval_var(block, v->var, v)) {}
 }
 
@@ -54,7 +54,7 @@ struct IrStaticIncrement vx_IrOp_detect_static_increment(const vx_IrOp *op) {
     const vx_IrValue a = *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A);
     const vx_IrValue b = *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
 
-    if (a.type == VX_IR_VALVAR && b.type == VX_IR_VALIMM_INT) {
+    if (a.type == VX_IR_VAL_VAR && b.type == VX_IR_VAL_IMM_INT) {
         long long by = b.imm_int;
         if (op->id == VX_IR_OP_SUB)
             by = -by;
@@ -65,7 +65,7 @@ struct IrStaticIncrement vx_IrOp_detect_static_increment(const vx_IrOp *op) {
         };
     }
 
-    if (b.type == VX_IR_VALVAR && a.type == VX_IR_VALIMM_INT && op->id == VX_IR_OP_ADD) {
+    if (b.type == VX_IR_VAL_VAR && a.type == VX_IR_VAL_IMM_INT && op->id == VX_IR_OP_ADD) {
         return (struct IrStaticIncrement) {
             .detected = false,
             .var = b.var,

@@ -4,10 +4,9 @@
 #include "ir.h"
 
 /** transform cfor to c ir primitives that are representable in ir ir */
-void vx_CIrBlock_normalize(vx_IrBlock *block);
-
-vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block);
-void vx_CIrBlock_mksa_final(vx_IrBlock *block);
+TRANSFORM_PASS void vx_CIrBlock_normalize(vx_IrBlock *);
+TRANSFORM_PASS vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *);
+TRANSFORM_PASS void vx_CIrBlock_mksa_final(vx_IrBlock *);
 
 vx_Errors vx_CIrBlock_verify(const vx_IrBlock *block, vx_OpPath path);
 

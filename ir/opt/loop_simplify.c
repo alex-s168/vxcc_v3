@@ -12,7 +12,7 @@ void vx_opt_loop_simplify(view, block)
         const vx_IrVar condVar = cond->outs[0];
 
         // if it will always we 0, we optimize it out
-        if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 })) {
+        if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             vx_IrView_replace(block, view, NULL, 0);
 
             goto next;
@@ -21,7 +21,7 @@ void vx_opt_loop_simplify(view, block)
         opt(vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block);
 
         // if it will never be 0 (not might be 0), it is always true => infinite loop
-        if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 })) {
+        if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             vx_IrOp new;
             vx_IrOp_init(&new, VX_IR_OP_INFINITE, block);
             vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_START);
@@ -42,7 +42,7 @@ void vx_opt_loop_simplify(view, block)
             do {
                 const vx_IrValue *a = vx_IrOp_param(&cond->ops[0], VX_IR_NAME_OPERAND_A);
                 // require it to be the counter
-                if (a->type != VX_IR_VALVAR)
+                if (a->type != VX_IR_VAL_VAR)
                     break;
                 if (a->var != cond->ins[0])
                     break;

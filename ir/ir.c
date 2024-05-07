@@ -9,7 +9,7 @@ void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *
         vx_IrOp *op = &top.block->ops[i];
 
         for (size_t j = 0; j < op->params_len; j ++)
-            if (op->params[j].val.type == VX_IR_VALBLOCK)
+            if (op->params[j].val.type == VX_IR_VAL_BLOCK)
                 vx_IrView_deep_traverse(vx_IrView_of_all(op->params[j].val.block), callback, data);
 
         callback(op, data);

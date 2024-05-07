@@ -78,27 +78,32 @@ const char *vx_IrName_str[] = {
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
     switch (value.type) {
-        case VX_IR_VALUNINIT: {
+        case VX_IR_VAL_UNINIT: {
             fprintf(out, "uninit");
         }
         break;
+
+        case VX_IR_VAL_TYPE: {
+            fprintf(out, "type"); // TODO
+        }
+        break;
         
-        case VX_IR_VALIMM_INT: {
+        case VX_IR_VAL_IMM_INT: {
             fprintf(out, "%lld", value.imm_int);
         }
         break;
 
-        case VX_IR_VALIMM_FLT: {
+        case VX_IR_VAL_IMM_FLT: {
             fprintf(out, "%f", value.imm_flt);
         }
         break;
 
-        case VX_IR_VALVAR: {
+        case VX_IR_VAL_VAR: {
             fprintf(out, "%%%zu", value.var);
         }
         break;
 
-        case VX_IR_VALBLOCK: {
+        case VX_IR_VAL_BLOCK: {
             const vx_IrBlock *block = value.block;
 
             fputc('(', out);
@@ -146,7 +151,7 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
         if (j > 0)
             fputc(',', out);
         const vx_IrTypedVar var = op->outs[j];
-        fprintf(out, "%s %%%zu", var.type, var.var);
+        fprintf(out, "%s %%%zu", "t" /* TODO var.type */, var.var);
     }
 
     if (op->outs_len > 0)

@@ -26,7 +26,7 @@ void vx_opt_join_compute(view, block)
 
             op->id = VX_IR_OP_IMM;
             vx_IrOp_remove_params(op);
-            vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VALVAR, .var = prev->outs[0].var });
+            vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = prev->outs[0].var });
 
             break;
         }

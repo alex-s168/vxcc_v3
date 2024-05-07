@@ -19,7 +19,7 @@ static void verify_vardecls_deeptraverse(vx_IrOp *op, void *dataIn) {
     for (size_t j = 0; j < op->params_len; j ++) {
         const vx_IrValue param = op->params[j].val;
 
-        if (param.type == VX_IR_VALBLOCK) {
+        if (param.type == VX_IR_VAL_BLOCK) {
             for (size_t k = 0; k < param.block->ins_len; k ++)
                 if (param.block->ins[k] == va->var)
                     va->declcount ++;

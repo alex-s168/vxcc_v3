@@ -27,34 +27,34 @@ void vx_CIrBlock_normalize(block)
             {
                 vx_IrOp opdo;
                 vx_IrOp_init(&opdo, VX_IR_OP_FLATTEN_PLEASE, new);
-                vx_IrOp_add_param_s(&opdo, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = b_init });
+                vx_IrOp_add_param_s(&opdo, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = b_init });
                 vx_IrBlock_add_op(new, &opdo);
             }
 
             vx_IrOp opwhile;
             vx_IrOp_init(&opwhile, VX_IR_OP_WHILE, new);
-            vx_IrOp_add_param_s(&opwhile, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = b_cond });
+            vx_IrOp_add_param_s(&opwhile, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = b_cond });
 
             vx_IrBlock *doblock = vx_IrBlock_init_heap(new, new->ops_len);
             {
                 vx_IrOp opdo;
                 vx_IrOp_init(&opdo, VX_IR_OP_FLATTEN_PLEASE, new);
-                vx_IrOp_add_param_s(&opdo, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = b_do });
+                vx_IrOp_add_param_s(&opdo, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = b_do });
                 vx_IrBlock_add_op(doblock, &opdo);
             }
             {
                 vx_IrOp opdo;
                 vx_IrOp_init(&opdo, VX_IR_OP_FLATTEN_PLEASE, new);
-                vx_IrOp_add_param_s(&opdo, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = b_end });
+                vx_IrOp_add_param_s(&opdo, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = b_end });
                 vx_IrBlock_add_op(doblock, &opdo);
             }
 
-            vx_IrOp_add_param_s(&opwhile, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = doblock });
+            vx_IrOp_add_param_s(&opwhile, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = doblock });
 
             vx_IrBlock_add_op(new, &opwhile);
 
             op->id = VX_IR_OP_FLATTEN_PLEASE;
-            vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = new });
+            vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = new });
         }
     }
 }

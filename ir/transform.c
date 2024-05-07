@@ -51,10 +51,10 @@ void vx_IrView_rename_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, vx_Ir
                 op.outs[j].var = new;
 
         for (size_t j = 0; j < op.params_len; j ++) {
-            if (op.params[j].val.type == VX_IR_VALVAR && op.params[j].val.var == old) {
+            if (op.params[j].val.type == VX_IR_VAL_VAR && op.params[j].val.var == old) {
                 op.params[j].val.var = new;
             }
-            else if (op.params[j].val.type == VX_IR_VALBLOCK) {
+            else if (op.params[j].val.type == VX_IR_VAL_BLOCK) {
                 vx_IrBlock *child = op.params[j].val.block;
                 vx_IrView_rename_var(vx_IrView_of_all(child), child, old, new);
             }
@@ -72,7 +72,7 @@ static void vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
     struct vx_IrView_substitute_var__data *data = dataIn;
 
     for (size_t i = 0; i < op->params_len; i ++)
-        if (op->params[i].val.type == VX_IR_VALVAR && op->params[i].val.var == data->old)
+        if (op->params[i].val.type == VX_IR_VAL_VAR && op->params[i].val.var == data->old)
             op->params[i].val = data->new;
 }
 

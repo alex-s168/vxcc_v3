@@ -31,7 +31,7 @@ vx_IrOp *vx_IrBlock_find_var_decl(block, var)
         for (size_t j = 0; j < op->params_len; j ++) {
             const vx_IrValue param = op->params[j].val;
 
-            if (param.type == VX_IR_VALBLOCK) {
+            if (param.type == VX_IR_VAL_BLOCK) {
                 for (size_t k = 0; k < param.block->ins_len; k ++)
                     if (param.block->ins[k] == var)
                         return op;
@@ -58,11 +58,11 @@ bool vx_IrBlock_var_used(block, var)
     for (long int i = block->ops_len - 1; i >= 0; i--) {
         const vx_IrOp *op = &block->ops[i];
         for (size_t j = 0; j < op->params_len; j++) {
-            if (op->params[j].val.type == VX_IR_VALBLOCK) {
+            if (op->params[j].val.type == VX_IR_VAL_BLOCK) {
                 if (vx_IrBlock_var_used(op->params[j].val.block, var)) {
                     return true;
                 }
-            } else if (op->params[j].val.type == VX_IR_VALVAR) {
+            } else if (op->params[j].val.type == VX_IR_VAL_VAR) {
                 if (op->params[j].val.var == var) {
                     return true;
                 }
@@ -142,7 +142,7 @@ bool vx_IrOp_is_volatile(op)
         case VX_IR_OP_FOREACH:
         case VX_IR_OP_FOREACH_UNTIL:
             for (size_t i = 0; i < op->params_len; i ++)
-                if (op->params[i].val.type == VX_IR_VALBLOCK)
+                if (op->params[i].val.type == VX_IR_VAL_BLOCK)
                     if (vx_IrBlock_is_volatile(op->params[i].val.block))
                         return true;
             return false;

@@ -22,7 +22,7 @@ void vx_opt_reduce_if(view, block)
         opt(els);
 
         // if it will never be 0 (not might be 0), it is always true => only execute then block
-        if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 })) {
+        if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             for (size_t i = 0; i < op->outs_len; i ++) {
                 const vx_IrVar out = op->outs[i].var;
                 vx_IrView_rename_var(vx_IrView_of_all(block), block, out, then->outs[i]); // does all the bookkeeping for us
@@ -35,7 +35,7 @@ void vx_opt_reduce_if(view, block)
         }
 
         // if it will always we 0, only the else block will ever be executed
-        if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 })) {
+        if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             for (size_t i = 0; i < op->outs_len; i ++) {
                 const vx_IrVar out = op->outs[i].var;
                 vx_IrView_rename_var(vx_IrView_of_all(block), block, out, els->outs[i]); // does all the bookkeeping for us

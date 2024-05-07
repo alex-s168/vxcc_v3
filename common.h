@@ -28,4 +28,8 @@ void vx_Errors_add_all_and_free(vx_Errors *dest, vx_Errors *src);
 void vx_Errors_free(vx_Errors errors);
 void vx_Errors_print(vx_Errors errors, FILE *dest);
 
+#define OPT_PASS        /* opt: */
+#define TRANSFORM_PASS  /* transform: */
+#define ANALYSIS_PASS   /* analysis: */
+
 #endif //COMMON_H

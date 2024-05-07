@@ -14,7 +14,7 @@ void vx_CIrBlock_mksa_final(block)
         vx_IrOp *op = &block->ops[i];
 
         for (size_t j = 0; j < op->params_len; j ++)
-            if (op->params[j].val.type == VX_IR_VALBLOCK)
+            if (op->params[j].val.type == VX_IR_VAL_BLOCK)
                 vx_CIrBlock_mksa_final(op->params[j].val.block);
 
         for (size_t j = 0; j < op->outs_len; j ++) {

@@ -121,7 +121,7 @@ vx_IrValue *vx_IrOp_param(op, name)
 void vx_IrNamedValue_destroy(value)
     vx_IrNamedValue value;
 {
-    if (value.val.type == VX_IR_VALBLOCK)
+    if (value.val.type == VX_IR_VAL_BLOCK)
         vx_IrBlock_destroy(value.val.block);
 }
 
@@ -149,7 +149,7 @@ void vx_IrOp_init(op, type, parent)
 
 void vx_IrOp_add_type(op, type)
     vx_IrOp *op;
-    vx_IrType type;
+    vx_IrType *type;
 {
     op->types = realloc(op->types, sizeof(vx_IrType) * (op->types_len + 1));
     op->types[op->types_len ++] = type;
@@ -158,7 +158,7 @@ void vx_IrOp_add_type(op, type)
 void vx_IrOp_add_out(op, var, type)
     vx_IrOp *op;
     vx_IrVar var;
-    vx_IrType type;
+    vx_IrType *type;
 {
     op->outs = realloc(op->outs, sizeof(vx_IrTypedVar) * (op->outs_len + 1));
     op->outs[op->outs_len ++] = (vx_IrTypedVar) { .var = var, .type = type };

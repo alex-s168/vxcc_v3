@@ -31,4 +31,6 @@ add_executable(vxcc_v3 main.c
         ir/analysis.c
         ir/transform.c
         ir/verify_common.c
+        plug/plugin.h
+        plug/plugin.c
 )

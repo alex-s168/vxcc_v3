@@ -36,7 +36,7 @@ static bool analyze_if(dest, op, i, path)
     if (vcond == NULL) {
         vx_error_param_missing(dest, vx_OpPath_copy_add(path, i), "cond");
         err = true;
-    } else if (vcond->type != VX_IR_VALBLOCK) {
+    } else if (vcond->type != VX_IR_VAL_BLOCK) {
         vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
         err = true;
     }
@@ -45,7 +45,7 @@ static bool analyze_if(dest, op, i, path)
     if (vthen == NULL) {
         vx_error_param_missing(dest, vx_OpPath_copy_add(path, i), "then");
         err = true;
-    } else if (vthen->type != VX_IR_VALBLOCK) {
+    } else if (vthen->type != VX_IR_VAL_BLOCK) {
         vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
         err = true;
     }
@@ -54,7 +54,7 @@ static bool analyze_if(dest, op, i, path)
     if (velse == NULL) {
         vx_error_param_missing(dest, vx_OpPath_copy_add(path, i), "else");
         err = true;
-    } else if (velse->type != VX_IR_VALBLOCK) {
+    } else if (velse->type != VX_IR_VAL_BLOCK) {
         vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
         err = true;
     }
@@ -116,7 +116,7 @@ static void analyze_loops(dest, op, i, path)
         vx_Errors_add(dest, &error);
     }
     else {
-        if (doblock_v->type != VX_IR_VALBLOCK) {
+        if (doblock_v->type != VX_IR_VAL_BLOCK) {
             vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
         } else {
             const vx_IrBlock *doblock = doblock_v->block;
@@ -142,12 +142,14 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
 
         // verify states in general
         for (size_t j = 0; j < op->states_len; j ++) {
-            if (op->states[j].type == VX_IR_VALBLOCK) {
+            if (op->states[j].type == VX_IR_VAL_BLOCK ||
+                op->states[j].type == VX_IR_VAL_TYPE)
+            {
                 const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
                 const vx_Error error = {
                     .path = newpath,
                     .error = "Invalid state",
-                    .additional = "States cannot be blocks!"
+                    .additional = "States can only be values that are present at runtime!"
                 };
                 vx_Errors_add(dest, &error);
             }
@@ -175,13 +177,13 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
         for (size_t j = 0; j < op->params_len; j ++) {
             const vx_IrValue val = op->params[j].val;
 
-            if (val.type == VX_IR_VALBLOCK) {
+            if (val.type == VX_IR_VAL_BLOCK) {
                 const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
                 vx_Errors errs = vx_IrBlock_verify(val.block, newpath);
                 free(newpath.ids);
                 vx_Errors_add_all_and_free(dest, &errs);
             }
-            else if (val.type == VX_IR_VALVAR) {
+            else if (val.type == VX_IR_VAL_VAR) {
                 const vx_IrVar var = val.var;
                 if (var >= root->as_root.vars_len) {
                     static char buf[256];

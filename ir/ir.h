@@ -20,7 +20,50 @@ typedef struct {
 #define VX_IRVAR_OPT_NONE (vx_OptIrVar) {.present = false,.var = 0}
 #define VX_IRVAR_OPT_SOME(v) (vx_OptIrVar) {.present = true,.var = v}
 
-typedef const char *vx_IrType;
+typedef struct vx_IrType_s vx_IrType;
+
+// only in C IR
+typedef struct {
+    vx_IrType **members;
+    size_t      members_len;
+
+    bool pack;
+    size_t align;
+} vx_IrTypeCIRStruct;
+
+// only in C IR
+typedef struct {
+    vx_IrType **members;
+    size_t      members_len;
+
+    size_t algin;
+} vx_IrTypeCIRUnion;
+
+typedef struct {
+    bool   sizeless;
+    size_t size;
+    size_t align;
+    size_t pad;
+} vx_IrTypeBase;
+
+struct vx_IrType_s {
+    const char *debugName;
+
+    enum {
+        // present in: cir
+        VX_IR_TYPE_KIND_CIR_STRUCT,
+        VX_IR_TYPE_KIND_CIR_UNION,
+
+        // present in: cir, ssa
+        VX_IR_TYPE_KIND_BASE,
+    } kind;
+
+    union {
+        vx_IrTypeBase       base;
+        vx_IrTypeCIRStruct  cir_struct;
+        vx_IrTypeCIRUnion   cir_union;
+    };
+};
 
 struct vx_IrBlock_s;
 typedef struct vx_IrBlock_s vx_IrBlock;
@@ -79,7 +122,7 @@ void vx_IrBlock_add_out(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);
 
 vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl);
-void vx_IrBlock_flatten(vx_IrBlock *block);
+TRANSFORM_PASS void vx_IrBlock_flatten(vx_IrBlock *block);
 void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
@@ -90,11 +133,15 @@ void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, size_t indent);
 
 typedef struct {
     enum {
-        VX_IR_VALIMM_INT,
-        VX_IR_VALIMM_FLT,
-        VX_IR_VALVAR,
-        VX_IR_VALBLOCK,
-        VX_IR_VALUNINIT,
+        // storable
+        VX_IR_VAL_IMM_INT,
+        VX_IR_VAL_IMM_FLT,
+        VX_IR_VAL_VAR,
+        VX_IR_VAL_UNINIT,
+
+        // not storable
+        VX_IR_VAL_BLOCK,
+        VX_IR_VAL_TYPE,
     } type;
 
     union {
@@ -228,11 +275,11 @@ extern const char *vx_IrOpType_names[SSAOPTYPE_LEN];
 
 typedef struct {
     vx_IrVar var;
-    vx_IrType type;
+    vx_IrType *type;
 } vx_IrTypedVar;
 
 struct vx_IrOp_s {
-    vx_IrType *types;
+    vx_IrType **types;
     size_t     types_len;
 
     vx_IrTypedVar *outs;
@@ -297,8 +344,8 @@ void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *
 vx_IrValue *vx_IrOp_param(const vx_IrOp *op, vx_IrName name);
 
 void vx_IrOp_init(vx_IrOp *op, vx_IrOpType type, vx_IrBlock *parent);
-void vx_IrOp_add_type(vx_IrOp *op, vx_IrType type);
-void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType t);
+void vx_IrOp_add_type(vx_IrOp *op, vx_IrType *type);
+void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
 void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
 void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);
 static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {

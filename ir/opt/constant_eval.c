@@ -18,18 +18,18 @@ void vx_opt_constant_eval(view, block)
         vx_Irblock_eval(block, a);      \
         vx_Irblock_eval(block, b);      \
                                             \
-        if (a->type == VX_IR_VALIMM_INT && b->type == VX_IR_VALIMM_INT) { \
+        if (a->type == VX_IR_VAL_IMM_INT && b->type == VX_IR_VAL_IMM_INT) { \
             op->id = VX_IR_OP_IMM; \
             vx_IrOp_remove_params(op); \
             vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
-                .type = VX_IR_VALIMM_INT, \
+                .type = VX_IR_VAL_IMM_INT, \
                 .imm_int = a->imm_int what b->imm_int \
             }); \
-        } else if (a->type == VX_IR_VALIMM_FLT && b->type == VX_IR_VALIMM_FLT) { \
+        } else if (a->type == VX_IR_VAL_IMM_FLT && b->type == VX_IR_VAL_IMM_FLT) { \
             op->id = VX_IR_OP_IMM; \
             vx_IrOp_remove_params(op); \
             vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
-                .type = VX_IR_VALIMM_FLT, \
+                .type = VX_IR_VAL_IMM_FLT, \
                 .imm_flt = a->imm_flt + b->imm_flt \
             }); \
         } \
@@ -38,16 +38,16 @@ void vx_opt_constant_eval(view, block)
 #define UNARY(what) { \
         vx_IrValue *val = vx_IrOp_param(op, VX_IR_NAME_VALUE); \
         vx_Irblock_eval(block, val); \
-        if (val->type == VX_IR_VALIMM_INT) { \
+        if (val->type == VX_IR_VAL_IMM_INT) { \
             op->id = VX_IR_OP_IMM; \
             *val = (vx_IrValue) { \
-                .type = VX_IR_VALIMM_INT, \
+                .type = VX_IR_VAL_IMM_INT, \
                 .imm_int = what val->imm_int \
             }; \
-        } else if (val->type == VX_IR_VALIMM_FLT) { \
+        } else if (val->type == VX_IR_VAL_IMM_FLT) { \
             op->id = VX_IR_OP_IMM; \
             *val = (vx_IrValue) { \
-                .type = VX_IR_VALIMM_FLT, \
+                .type = VX_IR_VAL_IMM_FLT, \
                 .imm_flt = what val->imm_flt \
             }; \
         } \
@@ -105,10 +105,10 @@ void vx_opt_constant_eval(view, block)
             case VX_IR_OP_BITWISE_NOT: {
                 vx_IrValue *val = vx_IrOp_param(op, VX_IR_NAME_VALUE);
                 vx_Irblock_eval(block, val);
-                if (val->type == VX_IR_VALIMM_INT) {
+                if (val->type == VX_IR_VAL_IMM_INT) {
                     op->id = VX_IR_OP_IMM;
                     *val = (vx_IrValue) {
-                        .type = VX_IR_VALIMM_INT,
+                        .type = VX_IR_VAL_IMM_INT,
                         .imm_int = ~val->imm_int
                     };
                 }

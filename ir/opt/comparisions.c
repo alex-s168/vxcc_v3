@@ -16,7 +16,7 @@ void vx_opt_comparisions(view, block)
         switch (op->id) {
             case VX_IR_OP_LTE: {
                 vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
-                if (b->type == VX_IR_VALIMM_INT) {
+                if (b->type == VX_IR_VAL_IMM_INT) {
                     b->imm_int ++;
                     op->id = VX_IR_OP_LT;
                 }
@@ -24,7 +24,7 @@ void vx_opt_comparisions(view, block)
 
             case VX_IR_OP_GTE: {
                 vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
-                if (b->type == VX_IR_VALIMM_INT) {
+                if (b->type == VX_IR_VAL_IMM_INT) {
                     b->imm_int --;
                     op->id = VX_IR_OP_GT;
                 }
@@ -33,7 +33,7 @@ void vx_opt_comparisions(view, block)
             case VX_IR_OP_LT: {
                 vx_IrValue *a = vx_IrOp_param(op, VX_IR_NAME_OPERAND_A);
                 vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
-                if (a->type == VX_IR_VALIMM_INT) {
+                if (a->type == VX_IR_VAL_IMM_INT) {
                     const vx_IrValue tmp = *a;
                     *a = *b;
                     *b = tmp;
@@ -44,7 +44,7 @@ void vx_opt_comparisions(view, block)
             case VX_IR_OP_GT: {
                 vx_IrValue *a = vx_IrOp_param(op, VX_IR_NAME_OPERAND_A);
                 vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
-                if (a->type == VX_IR_VALIMM_INT) {
+                if (a->type == VX_IR_VAL_IMM_INT) {
                     const vx_IrValue tmp = *a;
                     *a = *b;
                     *b = tmp;

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 set -e
-FILES="main.c ir/opt/*.c ir/*.c common/*.c ir/transform/*.c"
+FILES="main.c ir/opt/*.c ir/*.c common/*.c ir/transform/*.c plug/*.c"
 CFLAGS="-Wall -Wextra -Wno-unused -Wpedantic -Werror -std=c11"
 
 # shellcheck disable=SC2086

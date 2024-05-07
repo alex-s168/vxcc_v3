@@ -98,7 +98,7 @@ static vx_IrVar megic(outer, outerOff, conditional, condOff, ifOp, var, manipIn)
     //  manipulate       <=> the new target var
 
     const vx_IrOp *orig_assign = &outer->ops[outerOff];
-    vx_IrType type = NULL;
+    vx_IrType *type = NULL;
     for (size_t i = 0; i < orig_assign->outs_len; i ++)
         if (orig_assign->outs[i].var == var)
             type = orig_assign->outs[i].type;
@@ -109,7 +109,7 @@ static vx_IrVar megic(outer, outerOff, conditional, condOff, ifOp, var, manipIn)
     vx_IrBlock *els;
     if (pels == NULL) {
         els = vx_IrBlock_init_heap(then->parent, then->parent_index); // lazyness
-        vx_IrOp_add_param_s(ifOp, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = els });
+        vx_IrOp_add_param_s(ifOp, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = els });
     } else {
         els = pels->block;
     }
@@ -146,7 +146,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(block)
         assert(ifOp->params_len >= 2);
         assert(ifOp->params_len <= 3);
         for (size_t j = 0; j < ifOp->params_len; j ++) {
-            if (ifOp->params[j].val.type != VX_IR_VALBLOCK)
+            if (ifOp->params[j].val.type != VX_IR_VAL_BLOCK)
                 continue;
 
             vx_IrBlock *conditional = ifOp->params[j].val.block;
