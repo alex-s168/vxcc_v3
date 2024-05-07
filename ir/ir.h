@@ -1,5 +1,5 @@
-#ifndef SSA_H
-#define SSA_H
+#ifndef IR_H
+#define IR_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -7,316 +7,320 @@
 
 #include "../common.h"
 
-struct SsaOp_s;
-typedef struct SsaOp_s SsaOp;
+struct vx_IrOp_s;
+typedef struct vx_IrOp_s vx_IrOp;
 
-typedef size_t SsaVar;
+typedef size_t vx_IrVar;
 
 typedef struct {
-    SsaVar var;
+    vx_IrVar var;
     bool present;
-} OptSsaVar;
+} vx_OptIrVar;
 
-#define SSAVAR_OPT_NONE (OptSsaVar) {.present = false,.var = 0}
-#define SSAVAR_OPT_SOME(v) (OptSsaVar) {.present = true,.var = v}
+#define VX_IRVAR_OPT_NONE (vx_OptIrVar) {.present = false,.var = 0}
+#define VX_IRVAR_OPT_SOME(v) (vx_OptIrVar) {.present = true,.var = v}
 
-typedef const char *SsaType;
+typedef const char *vx_IrType;
 
-struct SsaBlock_s;
-typedef struct SsaBlock_s SsaBlock;
+struct vx_IrBlock_s;
+typedef struct vx_IrBlock_s vx_IrBlock;
 
-struct SsaBlock_s {
-    SsaBlock *parent;
+struct vx_IrBlock_s {
+    vx_IrBlock *parent;
     size_t parent_index;
 
     bool is_root;
     struct {
         struct {
-            SsaOp *decl;
+            vx_IrOp *decl;
         } *vars;
         size_t vars_len;
     } as_root;
     
-    SsaVar *ins;
-    size_t  ins_len;
+    vx_IrVar *ins;
+    size_t    ins_len;
     
-    SsaOp  *ops;
-    size_t  ops_len;
+    vx_IrOp *ops;
+    size_t   ops_len;
     
-    SsaVar *outs;
-    size_t  outs_len;
+    vx_IrVar *outs;
+    size_t    outs_len;
 
     bool should_free;
 };
 
-const SsaBlock *irblock_root(const SsaBlock *block);
+const vx_IrBlock *vx_IrBlock_root(const vx_IrBlock *block);
 
-VerifyErrors irblock_verify(const SsaBlock *block, OpPath path);
+// TODO: do differently
 
-static int ir_verify(const SsaBlock *block) {
-    OpPath path;
+vx_Errors vx_IrBlock_verify(const vx_IrBlock *block, vx_OpPath path);
+
+static int vx_ir_verify(const vx_IrBlock *block) {
+    vx_OpPath path;
     path.ids = NULL;
     path.len = 0;
-    const VerifyErrors errs = irblock_verify(block, path);
-    verifyerrors_print(errs, stderr);
-    verifyerrors_free(errs);
+    const vx_Errors errs = vx_IrBlock_verify(block, path);
+    vx_Errors_print(errs, stderr);
+    vx_Errors_free(errs);
     return errs.len > 0;
 }
 
+// TODO: move builder functions into separate header
+
 /** DON'T RUN INIT AFTERWARDS */
-SsaBlock *irblock_heapalloc(SsaBlock *parent, size_t parent_index);
-void irblock_init(SsaBlock *block, SsaBlock *parent, size_t parent_index);
+vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent, size_t parent_index);
+void vx_IrBlock_init(vx_IrBlock *block, vx_IrBlock *parent, size_t parent_index);
 /** run AFTER you finished building it! */
-void irblock_make_root(SsaBlock *block, size_t total_vars);
-void irblock_add_in(SsaBlock *block, SsaVar var);
-void irblock_add_op(SsaBlock *block, const SsaOp *op);
-void irblock_add_all_op(SsaBlock *dest, const SsaBlock *src);
-void irblock_add_out(SsaBlock *block, SsaVar out);
-void irblock_destroy(SsaBlock *block);
+void vx_IrBlock_make_root(vx_IrBlock *block, size_t total_vars);
+void vx_IrBlock_add_in(vx_IrBlock *block, vx_IrVar var);
+void vx_IrBlock_add_op(vx_IrBlock *block, const vx_IrOp *op);
+void vx_IrBlock_add_all_op(vx_IrBlock *dest, const vx_IrBlock *src);
+void vx_IrBlock_add_out(vx_IrBlock *block, vx_IrVar out);
+void vx_IrBlock_destroy(vx_IrBlock *block);
 
-SsaVar irblock_new_var(SsaBlock *block, SsaOp *decl);
-void irblock_flatten(SsaBlock *block);
-void irblock_swap_in_at(SsaBlock *block, size_t a, size_t b);
-void irblock_swap_out_at(SsaBlock *block, size_t a, size_t b);
-static void irblock_swap_state_at(SsaBlock *block, size_t a, size_t b) {
-    irblock_swap_in_at(block, a, b);
-    irblock_swap_out_at(block, a, b);
-}
-void irblock_remove_out_at(SsaBlock *block, size_t id);
+vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl);
+void vx_IrBlock_flatten(vx_IrBlock *block);
+void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
+void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
+void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
 
-bool irblock_var_used(const SsaBlock *block, SsaVar var);
+bool vx_IrBlock_var_used(const vx_IrBlock *block, vx_IrVar var);
 
-void irblock_dump(const SsaBlock *block, FILE *out, size_t indent);
+void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, size_t indent);
 
 typedef struct {
     enum {
-        SSA_VAL_IMM_INT,
-        SSA_VAL_IMM_FLT,
-        SSA_VAL_VAR,
-        SSA_VAL_BLOCK,
+        VX_IR_VALIMM_INT,
+        VX_IR_VALIMM_FLT,
+        VX_IR_VALVAR,
+        VX_IR_VALBLOCK,
+        VX_IR_VALUNINIT,
     } type;
 
     union {
         long long imm_int;
         double imm_flt;
-        SsaVar var;
-        SsaBlock *block;
+        vx_IrVar var;
+        vx_IrBlock *block;
     };
-} SsaValue;
+} vx_IrValue;
 
-SsaValue irvalue_clone(SsaValue value);
-void irvalue_dump(SsaValue value, FILE *out, size_t indent);
+vx_IrValue vx_IrValue_clone(vx_IrValue value);
+void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 
-SsaOp *irblock_finddecl_var(const SsaBlock *block, SsaVar var);
+vx_IrOp *vx_IrBlock_find_var_decl(const vx_IrBlock *block, vx_IrVar var);
 /** returns true if static eval ok; only touches dest if true */
-bool irblock_staticeval_var(const SsaBlock *block, SsaVar var, SsaValue *dest);
-bool irblock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v);
-bool irblock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v);
-void irblock_staticeval(SsaBlock *block, SsaValue *v);
+bool vx_IrBlock_eval_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest);
+bool vx_Irblock_mightbe_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
+bool vx_Irblock_alwaysis_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
+void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v);
 
 typedef enum {
-    SSA_NAME_OPERAND_A,
-    SSA_NAME_OPERAND_B,
+    VX_IR_NAME_OPERAND_A,
+    VX_IR_NAME_OPERAND_B,
 
-    SSA_NAME_BLOCK,
-    SSA_NAME_VALUE,
-    SSA_NAME_COND,
+    VX_IR_NAME_BLOCK,
+    VX_IR_NAME_VALUE,
+    VX_IR_NAME_ADDR,
+    VX_IR_NAME_COND,
+    VX_IR_NAME_VAR,
 
-    SSA_NAME_COND_THEN,
-    SSA_NAME_COND_ELSE,
+    VX_IR_NAME_COND_THEN,
+    VX_IR_NAME_COND_ELSE,
 
-    SSA_NAME_LOOP_DO,
-    SSA_NAME_LOOP_START,
-    SSA_NAME_LOOP_ENDEX,
-    SSA_NAME_LOOP_STRIDE,
+    VX_IR_NAME_LOOP_DO,
+    VX_IR_NAME_LOOP_START,
+    VX_IR_NAME_LOOP_ENDEX,
+    VX_IR_NAME_LOOP_STRIDE,
 
-    SSA_NAME_ALTERNATIVE_A,
-    SSA_NAME_ALTERNATIVE_B,
-} SsaName;
+    VX_IR_NAME_ALTERNATIVE_A,
+    VX_IR_NAME_ALTERNATIVE_B,
+} vx_IrName;
 
-extern const char *irname_str[];
+extern const char *vx_IrName_str[];
 
 typedef struct {
-    SsaName   name;
-    SsaValue  val;
-} SsaNamedValue;
+    vx_IrName   name;
+    vx_IrValue  val;
+} vx_IrNamedValue;
 
-static SsaNamedValue irnamedvalue_create(SsaName name, SsaValue v) {
-    return (SsaNamedValue) {
+static vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
+    return (vx_IrNamedValue) {
         .name = name,
         .val = v,
     };
 }
-static SsaNamedValue irnamedvalue_clone(SsaNamedValue val) {
-    return irnamedvalue_create(val.name, irvalue_clone(val.val));
-}
-void irnamedvalue_rename(SsaNamedValue *value, SsaName newn);
-void irnamedvalue_destroy(SsaNamedValue v);
+void vx_IrNamedValue_destroy(vx_IrNamedValue v);
 
 typedef enum {
-    SSA_OP_NOP = 0,
-    SSA_OP_IMM,            // "val"
-    SSA_OP_FLATTEN_PLEASE, // "block"
+    VX_IR_OP_NOP = 0,
+    VX_IR_OP_IMM,            // "val"
+    VX_IR_OP_FLATTEN_PLEASE, // "block"
     
     // convert
     /** for pointers only! */
-    SSA_OP_REINTERPRET, // "val"
-    SSA_OP_ZEROEXT,     // "val"
-    SSA_OP_SIGNEXT,     // "val"
-    SSA_OP_TOFLT,       // "val"
-    SSA_OP_FROMFLT,     // "val"
-    SSA_OP_BITCAST,     // "val"
-        
+    VX_IR_OP_REINTERPRET, // "val"
+    VX_IR_OP_ZEROEXT,     // "val"
+    VX_IR_OP_SIGNEXT,     // "val"
+    VX_IR_OP_TOFLT,       // "val"
+    VX_IR_OP_FROMFLT,     // "val"
+    VX_IR_OP_BITCAST,     // "val"
+
+    // mem
+    VX_IR_OP_LOAD,            // "addr"
+    VX_IR_OP_LOAD_VOLATILE,   // "addr"
+    VX_IR_OP_STORE,           // "addr", "val"
+    VX_IR_OP_STORE_VOLATILE,  // "addr", "val"
+    VX_IR_OP_PLACE,           // "var"
+    
     // arithm
-    SSA_OP_ADD, // "a", "b"
-    SSA_OP_SUB, // "a", "b"
-    SSA_OP_MUL, // "a", "b"
-    SSA_OP_DIV, // "a", "b"
-    SSA_OP_MOD, // "a", "b"
+    VX_IR_OP_ADD, // "a", "b"
+    VX_IR_OP_SUB, // "a", "b"
+    VX_IR_OP_MUL, // "a", "b"
+    VX_IR_OP_DIV, // "a", "b"
+    VX_IR_OP_MOD, // "a", "b"
 
     // compare
-    SSA_OP_GT,  // "a", "b"
-    SSA_OP_GTE, // "a", "b"
-    SSA_OP_LT,  // "a", "b"
-    SSA_OP_LTE, // "a", "b"
-    SSA_OP_EQ,  // "a", "b"
-    SSA_OP_NEQ, // "a", "b"
+    VX_IR_OP_GT,  // "a", "b"
+    VX_IR_OP_GTE, // "a", "b"
+    VX_IR_OP_LT,  // "a", "b"
+    VX_IR_OP_LTE, // "a", "b"
+    VX_IR_OP_EQ,  // "a", "b"
+    VX_IR_OP_NEQ, // "a", "b"
 
     // boolean
-    SSA_OP_NOT, // "val"
-    SSA_OP_AND, // "val"
-    SSA_OP_OR,  // "val"
+    VX_IR_OP_NOT, // "val"
+    VX_IR_OP_AND, // "val"
+    VX_IR_OP_OR,  // "val"
 
     // bitwise boolean
-    SSA_OP_BITWISE_NOT, // "val"
-    SSA_OP_BITWISE_AND, // "a", "b"
-    SSA_OP_BITIWSE_OR,  // "a", "b"
+    VX_IR_OP_BITWISE_NOT, // "val"
+    VX_IR_OP_BITWISE_AND, // "a", "b"
+    VX_IR_OP_BITIWSE_OR,  // "a", "b"
     
     // misc
-    SSA_OP_SHL, // "a", "b"
-    SSA_OP_SHR, // "a", "b"
+    VX_IR_OP_SHL, // "a", "b"
+    VX_IR_OP_SHR, // "a", "b"
 
     // basic loop
-    SSA_OP_FOR,      // "start": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
-    SSA_OP_INFINITE, // "start": counter, "stride": int, "do": (counter, States)->States, States
-    SSA_OP_WHILE,    // "cond": (States)->bool, "do": (counter)->States, States
-    SSA_OP_CONTINUE,
-    SSA_OP_BREAK,
+    VX_IR_OP_FOR,      // "start": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
+    VX_IR_OP_INFINITE, // "start": counter, "stride": int, "do": (counter, States)->States, States
+    VX_IR_OP_WHILE,    // "cond": (States)->bool, "do": (counter)->States, States
+    VX_IR_OP_CONTINUE,
+    VX_IR_OP_BREAK,
 
     // advanced loop
-    SSA_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
-    SSA_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
-    SSA_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
-    CIR_OP_CFOR,           // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
+    VX_IR_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
+    VX_IR_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
+    VX_IR_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
+    CVX_IR_OP_CFOR,           // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
     
     // conditional
-    SSA_OP_IF,     // "cond": bool, "then": ()->R, ("else": ()->R)
+    VX_IR_OP_IF,     // "cond": bool, "then": ()->R, ("else": ()->R)
 
 
-    SSA_OP____END,
-} SsaOpType;
+    VX_IR_OP____END,
+} vx_IrOpType;
 
-#define SSAOPTYPE_LEN (SSA_OP____END - SSA_OP_NOP)
+#define SSAOPTYPE_LEN (VX_IR_OP____END - VX_IR_OP_NOP)
 
-extern const char *iroptype_names[SSAOPTYPE_LEN];
+extern const char *vx_IrOpType_names[SSAOPTYPE_LEN];
 
 typedef struct {
-    SsaVar var;
-    SsaType type;
-} SsaTypedVar;
+    vx_IrVar var;
+    vx_IrType type;
+} vx_IrTypedVar;
 
-struct SsaOp_s {
-    SsaType *types;
-    size_t   types_len;
+struct vx_IrOp_s {
+    vx_IrType *types;
+    size_t     types_len;
 
-    SsaTypedVar *outs;
-    size_t       outs_len;
+    vx_IrTypedVar *outs;
+    size_t         outs_len;
 
-    SsaNamedValue *params;
-    size_t         params_len;
+    vx_IrNamedValue *params;
+    size_t           params_len;
 
-    SsaValue *states;
-    size_t    states_len;
+    vx_IrValue *states;
+    size_t      states_len;
 
-    SsaBlock *parent;
-    SsaOpType id;
+    vx_IrBlock  *parent;
+    vx_IrOpType  id;
 };
 
-void irop_dump(const SsaOp *op, FILE *out, size_t indent);
+void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent);
 
 typedef struct {
-    const SsaBlock *block;
+    const vx_IrBlock *block;
     size_t start;
     size_t end;
-} SsaView;
+} vx_IrView;
 
-static SsaView irview_of_single(const SsaBlock *block, size_t index) {
-    return (SsaView) {
+static vx_IrView vx_IrView_of_single(const vx_IrBlock *block, size_t index) {
+    return (vx_IrView) {
         .block = block,
         .start = index,
         .end = index + 1,
     };
 }
-static SsaView irview_of_all(const SsaBlock *block) {
-    return (SsaView) {
+static vx_IrView vx_IrView_of_all(const vx_IrBlock *block) {
+    return (vx_IrView) {
         .block = block,
         .start = 0,
         .end = block->ops_len,
     };
 }
-static size_t irview_len(const SsaView view) {
+static size_t vx_IrView_len(const vx_IrView view) {
     return view.end - view.start;
 }
 /** returns true if found */
-bool irview_find(SsaView *view, SsaOpType type);
-SsaView irview_replace(SsaBlock *viewblock, SsaView view, const SsaOp *ops, size_t ops_len);
-static SsaView irview_drop(const SsaView view, const size_t count) {
-    SsaView out = view;
+bool vx_IrView_find(vx_IrView *view, vx_IrOpType type);
+vx_IrView vx_IrView_replace(vx_IrBlock *viewblock, vx_IrView view, const vx_IrOp *ops, size_t ops_len);
+static vx_IrView vx_IrView_drop(const vx_IrView view, const size_t count) {
+    vx_IrView out = view;
     out.block = view.block;
     out.start = view.start + count;
     if (out.start > out.end)
         out.start = out.end;
     return out;
 }
-static const SsaOp *irview_take(const SsaView view) {
+static const vx_IrOp *vx_IrView_take(const vx_IrView view) {
     return &view.block->ops[view.start];
 }
-void irview_rename_var(SsaView view, SsaBlock *block, SsaVar old, SsaVar newv);
-void irview_substitude_var(SsaView view, SsaBlock *block, SsaVar old, SsaValue newv);
-static bool irview_has_next(const SsaView view) {
+void vx_IrView_rename_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
+void vx_IrView_substitute_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, vx_IrValue newv);
+static bool vx_IrView_has_next(const vx_IrView view) {
     return view.start < view.end;
 }
-SsaOp *irblock_traverse(SsaView *current);
-void irview_deep_traverse(SsaView top, void (*callback)(SsaOp *op, void *data), void *data);
+void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *data), void *data);
 
-SsaValue *irop_param(const SsaOp *op, SsaName name);
+vx_IrValue *vx_IrOp_param(const vx_IrOp *op, vx_IrName name);
 
-void irop_init(SsaOp *op, SsaOpType type, SsaBlock *parent);
-void irop_add_type(SsaOp *op, SsaType type);
-void irop_add_out(SsaOp *op, SsaVar v, SsaType t);
-void irop_add_param_s(SsaOp *op, SsaName name, SsaValue val);
-void irop_add_param(SsaOp *op, SsaNamedValue p);
-static void irop_steal_param(SsaOp *dest, const SsaOp *src, SsaName param) {
-    irop_add_param_s(dest, param, irvalue_clone(*irop_param(src, param)));
+void vx_IrOp_init(vx_IrOp *op, vx_IrOpType type, vx_IrBlock *parent);
+void vx_IrOp_add_type(vx_IrOp *op, vx_IrType type);
+void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType t);
+void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
+void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);
+static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
+    vx_IrOp_add_param_s(dest, param, vx_IrValue_clone(*vx_IrOp_param(src, param)));
 }
-void irop_remove_params(SsaOp *op);
-void irop_remove_out_at(SsaOp *op, size_t id);
-void irop_remove_param_at(SsaOp *op, size_t id);
-void irop_steal_outs(SsaOp *dest, const SsaOp *src);
-void irop_destroy(SsaOp *op);
-bool irop_anyparam_hasvar(SsaOp *op, SsaVar var);
-void irop_remove_state_at(SsaOp *op, size_t id);
-bool irop_is_pure(SsaOp *op);
-void irop_steal_states(SsaOp *dest, const SsaOp *src);
+void vx_IrOp_remove_params(vx_IrOp *op);
+void vx_IrOp_remove_out_at(vx_IrOp *op, size_t id);
+void vx_IrOp_remove_param_at(vx_IrOp *op, size_t id);
+void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src);
+void vx_IrOp_destroy(vx_IrOp *op);
+void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);
+bool vx_IrOp_is_volatile(vx_IrOp *op);
+void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
 
-struct SsaStaticIncrement {
+struct IrStaticIncrement {
     bool detected;
-    SsaVar var;
+    vx_IrVar var;
     long long by;
 };
-struct SsaStaticIncrement irop_detect_static_increment(const SsaOp *op);
+struct IrStaticIncrement vx_IrOp_detect_static_increment(const vx_IrOp *op);
 
-SsaOp *irblock_inside_out_vardecl_before(const SsaBlock *block, SsaVar var, size_t before);
-bool irblock_is_pure(const SsaBlock *block);
+vx_IrOp *vx_IrBlock_inside_out_vardecl_before(const vx_IrBlock *block, vx_IrVar var, size_t before);
+bool vx_IrBlock_is_volatile(const vx_IrBlock *block);
 
-#endif //SSA_H
+#endif //IR_H

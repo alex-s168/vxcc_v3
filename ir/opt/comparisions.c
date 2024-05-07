@@ -6,46 +6,49 @@
  * `constant < a` -> `a > constant`
  * `constant > a` -> `a < constant`
  */
-void opt_comparisions(SsaView view, SsaBlock *block) {
+void vx_opt_comparisions(view, block)
+    vx_IrView view;
+    vx_IrBlock *block;
+{
     for (size_t i = view.start; i < view.end; i ++) {
-        SsaOp *op = &block->ops[i];
+        vx_IrOp *op = &block->ops[i];
 
         switch (op->id) {
-            case SSA_OP_LTE: {
-                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
-                if (b->type == SSA_VAL_IMM_INT) {
+            case VX_IR_OP_LTE: {
+                vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
+                if (b->type == VX_IR_VALIMM_INT) {
                     b->imm_int ++;
-                    op->id = SSA_OP_LT;
+                    op->id = VX_IR_OP_LT;
                 }
             } break;
 
-            case SSA_OP_GTE: {
-                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
-                if (b->type == SSA_VAL_IMM_INT) {
+            case VX_IR_OP_GTE: {
+                vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
+                if (b->type == VX_IR_VALIMM_INT) {
                     b->imm_int --;
-                    op->id = SSA_OP_GT;
+                    op->id = VX_IR_OP_GT;
                 }
             } break;
 
-            case SSA_OP_LT: {
-                SsaValue *a = irop_param(op, SSA_NAME_OPERAND_A);
-                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
-                if (a->type == SSA_VAL_IMM_INT) {
-                    const SsaValue tmp = *a;
+            case VX_IR_OP_LT: {
+                vx_IrValue *a = vx_IrOp_param(op, VX_IR_NAME_OPERAND_A);
+                vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
+                if (a->type == VX_IR_VALIMM_INT) {
+                    const vx_IrValue tmp = *a;
                     *a = *b;
                     *b = tmp;
-                    op->id = SSA_OP_GT;
+                    op->id = VX_IR_OP_GT;
                 }
             } break;
 
-            case SSA_OP_GT: {
-                SsaValue *a = irop_param(op, SSA_NAME_OPERAND_A);
-                SsaValue *b = irop_param(op, SSA_NAME_OPERAND_B);
-                if (a->type == SSA_VAL_IMM_INT) {
-                    const SsaValue tmp = *a;
+            case VX_IR_OP_GT: {
+                vx_IrValue *a = vx_IrOp_param(op, VX_IR_NAME_OPERAND_A);
+                vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
+                if (a->type == VX_IR_VALIMM_INT) {
+                    const vx_IrValue tmp = *a;
                     *a = *b;
                     *b = tmp;
-                    op->id = SSA_OP_LT;
+                    op->id = VX_IR_OP_LT;
                 }
             } break;
 

@@ -7,7 +7,11 @@
 
 #include "../utils.h"
 
-void irblock_init(SsaBlock *block, SsaBlock *parent, size_t parent_index) {
+void vx_IrBlock_init(block, parent, parent_index)
+    vx_IrBlock *block;
+    vx_IrBlock *parent;
+    size_t parent_index;
+{
     block->parent = parent;
     block->parent_index = parent_index;
 
@@ -25,16 +29,22 @@ void irblock_init(SsaBlock *block, SsaBlock *parent, size_t parent_index) {
     block->should_free = false;
 }
 
-SsaBlock *irblock_heapalloc(SsaBlock *parent, size_t parent_index) {
-    SsaBlock *new = malloc(sizeof(SsaBlock));
+vx_IrBlock *vx_IrBlock_init_heap(parent, parent_index)
+    vx_IrBlock *parent;
+    size_t parent_index;
+{
+    vx_IrBlock *new = malloc(sizeof(vx_IrBlock));
     if (new == NULL)
         return NULL;
-    irblock_init(new, parent, parent_index);
+    vx_IrBlock_init(new, parent, parent_index);
     new->should_free = true;
     return new;
 }
 
-void irblock_make_root(SsaBlock *block, const size_t total_vars) {
+void vx_IrBlock_make_root(block, total_vars)
+    vx_IrBlock *block;
+    const size_t total_vars;
+{
     assert(block->parent == NULL);
 
     block->is_root = true;
@@ -42,39 +52,53 @@ void irblock_make_root(SsaBlock *block, const size_t total_vars) {
     block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
 
     for (size_t i = 0; i < total_vars; i ++) {
-        SsaOp *decl = irblock_finddecl_var(block, i);
+        vx_IrOp *decl = vx_IrBlock_find_var_decl(block, i);
         // decl can be null!
         block->as_root.vars[i].decl = decl;
     }
 }
 
-void irblock_add_in(SsaBlock *block, const SsaVar var) {
-    block->ins = realloc(block->ins, sizeof(SsaVar) * (block->ins_len + 1));
+void vx_IrBlock_add_in(block, var)
+    vx_IrBlock *block;
+    const vx_IrVar var;
+{
+    block->ins = realloc(block->ins, sizeof(vx_IrVar) * (block->ins_len + 1));
     block->ins[block->ins_len ++] = var;
 }
 
-void irblock_add_op(SsaBlock *block, const SsaOp *op) {
-    block->ops = realloc(block->ops, sizeof(SsaOp) * (block->ops_len + 1));
+void vx_IrBlock_add_op(block, op)
+    vx_IrBlock *block;
+    const vx_IrOp *op;
+{
+    block->ops = realloc(block->ops, sizeof(vx_IrOp) * (block->ops_len + 1));
     block->ops[block->ops_len ++] = *op;
 }
 
-void irblock_add_all_op(SsaBlock *dest, const SsaBlock *src) {
-    dest->ops = realloc(dest->ops, sizeof(SsaOp) * (dest->ops_len + src->ops_len));
+void vx_IrBlock_add_all_op(dest, src)
+    vx_IrBlock *dest;
+    const vx_IrBlock *src;
+{
+    dest->ops = realloc(dest->ops, sizeof(vx_IrOp) * (dest->ops_len + src->ops_len));
     memcpy(dest->ops + dest->ops_len, src->ops, src->ops_len);
     dest->ops_len += src->ops_len;
 }
 
-void irblock_add_out(SsaBlock *block, SsaVar out) {
-    block->outs = realloc(block->outs, sizeof(SsaVar) * (block->outs_len + 1));
+void vx_IrBlock_add_out(block, out)
+    vx_IrBlock *block;
+    vx_IrVar out;
+{
+    block->outs = realloc(block->outs, sizeof(vx_IrVar) * (block->outs_len + 1));
     block->outs[block->outs_len ++] = out;
 }
 
-void irblock_destroy(SsaBlock *block) {
+void vx_IrBlock_destroy(block)
+    vx_IrBlock *block;
+{
     if (block == NULL)
         return;
     free(block->ins);
     for (size_t i = 0; i < block->ops_len; i ++)
-        irop_destroy(&block->ops[i]);
+        vx_IrOp_destroy(&block->ops[i]);
     free(block->ops);
     free(block->outs);
     if (block->is_root)
@@ -83,7 +107,10 @@ void irblock_destroy(SsaBlock *block) {
         free(block);
 }
 
-SsaValue *irop_param(const SsaOp *op, SsaName name) {
+vx_IrValue *vx_IrOp_param(op, name)
+    const vx_IrOp *op;
+    vx_IrName name;
+{
     for (size_t i = 0; i < op->params_len; i ++)
         if (op->params[i].name == name)
             return &op->params[i].val;
@@ -91,12 +118,18 @@ SsaValue *irop_param(const SsaOp *op, SsaName name) {
     return NULL;
 }
 
-void irnamedvalue_destroy(SsaNamedValue v) {
-    if (v.val.type == SSA_VAL_BLOCK)
-        irblock_destroy(v.val.block);
+void vx_IrNamedValue_destroy(value)
+    vx_IrNamedValue value;
+{
+    if (value.val.type == VX_IR_VALBLOCK)
+        vx_IrBlock_destroy(value.val.block);
 }
 
-void irop_init(SsaOp *op, const SsaOpType type, SsaBlock *parent) {
+void vx_IrOp_init(op, type, parent)
+    vx_IrOp *op;
+    const vx_IrOpType type;
+    vx_IrBlock *parent;
+{
     op->types = NULL;
     op->types_len = 0;
 
@@ -114,81 +147,113 @@ void irop_init(SsaOp *op, const SsaOpType type, SsaBlock *parent) {
     op->states_len = 0;
 }
 
-void irop_add_type(SsaOp *op, SsaType type) {
-    op->types = realloc(op->types, sizeof(SsaType) * (op->types_len + 1));
+void vx_IrOp_add_type(op, type)
+    vx_IrOp *op;
+    vx_IrType type;
+{
+    op->types = realloc(op->types, sizeof(vx_IrType) * (op->types_len + 1));
     op->types[op->types_len ++] = type;
 }
 
-void irop_add_out(SsaOp *op, SsaVar v, SsaType t) {
-    op->outs = realloc(op->outs, sizeof(SsaTypedVar) * (op->outs_len + 1));
-    op->outs[op->outs_len ++] = (SsaTypedVar) { .var = v, .type = t };
+void vx_IrOp_add_out(op, var, type)
+    vx_IrOp *op;
+    vx_IrVar var;
+    vx_IrType type;
+{
+    op->outs = realloc(op->outs, sizeof(vx_IrTypedVar) * (op->outs_len + 1));
+    op->outs[op->outs_len ++] = (vx_IrTypedVar) { .var = var, .type = type };
 }
 
-void irop_add_param(SsaOp *op, SsaNamedValue p) {
-    op->params = realloc(op->params, sizeof(SsaNamedValue) * (op->params_len + 1));
+void vx_IrOp_add_param(op, p)
+    vx_IrOp *op;
+    vx_IrNamedValue p;
+{
+    op->params = realloc(op->params, sizeof(vx_IrNamedValue) * (op->params_len + 1));
     op->params[op->params_len ++] = p;
 }
 
-void irnamedvalue_rename(SsaNamedValue *value, SsaName newn) {
-    value->name = newn;
+void vx_IrOp_add_param_s(op, name, val)
+    vx_IrOp *op;
+    vx_IrName name;
+    const vx_IrValue val;
+{
+    vx_IrOp_add_param(op, vx_IrNamedValue_create(name, val));
 }
 
-void irop_add_param_s(SsaOp *op, SsaName name, const SsaValue val) {
-    irop_add_param(op, irnamedvalue_create(name, val));
-}
-
-void irop_destroy(SsaOp *op) {
-    irop_remove_params(op);
+void vx_IrOp_destroy(op)
+    vx_IrOp *op;
+{
+    vx_IrOp_remove_params(op);
     free(op->types);
     free(op->outs);
     free(op->states);
 }
 
-void irop_remove_params(SsaOp *op) {
+void vx_IrOp_remove_params(op)
+    vx_IrOp *op;
+{
     for (size_t i = 0; i < op->params_len; i ++)
-        irnamedvalue_destroy(op->params[i]);
+        vx_IrNamedValue_destroy(op->params[i]);
     free(op->params);
     op->params = NULL;
     op->params_len = 0;
 }
 
 
-void irop_steal_outs(SsaOp *dest, const SsaOp *src) {
+void vx_IrOp_steal_outs(dest, src)
+    vx_IrOp *dest;
+    const vx_IrOp *src;
+{
     for (size_t i = 0; i < src->outs_len; i ++) {
-        irop_add_out(dest, src->outs[i].var, src->outs[i].type);
+        vx_IrOp_add_out(dest, src->outs[i].var, src->outs[i].type);
     }
 }
 
-void irop_remove_out_at(SsaOp *op, const size_t id) {
-    memmove(op->outs + id, op->outs + id + 1, sizeof(SsaTypedVar) * (op->outs_len - id - 1));
+void vx_IrOp_remove_out_at(op, id)
+    vx_IrOp *op;
+    const size_t id;
+{
+    memmove(op->outs + id, op->outs + id + 1, sizeof(vx_IrTypedVar) * (op->outs_len - id - 1));
     op->outs_len --;
 }
 
-void irblock_remove_out_at(SsaBlock *block, size_t id) {
-    memmove(block->outs + id, block->outs + id + 1, sizeof(SsaVar) * (block->outs_len - id - 1));
+void vx_IrBlock_remove_out_at(block, id)
+    vx_IrBlock *block;
+    size_t id;
+{
+    memmove(block->outs + id, block->outs + id + 1, sizeof(vx_IrVar) * (block->outs_len - id - 1));
     block->outs_len --;
 }
 
-void irop_remove_param_at(SsaOp *op, const size_t id) {
-    memmove(op->params + id, op->params + id + 1, sizeof(SsaNamedValue) * (op->params_len - id - 1));
+void vx_IrOp_remove_param_at(op, id)
+    vx_IrOp *op;
+    const size_t id;
+{
+    memmove(op->params + id, op->params + id + 1, sizeof(vx_IrNamedValue) * (op->params_len - id - 1));
     op->params_len --;
 }
 
 
-void irop_remove_state_at(SsaOp *op, const size_t id) {
-    memmove(op->states + id, op->states + id + 1, sizeof(SsaNamedValue) * (op->states_len - id - 1));
+void vx_IrOp_remove_state_at(op, id)
+    vx_IrOp *op;
+    const size_t id;
+{
+    memmove(op->states + id, op->states + id + 1, sizeof(vx_IrNamedValue) * (op->states_len - id - 1));
     op->states_len --;
 }
 
-SsaValue irvalue_clone(const SsaValue value) {
+vx_IrValue vx_IrValue_clone(const vx_IrValue value) {
     // TODO
     return value;
 }
 
-void irop_steal_states(SsaOp *dest, const SsaOp *src) {
+void vx_IrOp_steal_states(dest, src)
+    vx_IrOp *dest;
+    const vx_IrOp *src;
+{
     free(dest->states);
-    dest->states = malloc(sizeof(SsaValue) * src->states_len);
+    dest->states = malloc(sizeof(vx_IrValue) * src->states_len);
     for (size_t i = 0; i < src->states_len; i ++)
-        dest->states[i] = irvalue_clone(src->states[i]);
+        dest->states[i] = vx_IrValue_clone(src->states[i]);
     dest->states_len = src->states_len;
 }

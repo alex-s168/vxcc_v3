@@ -6,10 +6,10 @@
 
 struct verify_vardecls_deeptraverse__data {
     size_t declcount;
-    SsaVar var;
+    vx_IrVar var;
 };
 
-static void verify_vardecls_deeptraverse(SsaOp *op, void *dataIn) {
+static void verify_vardecls_deeptraverse(vx_IrOp *op, void *dataIn) {
     struct verify_vardecls_deeptraverse__data *va = dataIn;
 
     for (size_t i = 0; i < op->outs_len; i ++)
@@ -17,9 +17,9 @@ static void verify_vardecls_deeptraverse(SsaOp *op, void *dataIn) {
             va->declcount ++;
 
     for (size_t j = 0; j < op->params_len; j ++) {
-        const SsaValue param = op->params[j].val;
+        const vx_IrValue param = op->params[j].val;
 
-        if (param.type == SSA_VAL_BLOCK) {
+        if (param.type == VX_IR_VALBLOCK) {
             for (size_t k = 0; k < param.block->ins_len; k ++)
                 if (param.block->ins[k] == va->var)
                     va->declcount ++;
@@ -27,12 +27,12 @@ static void verify_vardecls_deeptraverse(SsaOp *op, void *dataIn) {
     }
 }
 
-VerifyErrors irblock_verify(const SsaBlock *block, const OpPath path) {
-    VerifyErrors errors;
+vx_Errors vx_IrBlock_verify(const vx_IrBlock *block, const vx_OpPath path) {
+    vx_Errors errors;
     errors.len = 0;
     errors.items = NULL;
 
-    irblock_verify_ssa_based(&errors, block, path);
+    vx_IrBlock_verify_ssa_based(&errors, block, path);
 
     if (block->is_root) {
         for (size_t i = 0; i < block->as_root.vars_len; i ++) {
@@ -42,19 +42,19 @@ VerifyErrors irblock_verify(const SsaBlock *block, const OpPath path) {
             struct verify_vardecls_deeptraverse__data dat;
             dat.var = i;
             dat.declcount = 0;
-            irview_deep_traverse(irview_of_all(block), verify_vardecls_deeptraverse, &dat);
+            vx_IrView_deep_traverse(vx_IrView_of_all(block), verify_vardecls_deeptraverse, &dat);
 
             assert(dat.declcount > 0 /* WE REMOVED VARIABLE DECLARATION WITHOUT REMOVING IT FROM DB!!! */);
 
             if (dat.declcount > 1) {
                 static char buf[256];
                 sprintf(buf, "Variable %%%zu is assigned more than once!", i);
-                VerifyError error = {
-                    .path = (OpPath) { .ids = NULL, .len = 0 },
+                vx_Error error = {
+                    .path = (vx_OpPath) { .ids = NULL, .len = 0 },
                     .error = "Variable assigned more than once",
                     .additional = buf
                 };
-                verifyerrors_add(&errors, &error);
+                vx_Errors_add(&errors, &error);
             }
         }
     }

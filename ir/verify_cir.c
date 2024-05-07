@@ -1,12 +1,15 @@
 #include "cir.h"
 #include "verify.h"
 
-VerifyErrors cirblock_verify(const SsaBlock *block, OpPath path) {
-    VerifyErrors errors;
+vx_Errors vx_CIrBlock_verify(block, path)
+    const vx_IrBlock *block;
+    vx_OpPath path;
+{
+    vx_Errors errors;
     errors.items = NULL;
     errors.len = 0;
 
-    irblock_verify_ssa_based(&errors, block, path);
+    vx_IrBlock_verify_ssa_based(&errors, block, path);
 
     return errors;
 }

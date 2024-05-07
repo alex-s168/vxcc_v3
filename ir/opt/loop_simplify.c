@@ -1,61 +1,64 @@
 #include "../opt.h"
 
-void opt_loop_simplify(SsaView view, SsaBlock *block) {
-    while (irview_find(&view, SSA_OP_FOR)) {
-        SsaOp *op = (SsaOp *) irview_take(view);
+void vx_opt_loop_simplify(view, block)
+    vx_IrView view;
+    vx_IrBlock *block;
+{
+    while (vx_IrView_find(&view, VX_IR_OP_FOR)) {
+        vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);
 
-        SsaBlock *cond = irop_param(op, SSA_NAME_COND)->block;
+        vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
         opt(cond); // !
-        const SsaVar condVar = cond->outs[0];
+        const vx_IrVar condVar = cond->outs[0];
 
         // if it will always we 0, we optimize it out
-        if (irblock_alwaysis_var(cond, condVar, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 })) {
-            irview_replace(block, view, NULL, 0);
+        if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 })) {
+            vx_IrView_replace(block, view, NULL, 0);
 
             goto next;
         }
 
-        opt(irop_param(op, SSA_NAME_LOOP_DO)->block);
+        opt(vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block);
 
         // if it will never be 0 (not might be 0), it is always true => infinite loop
-        if (!irblock_mightbe_var(cond, condVar, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 })) {
-            SsaOp new;
-            irop_init(&new, SSA_OP_INFINITE, block);
-            irop_steal_param(&new, op, SSA_NAME_LOOP_START);
-            irop_steal_param(&new, op, SSA_NAME_LOOP_DO);
-            irop_steal_param(&new, op, SSA_NAME_LOOP_STRIDE);
-            irop_steal_states(&new, op);
-            irop_steal_outs(&new, op);
+        if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 })) {
+            vx_IrOp new;
+            vx_IrOp_init(&new, VX_IR_OP_INFINITE, block);
+            vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_START);
+            vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_DO);
+            vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_STRIDE);
+            vx_IrOp_steal_states(&new, op);
+            vx_IrOp_steal_outs(&new, op);
 
-            irview_replace(block, view, &new, 1);
+            vx_IrView_replace(block, view, &new, 1);
 
             goto next;
         }
 
         // if it is a less than, we can do a repeat
-        if (cond->ops_len > 0 && cond->ops[0].id == SSA_OP_LT) {
+        if (cond->ops_len > 0 && cond->ops[0].id == VX_IR_OP_LT) {
 
             bool break2 = false;
             do {
-                const SsaValue *a = irop_param(&cond->ops[0], SSA_NAME_OPERAND_A);
+                const vx_IrValue *a = vx_IrOp_param(&cond->ops[0], VX_IR_NAME_OPERAND_A);
                 // require it to be the counter
-                if (a->type != SSA_VAL_VAR)
+                if (a->type != VX_IR_VALVAR)
                     break;
                 if (a->var != cond->ins[0])
                     break;
                 if (cond->ops[0].outs[0].var != cond->outs[0])
                     break;
             
-                const SsaValue b = irvalue_clone(*irop_param(&cond->ops[0], SSA_NAME_OPERAND_B));
+                const vx_IrValue b = vx_IrValue_clone(*vx_IrOp_param(&cond->ops[0], VX_IR_NAME_OPERAND_B));
 
-                SsaOp new;
-                irop_init(&new, SSA_OP_REPEAT, block);
-                irop_steal_param(&new, op, SSA_NAME_LOOP_DO);
-                irop_steal_param(&new, op, SSA_NAME_LOOP_START);
-                irop_add_param_s(&new, SSA_NAME_LOOP_ENDEX, b);
-                irop_steal_param(&new, op, SSA_NAME_LOOP_STRIDE);
-                irop_steal_states(&new, op); // steal all state init params
-                irop_steal_outs(&new, op);
+                vx_IrOp new;
+                vx_IrOp_init(&new, VX_IR_OP_REPEAT, block);
+                vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_DO);
+                vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_START);
+                vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_ENDEX, b);
+                vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_STRIDE);
+                vx_IrOp_steal_states(&new, op); // steal all state init params
+                vx_IrOp_steal_outs(&new, op);
                 // we probably do a bit of memory leaking here...
                 *op = new;
                 
@@ -66,6 +69,6 @@ void opt_loop_simplify(SsaView view, SsaBlock *block) {
         }
 
     next:
-        view = irview_drop(view, 1);
+        view = vx_IrView_drop(view, 1);
     }
 }

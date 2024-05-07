@@ -3,146 +3,146 @@
 #include "ir/cir.h"
 
 static int ir_test(void) {
-    SsaBlock block;
-    irblock_init(&block, NULL, 0);
+    vx_IrBlock block;
+    vx_IrBlock_init(&block, NULL, 0);
 
-    SsaOp for_op;
-    irop_init(&for_op, SSA_OP_FOR, &block);
-    irop_add_param_s(&for_op, SSA_NAME_LOOP_START, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 0 });
+    vx_IrOp for_op;
+    vx_IrOp_init(&for_op, VX_IR_OP_FOR, &block);
+    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_LOOP_START, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 0 });
 
-    SsaBlock cond;
-    irblock_init(&cond, &block, block.ops_len);
-    irblock_add_in(&cond, 2);
+    vx_IrBlock cond;
+    vx_IrBlock_init(&cond, &block, block.ops_len);
+    vx_IrBlock_add_in(&cond, 2);
     {
-        SsaOp cmp_op;
-        irop_init(&cmp_op, SSA_OP_LT, &cond);
-        irop_add_out(&cmp_op, 1, "bool");
-        irop_add_param_s(&cmp_op, SSA_NAME_OPERAND_A, (SsaValue) { .type = SSA_VAL_VAR, .var = 2 });
-        irop_add_param_s(&cmp_op, SSA_NAME_OPERAND_B, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 10 });
+        vx_IrOp cmp_op;
+        vx_IrOp_init(&cmp_op, VX_IR_OP_LT, &cond);
+        vx_IrOp_add_out(&cmp_op, 1, "bool");
+        vx_IrOp_add_param_s(&cmp_op, VX_IR_NAME_OPERAND_A, (vx_IrValue) { .type = VX_IR_VALVAR, .var = 2 });
+        vx_IrOp_add_param_s(&cmp_op, VX_IR_NAME_OPERAND_B, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 10 });
 
-        irblock_add_op(&cond, &cmp_op);
+        vx_IrBlock_add_op(&cond, &cmp_op);
     }
-    irblock_add_out(&cond, 1);
+    vx_IrBlock_add_out(&cond, 1);
 
-    irop_add_param_s(&for_op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = &cond });
+    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = &cond });
 
-    SsaBlock loop;
-    irblock_init(&loop, &block, block.ops_len);
-    irblock_add_in(&loop, 0);
+    vx_IrBlock loop;
+    vx_IrBlock_init(&loop, &block, block.ops_len);
+    vx_IrBlock_add_in(&loop, 0);
     // let's assume that this block prints the number
 
-    irop_add_param_s(&for_op, SSA_NAME_LOOP_STRIDE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
-    irop_add_param_s(&for_op, SSA_NAME_LOOP_DO, (SsaValue) { .type = SSA_VAL_BLOCK, .block = &loop });
+    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_LOOP_STRIDE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 1 });
+    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = &loop });
 
-    irblock_add_op(&block, &for_op);
+    vx_IrBlock_add_op(&block, &for_op);
 
-    irblock_make_root(&block, 3);
+    vx_IrBlock_make_root(&block, 3);
 
-    if (ir_verify(&block) != 0)
+    if (vx_ir_verify(&block) != 0)
         return 1;
 
     opt(&block);
 
-    irblock_dump(&block, stdout, 0);
+    vx_IrBlock_dump(&block, stdout, 0);
 
     return 0;
 }
 
-static SsaBlock *always_true_block(SsaBlock *parent, SsaVar temp_var) {
-    SsaBlock *block = irblock_heapalloc(parent, parent->ops_len);
+static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
+    vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->ops_len);
 
-    SsaOp assign;
-    irop_init(&assign, SSA_OP_IMM, block);
-    irop_add_out(&assign, temp_var, "int");
-    irop_add_param_s(&assign, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
-    irblock_add_op(block, &assign);
+    vx_IrOp assign;
+    vx_IrOp_init(&assign, VX_IR_OP_IMM, block);
+    vx_IrOp_add_out(&assign, temp_var, "int");
+    vx_IrOp_add_param_s(&assign, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 1 });
+    vx_IrBlock_add_op(block, &assign);
 
-    irblock_add_out(block, temp_var);
+    vx_IrBlock_add_out(block, temp_var);
     return block;
 }
 
-static SsaBlock *conditional_c_assign(SsaVar dest, SsaBlock *parent, SsaVar temp_var) {
-    SsaOp op;
-    irop_init(&op, SSA_OP_IF, parent);
+static vx_IrBlock *conditional_c_assign(vx_IrVar dest, vx_IrBlock *parent, vx_IrVar temp_var) {
+    vx_IrOp op;
+    vx_IrOp_init(&op, VX_IR_OP_IF, parent);
     
-    SsaBlock *then = irblock_heapalloc(parent, parent->ops_len);
+    vx_IrBlock *then = vx_IrBlock_init_heap(parent, parent->ops_len);
     {
-        SsaOp op2;
-        irop_init(&op2, SSA_OP_IMM, then);
-        irop_add_out(&op2, dest, "int");
-        irop_add_param_s(&op2, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
-        irblock_add_op(then, &op2);
+        vx_IrOp op2;
+        vx_IrOp_init(&op2, VX_IR_OP_IMM, then);
+        vx_IrOp_add_out(&op2, dest, "int");
+        vx_IrOp_add_param_s(&op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 2 });
+        vx_IrBlock_add_op(then, &op2);
     }
-    irop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = then });
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND_THEN, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = then });
 
-    irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = always_true_block(parent, temp_var) });
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = always_true_block(parent, temp_var) });
 
-    irblock_add_op(parent, &op);
+    vx_IrBlock_add_op(parent, &op);
 
     return then;
 }
 
-static SsaBlock *conditional_c_assign_else(SsaVar dest, SsaBlock *parent, SsaVar temp_var) {
-    SsaOp op;
-    irop_init(&op, SSA_OP_IF, parent);
+static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, vx_IrVar temp_var) {
+    vx_IrOp op;
+    vx_IrOp_init(&op, VX_IR_OP_IF, parent);
     
-    irop_add_param_s(&op, SSA_NAME_COND_THEN, (SsaValue) { .type = SSA_VAL_BLOCK, .block = irblock_heapalloc(parent, parent->ops_len) });
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND_THEN, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = vx_IrBlock_init_heap(parent, parent->ops_len) });
 
-    SsaBlock *els = irblock_heapalloc(parent, parent->ops_len);
+    vx_IrBlock *els = vx_IrBlock_init_heap(parent, parent->ops_len);
     {
-        SsaOp op2;
-        irop_init(&op2, SSA_OP_IMM, els);
-        irop_add_out(&op2, dest, "int");
-        irop_add_param_s(&op2, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 2 });
-        irblock_add_op(els, &op2);
+        vx_IrOp op2;
+        vx_IrOp_init(&op2, VX_IR_OP_IMM, els);
+        vx_IrOp_add_out(&op2, dest, "int");
+        vx_IrOp_add_param_s(&op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 2 });
+        vx_IrBlock_add_op(els, &op2);
     }
-    irop_add_param_s(&op, SSA_NAME_COND_ELSE, (SsaValue) { .type = SSA_VAL_BLOCK, .block = els });
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = els });
 
-    irop_add_param_s(&op, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = always_true_block(parent, temp_var) });
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = always_true_block(parent, temp_var) });
 
-    irblock_add_op(parent, &op);
+    vx_IrBlock_add_op(parent, &op);
 
     return els;
 }
 
 static int cir_test(void) {
-    SsaBlock block;
-    irblock_init(&block, NULL, 0);
+    vx_IrBlock block;
+    vx_IrBlock_init(&block, NULL, 0);
 
     {
-        SsaOp op;
-        irop_init(&op, SSA_OP_IMM, &block);
-        irop_add_out(&op, 0, "int");
-        irop_add_param_s(&op, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = 1 });
-        irblock_add_op(&block, &op);
+        vx_IrOp op;
+        vx_IrOp_init(&op, VX_IR_OP_IMM, &block);
+        vx_IrOp_add_out(&op, 0, "int");
+        vx_IrOp_add_param_s(&op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = 1 });
+        vx_IrBlock_add_op(&block, &op);
     }
 
-    SsaBlock *els = conditional_c_assign_else(0, &block, 1);
+    vx_IrBlock *els = conditional_c_assign_else(0, &block, 1);
     conditional_c_assign_else(0, els, 2);
 
     {
-        SsaOp op;
-        irop_init(&op, SSA_OP_IMM, &block);
-        irop_add_out(&op, 1, "int");
-        irop_add_param_s(&op, SSA_NAME_VALUE, (SsaValue) { .type = SSA_VAL_VAR, .var = 0 });
-        irblock_add_op(&block, &op);
+        vx_IrOp op;
+        vx_IrOp_init(&op, VX_IR_OP_IMM, &block);
+        vx_IrOp_add_out(&op, 1, "int");
+        vx_IrOp_add_param_s(&op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VALVAR, .var = 0 });
+        vx_IrBlock_add_op(&block, &op);
     }
 
-    irblock_make_root(&block, 1);
+    vx_IrBlock_make_root(&block, 1);
 
-    if (cir_verify(&block) != 0)
+    if (vx_cir_verify(&block) != 0)
         return 1;
 
     printf("Pre:\n");
-    irblock_dump(&block, stdout, 0);
+    vx_IrBlock_dump(&block, stdout, 0);
 
-    cirblock_mksa_states(&block);
-    cirblock_mksa_final(&block);
+    vx_CIrBlock_mksa_states(&block);
+    vx_CIrBlock_mksa_final(&block);
 
     printf("Post:\n");
-    irblock_dump(&block, stdout, 0);
+    vx_IrBlock_dump(&block, stdout, 0);
 
-    irblock_destroy(&block);
+    vx_IrBlock_destroy(&block);
 
     return 0;
 }

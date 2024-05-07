@@ -1,19 +1,25 @@
 #include "../opt.h"
 
-static void trav(SsaOp *op, void *data) {
-    SsaBlock *block = data;
+static void trav(op, data)
+    vx_IrOp *op;
+    void *data;
+{
+    vx_IrBlock *block = data;
 
-    if (op->id != SSA_OP_IMM)
+    if (op->id != VX_IR_OP_IMM)
         return;
 
-    const SsaValue value = *irop_param(op, SSA_NAME_VALUE);
+    const vx_IrValue value = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
 
     for (size_t i = 0; i < op->outs_len; i ++) {
-        const SsaVar out = op->outs[i].var;
-        irview_substitude_var(irview_of_all(block), block, out, value);
+        const vx_IrVar out = op->outs[i].var;
+        vx_IrView_substitute_var(vx_IrView_of_all(block), block, out, value);
     }
 }
 
-void opt_inline_vars(SsaView view, SsaBlock *block) {
-    irview_deep_traverse(view, trav, block);
+void vx_opt_inline_vars(view, block)
+    vx_IrView view;
+    vx_IrBlock *block;
+{
+    vx_IrView_deep_traverse(view, trav, block);
 }

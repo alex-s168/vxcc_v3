@@ -2,188 +2,209 @@
 
 #include "verify.h"
 
-void error_param_type(VerifyErrors *errors, const OpPath path, const char *expected) {
+void vx_error_param_type(vx_Errors *errors, const vx_OpPath path, const char *expected) {
     static char buf[256];
     sprintf(buf, "Expected parameter type %s", expected);
-    const VerifyError error = {
+    const vx_Error error = {
         .path = path,
         .error = "Incorrect type",
         .additional = buf
     };
-    verifyerrors_add(errors, &error);
+    vx_Errors_add(errors, &error);
 }
 
-void error_param_missing(VerifyErrors *errors, const OpPath path, const char *param) {
+void vx_error_param_missing(vx_Errors *errors, const vx_OpPath path, const char *param) {
     static char buf[256];
     sprintf(buf, "Missing required parameter %s", param);
-    const VerifyError error = {
+    const vx_Error error = {
         .path = path,
         .error = "Missing parameter",
         .additional = buf
     };
-    verifyerrors_add(errors, &error);
+    vx_Errors_add(errors, &error);
 }
 
-void irblock_verify_ssa_based(VerifyErrors *dest, const SsaBlock *block, const OpPath path) {
-    const SsaBlock *root = irblock_root(block);
+static bool analyze_if(dest, op, i, path)
+    vx_Errors *dest;
+    const vx_IrOp *op;
+    size_t i;
+    vx_OpPath path;
+{
+    bool err = false;
+
+    const vx_IrValue *vcond = vx_IrOp_param(op, VX_IR_NAME_COND);
+    if (vcond == NULL) {
+        vx_error_param_missing(dest, vx_OpPath_copy_add(path, i), "cond");
+        err = true;
+    } else if (vcond->type != VX_IR_VALBLOCK) {
+        vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
+        err = true;
+    }
+
+    const vx_IrValue *vthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
+    if (vthen == NULL) {
+        vx_error_param_missing(dest, vx_OpPath_copy_add(path, i), "then");
+        err = true;
+    } else if (vthen->type != VX_IR_VALBLOCK) {
+        vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
+        err = true;
+    }
+
+    const vx_IrValue *velse = vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
+    if (velse == NULL) {
+        vx_error_param_missing(dest, vx_OpPath_copy_add(path, i), "else");
+        err = true;
+    } else if (velse->type != VX_IR_VALBLOCK) {
+        vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
+        err = true;
+    }
+
+    if (!err) {
+        vx_IrBlock *bcond = vcond->block;
+        vx_IrBlock *bthen = vthen->block;
+        vx_IrBlock *belse = velse->block;
+
+        if (bcond->outs_len != 1) {
+            const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+            vx_Error error = {
+                .path = newpath,
+                .error = "If block is missing a condition",
+                .additional = "If block is missing a condition! Example: `cond=(){ ^ 1 }`"
+            };
+            vx_Errors_add(dest, &error);
+        }
+
+        if (!(bthen->outs_len == belse->outs_len && bthen->outs_len == op->outs_len)) {
+            const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+            vx_Error error = {
+                .path = newpath,
+                .error = "If block invalid outputs",
+                .additional = "Expected every branch in the if block to have the same amount of outputs!"
+            };
+            vx_Errors_add(dest, &error);
+        }
+    }
+
+    return err;
+}
+
+static void analyze_loops(dest, op, i, path)
+    vx_Errors *dest;
+    const vx_IrOp *op;
+    size_t i;
+    vx_OpPath path;
+{
+    const size_t states_count = op->outs_len;
+    if (states_count != op->states_len) {
+        const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+        vx_Error error = {
+            .path = newpath,
+            .error = "Loop state not initialized",
+            .additional = "Loop states do not match! Example: `state0=1234`"
+        };
+        vx_Errors_add(dest, &error);
+    }
+
+    const vx_IrValue *doblock_v = vx_IrOp_param(op, VX_IR_NAME_LOOP_DO);
+    if (doblock_v == NULL) {
+        const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+        vx_Error error = {
+            .path = newpath,
+            .error = "Loop is missing a do block",
+            .additional = "Loop is missing a `do` block. Example: `do=(%0){}`"
+        };
+        vx_Errors_add(dest, &error);
+    }
+    else {
+        if (doblock_v->type != VX_IR_VALBLOCK) {
+            vx_error_param_type(dest, vx_OpPath_copy_add(path, i), "block");
+        } else {
+            const vx_IrBlock *doblock = doblock_v->block;
+
+            if (doblock->outs_len != states_count) {
+                const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+                vx_Error error = {
+                    .path = newpath,
+                    .error = "Do block is missing state changes",
+                    .additional = "Loop do-block is missing state-updates for all states!"
+                };
+                vx_Errors_add(dest, &error);
+            }
+        }
+    }
+}
+
+void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const vx_OpPath path) {
+    const vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (size_t i = 0; i < block->ops_len; i++) {
-        const SsaOp *op = &block->ops[i];
-
-        // TODO: implement for more types
+        const vx_IrOp *op = &block->ops[i];
 
         // verify states in general
         for (size_t j = 0; j < op->states_len; j ++) {
-            if (op->states[j].type == SSA_VAL_BLOCK) {
-                const OpPath newpath = oppath_copy_add(path, i);
-                const VerifyError error = {
+            if (op->states[j].type == VX_IR_VALBLOCK) {
+                const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+                const vx_Error error = {
                     .path = newpath,
                     .error = "Invalid state",
                     .additional = "States cannot be blocks!"
                 };
-                verifyerrors_add(dest, &error);
+                vx_Errors_add(dest, &error);
             }
         }
 
-        // verify loop state
-        if (op->id == SSA_OP_FOR ||
-            op->id == SSA_OP_FOREACH ||
-            op->id == SSA_OP_FOREACH_UNTIL ||
-            op->id == SSA_OP_REPEAT ||
-            op->id == SSA_OP_INFINITE ||
-            op->id == SSA_OP_WHILE)
-        {
-            const size_t states_count = op->outs_len;
-            if (states_count != op->states_len) {
-                const OpPath newpath = oppath_copy_add(path, i);
-                VerifyError error = {
-                    .path = newpath,
-                    .error = "Loop state not initialized",
-                    .additional = "Loop states do not match! Example: `state0=1234`"
-                };
-                verifyerrors_add(dest, &error);
-            }
+        // TODO: implement for more ops
+        switch (op->id) {
+        case VX_IR_OP_FOR:
+        case VX_IR_OP_FOREACH:
+        case VX_IR_OP_FOREACH_UNTIL:
+        case VX_IR_OP_REPEAT:
+        case VX_IR_OP_INFINITE:
+        case VX_IR_OP_WHILE:
+            analyze_loops(dest, block, i, path);
+            break;
 
-            const SsaValue *doblock_v = irop_param(op, SSA_NAME_LOOP_DO);
-            if (doblock_v == NULL) {
-                const OpPath newpath = oppath_copy_add(path, i);
-                VerifyError error = {
-                    .path = newpath,
-                    .error = "Loop is missing a do block",
-                    .additional = "Loop is missing a `do` block. Example: `do=(%0){}`"
-                };
-                verifyerrors_add(dest, &error);
-            }
-            else {
-                if (doblock_v->type != SSA_VAL_BLOCK) {
-                    error_param_type(dest, oppath_copy_add(path, i), "block");
-                } else {
-                    const SsaBlock *doblock = doblock_v->block;
+        case VX_IR_OP_IF:
+            (void) analyze_if(dest, op, i, path);
+            break;
 
-                    if (doblock->outs_len != states_count) {
-                        const OpPath newpath = oppath_copy_add(path, i);
-                        VerifyError error = {
-                            .path = newpath,
-                            .error = "Do block is missing state changes",
-                            .additional = "Loop do-block is missing state-updates for all states!"
-                        };
-                        verifyerrors_add(dest, &error);
-                    }
-                }
-            }
-        }
-
-        if (op->id == SSA_OP_IF) {
-            bool err = false;
-
-            const SsaValue *vcond = irop_param(op, SSA_NAME_COND);
-            if (vcond == NULL) {
-                error_param_missing(dest, oppath_copy_add(path, i), "cond");
-                err = true;
-            } else if (vcond->type != SSA_VAL_BLOCK) {
-                error_param_type(dest, oppath_copy_add(path, i), "block");
-                err = true;
-            }
-
-            const SsaValue *vthen = irop_param(op, SSA_NAME_COND_THEN);
-            if (vthen == NULL) {
-                error_param_missing(dest, oppath_copy_add(path, i), "then");
-                err = true;
-            } else if (vthen->type != SSA_VAL_BLOCK) {
-                error_param_type(dest, oppath_copy_add(path, i), "block");
-                err = true;
-            }
-
-            const SsaValue *velse = irop_param(op, SSA_NAME_COND_ELSE);
-            if (velse == NULL) {
-                error_param_missing(dest, oppath_copy_add(path, i), "else");
-                err = true;
-            } else if (velse->type != SSA_VAL_BLOCK) {
-                error_param_type(dest, oppath_copy_add(path, i), "block");
-                err = true;
-            }
-
-            if (!err) {
-                SsaBlock *bcond = vcond->block;
-                SsaBlock *bthen = vthen->block;
-                SsaBlock *belse = velse->block;
-
-                if (bcond->outs_len != 1) {
-                    const OpPath newpath = oppath_copy_add(path, i);
-                    VerifyError error = {
-                        .path = newpath,
-                        .error = "If block is missing a condition",
-                        .additional = "If block is missing a condition! Example: `cond=(){ ^ 1 }`"
-                    };
-                    verifyerrors_add(dest, &error);
-                }
-
-                if (!(bthen->outs_len == belse->outs_len && bthen->outs_len == op->outs_len)) {
-                    const OpPath newpath = oppath_copy_add(path, i);
-                    VerifyError error = {
-                        .path = newpath,
-                        .error = "If block invalid outputs",
-                        .additional = "Expected every branch in the if block to have the same amount of outputs!"
-                    };
-                    verifyerrors_add(dest, &error);
-                }
-            }
+        default:
+            break;
         }
 
         for (size_t j = 0; j < op->params_len; j ++) {
-            const SsaValue val = op->params[j].val;
+            const vx_IrValue val = op->params[j].val;
 
-            if (val.type == SSA_VAL_BLOCK) {
-                const OpPath newpath = oppath_copy_add(path, i);
-                VerifyErrors errs = irblock_verify(val.block, newpath);
+            if (val.type == VX_IR_VALBLOCK) {
+                const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+                vx_Errors errs = vx_IrBlock_verify(val.block, newpath);
                 free(newpath.ids);
-                verifyerrors_add_all_and_free(dest, &errs);
+                vx_Errors_add_all_and_free(dest, &errs);
             }
-            else if (val.type == SSA_VAL_VAR) {
-                const SsaVar var = val.var;
+            else if (val.type == VX_IR_VALVAR) {
+                const vx_IrVar var = val.var;
                 if (var >= root->as_root.vars_len) {
                     static char buf[256];
                     sprintf(buf, "Variable %%%zu id is bigger than root block variable count - 1!", var);
-                    const OpPath newpath = oppath_copy_add(path, i);
-                    VerifyError error = {
+                    const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+                    vx_Error error = {
                         .path = newpath,
                         .error = "Variable out of bounds",
                         .additional = buf
                     };
-                    verifyerrors_add(dest, &error);
+                    vx_Errors_add(dest, &error);
                 } else if (root->as_root.vars[var].decl == NULL) {
                     static char buf[256];
                     sprintf(buf, "Variable %%%zu is never declared!", var);
-                    const OpPath newpath = oppath_copy_add(path, i);
-                    VerifyError error = {
+                    const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+                    vx_Error error = {
                         .path = newpath,
                         .error = "Undeclared variable",
                         .additional = buf
                     };
-                    verifyerrors_add(dest, &error);
+                    vx_Errors_add(dest, &error);
                 }
             }
         }
     }
-
 }

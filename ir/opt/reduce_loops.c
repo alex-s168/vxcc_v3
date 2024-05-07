@@ -29,28 +29,31 @@
 *
 * But when the condition is always true, we need to make it an infinite loop!
 */
-void opt_reduce_loops(SsaView view, SsaBlock *block) {
+void vx_opt_reduce_loops(view, block)
+    vx_IrView view;
+    vx_IrBlock *block;
+{
     assert(view.block == block);
     
-    while (irview_find(&view, SSA_OP_FOR)) {
-        SsaOp *op = (SsaOp *) irview_take(view);
+    while (vx_IrView_find(&view, VX_IR_OP_FOR)) {
+        vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);
 
-        if (op->id == SSA_OP_WHILE && op->outs_len > 0) { // "fast path" for when we don't even have states
-            SsaBlock **bdo = &irop_param(op, SSA_NAME_LOOP_DO)->block;
-            SsaBlock *newdo = *bdo;
-            SsaBlock **bcond = &irop_param(op, SSA_NAME_COND)->block;
-            SsaBlock *newcond = *bcond;
+        if (op->id == VX_IR_OP_WHILE && op->outs_len > 0) { // "fast path" for when we don't even have states
+            vx_IrBlock **bdo = &vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block;
+            vx_IrBlock *newdo = *bdo;
+            vx_IrBlock **bcond = &vx_IrOp_param(op, VX_IR_NAME_COND)->block;
+            vx_IrBlock *newcond = *bcond;
 
             // TODO: if we detect multiple counters here, chose the one which is single present in the condition
             
-            SsaOp *incOp = NULL;
+            vx_IrOp *incOp = NULL;
             size_t stateId;
-            struct SsaStaticIncrement si;
+            struct IrStaticIncrement si;
             for (stateId = 0; stateId < op->outs_len; stateId ++) {
                 bool found = false;
                 for (size_t j = 0; j < newdo->ops_len; j ++) {
                     incOp = &newdo->ops[j];
-                    si = irop_detect_static_increment(incOp);
+                    si = vx_IrOp_detect_static_increment(incOp);
                     if (si.detected &&
                         incOp->outs[0].var == op->outs[stateId].var &&
                         si.var == newcond->ins[stateId])
@@ -70,27 +73,28 @@ void opt_reduce_loops(SsaView view, SsaBlock *block) {
             *bcond = NULL;
             *bdo = NULL;
 
-            const SsaValue init = op->states[stateId];
+            const vx_IrValue init = op->states[stateId];
 
             // counter needs to be at pos 0 oviously
-            irblock_swap_state_at(newcond, stateId, 0);
-            irop_remove_state_at(op, stateId);
+            vx_IrBlock_swap_in_at(newcond, stateId, 0);
+            vx_IrBlock_swap_out_at(newcond, stateId, 0);
+            vx_IrOp_remove_state_at(op, stateId);
 
-            SsaOp new;
-            irop_init(&new, SSA_OP_FOR, block);
-            irop_add_param_s(&new, SSA_NAME_LOOP_START, init);
-            irop_add_param_s(&new, SSA_NAME_LOOP_STRIDE, (SsaValue) { .type = SSA_VAL_IMM_INT, .imm_int = si.by });
-            irop_steal_states(&new, op);
-            irop_add_param_s(&new, SSA_NAME_COND, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newcond });
-            irop_add_param_s(&new, SSA_NAME_LOOP_DO, (SsaValue) { .type = SSA_VAL_BLOCK, .block = newdo });
+            vx_IrOp new;
+            vx_IrOp_init(&new, VX_IR_OP_FOR, block);
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_START, init);
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_STRIDE, (vx_IrValue) { .type = VX_IR_VALIMM_INT, .imm_int = si.by });
+            vx_IrOp_steal_states(&new, op);
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = newcond });
+            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VALBLOCK, .block = newdo });
 
-            irop_destroy(incOp);
-            irop_init(incOp, SSA_OP_NOP, block);
+            vx_IrOp_destroy(incOp);
+            vx_IrOp_init(incOp, VX_IR_OP_NOP, block);
 
-            irop_destroy(op);
-            (void) irview_replace(block, view, &new, 1);
+            vx_IrOp_destroy(op);
+            (void) vx_IrView_replace(block, view, &new, 1);
         }
         
-        view = irview_drop(view, 1);
+        view = vx_IrView_drop(view, 1);
     }
 }

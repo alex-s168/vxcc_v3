@@ -6,18 +6,18 @@
 
 #include "../utils.h"
 
-bool irblock_staticeval_var(const SsaBlock *block, const SsaVar var, SsaValue *dest) {
-    const SsaOp *decl = irblock_root(block)->as_root.vars[var].decl;
+bool vx_IrBlock_eval_var(const vx_IrBlock *block, const vx_IrVar var, vx_IrValue *dest) {
+    const vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
     if (decl == NULL)
         return false;
 
-    if (decl->id == SSA_OP_IMM) {
-        const SsaValue *value = irop_param(decl, SSA_NAME_VALUE);
+    if (decl->id == VX_IR_OP_IMM) {
+        const vx_IrValue *value = vx_IrOp_param(decl, VX_IR_NAME_VALUE);
         if (value == NULL)
             return false;
 
-        if (value->type == SSA_VAL_VAR)
-            return irblock_staticeval_var(block, value->var, dest);
+        if (value->type == VX_IR_VALVAR)
+            return vx_IrBlock_eval_var(block, value->var, dest);
 
         *dest = *value;
         return true;
@@ -26,52 +26,52 @@ bool irblock_staticeval_var(const SsaBlock *block, const SsaVar var, SsaValue *d
     return false;
 }
 
-bool irblock_mightbe_var(const SsaBlock *block, SsaVar var, SsaValue v) {
-    SsaValue is;
-    if (irblock_staticeval_var(block, var, &is)) {
-        return memcmp(&is, &v, sizeof(SsaValue)) == 0;
+bool vx_Irblock_mightbe_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
+    vx_IrValue is;
+    if (vx_IrBlock_eval_var(block, var, &is)) {
+        return memcmp(&is, &v, sizeof(vx_IrValue)) == 0;
     }
     return true;
 }
 
-bool irblock_alwaysis_var(const SsaBlock *block, SsaVar var, SsaValue v) {
-    SsaValue is;
-    if (!irblock_staticeval_var(block, var, &is))
+bool vx_Irblock_alwaysis_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
+    vx_IrValue is;
+    if (!vx_IrBlock_eval_var(block, var, &is))
         return false;
-    return memcmp(&is, &v, sizeof(SsaValue)) == 0;
+    return memcmp(&is, &v, sizeof(vx_IrValue)) == 0;
 }
 
-void irblock_staticeval(SsaBlock *block, SsaValue *v) {
-    if (v->type == SSA_VAL_VAR)
-        while (irblock_staticeval_var(block, v->var, v)) {}
+void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v) {
+    if (v->type == VX_IR_VALVAR)
+        while (vx_IrBlock_eval_var(block, v->var, v)) {}
 }
 
 
-struct SsaStaticIncrement irop_detect_static_increment(const SsaOp *op) {
-    if (op->id != SSA_OP_ADD && op->id != SSA_OP_SUB)
-        return (struct SsaStaticIncrement) { .detected = false };
+struct IrStaticIncrement vx_IrOp_detect_static_increment(const vx_IrOp *op) {
+    if (op->id != VX_IR_OP_ADD && op->id != VX_IR_OP_SUB)
+        return (struct IrStaticIncrement) { .detected = false };
 
-    const SsaValue a = *irop_param(op, SSA_NAME_OPERAND_A);
-    const SsaValue b = *irop_param(op, SSA_NAME_OPERAND_B);
+    const vx_IrValue a = *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A);
+    const vx_IrValue b = *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
 
-    if (a.type == SSA_VAL_VAR && b.type == SSA_VAL_IMM_INT) {
+    if (a.type == VX_IR_VALVAR && b.type == VX_IR_VALIMM_INT) {
         long long by = b.imm_int;
-        if (op->id == SSA_OP_SUB)
+        if (op->id == VX_IR_OP_SUB)
             by = -by;
-        return (struct SsaStaticIncrement) {
+        return (struct IrStaticIncrement) {
             .detected = false,
             .var = a.var,
             .by = by
         };
     }
 
-    if (b.type == SSA_VAL_VAR && a.type == SSA_VAL_IMM_INT && op->id == SSA_OP_ADD) {
-        return (struct SsaStaticIncrement) {
+    if (b.type == VX_IR_VALVAR && a.type == VX_IR_VALIMM_INT && op->id == VX_IR_OP_ADD) {
+        return (struct IrStaticIncrement) {
             .detected = false,
             .var = b.var,
             .by = a.imm_int
         };
     }
 
-    return (struct SsaStaticIncrement) { .detected = false };
+    return (struct IrStaticIncrement) { .detected = false };
 }
