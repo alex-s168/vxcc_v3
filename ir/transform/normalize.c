@@ -18,7 +18,7 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
             vx_IrBlock *b_end = vx_IrOp_param(op, VX_IR_NAME_LOOP_ENDEX)->block;
             vx_IrBlock *b_do = vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block;
             // we free manually because we don't want to free blocks if should_free
-            free(op->types); // TODO: ^ is stupid
+            // TODO: ^ is stupid
             free(op->outs);
             free(op->states);
             vx_IrOp_remove_params(op);

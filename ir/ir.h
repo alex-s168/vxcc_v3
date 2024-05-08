@@ -279,9 +279,6 @@ typedef struct {
 } vx_IrTypedVar;
 
 struct vx_IrOp_s {
-    vx_IrType **types;
-    size_t     types_len;
-
     vx_IrTypedVar *outs;
     size_t         outs_len;
 
@@ -344,7 +341,6 @@ void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *
 vx_IrValue *vx_IrOp_param(const vx_IrOp *op, vx_IrName name);
 
 void vx_IrOp_init(vx_IrOp *op, vx_IrOpType type, vx_IrBlock *parent);
-void vx_IrOp_add_type(vx_IrOp *op, vx_IrType *type);
 void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
 void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
 void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);

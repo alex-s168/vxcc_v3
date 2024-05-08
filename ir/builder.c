@@ -116,9 +116,6 @@ void vx_IrOp_init(vx_IrOp *op,
                   const vx_IrOpType type,
                   vx_IrBlock *parent)
 {
-    op->types = NULL;
-    op->types_len = 0;
-
     op->outs = NULL;
     op->outs_len = 0;
 
@@ -131,13 +128,6 @@ void vx_IrOp_init(vx_IrOp *op,
 
     op->states = NULL;
     op->states_len = 0;
-}
-
-void vx_IrOp_add_type(vx_IrOp *op,
-                      vx_IrType *type)
-{
-    op->types = realloc(op->types, sizeof(vx_IrType) * (op->types_len + 1));
-    op->types[op->types_len ++] = type;
 }
 
 void vx_IrOp_add_out(vx_IrOp *op,
@@ -165,7 +155,6 @@ void vx_IrOp_add_param_s(vx_IrOp *op,
 void vx_IrOp_destroy(vx_IrOp *op)
 {
     vx_IrOp_remove_params(op);
-    free(op->types);
     free(op->outs);
     free(op->states);
 }
