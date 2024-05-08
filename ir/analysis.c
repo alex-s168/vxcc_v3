@@ -2,9 +2,8 @@
 
 #include "ir.h"
 
-bool vx_IrView_find(view, type)
-    vx_IrView *view;
-    const vx_IrOpType type;
+bool vx_IrView_find(vx_IrView *view,
+                    const vx_IrOpType type)
 {
     for (size_t i = view->start; i < view->end; i ++) {
         if (view->block->ops[i].id == type) {
@@ -17,9 +16,8 @@ bool vx_IrView_find(view, type)
 }
 
 /** You should use `vx_IrBlock_root(block)->as_root.vars[id].decl` instead! */
-vx_IrOp *vx_IrBlock_find_var_decl(block, var)
-    const vx_IrBlock *block;
-    const vx_IrVar var;
+vx_IrOp *vx_IrBlock_find_var_decl(const vx_IrBlock *block,
+                                  const vx_IrVar var)
 {
     for (size_t i = 0; i < block->ops_len; i ++) {
         vx_IrOp *op = &block->ops[i];
@@ -47,9 +45,8 @@ vx_IrOp *vx_IrBlock_find_var_decl(block, var)
 }
 
 
-bool vx_IrBlock_var_used(block, var)
-    const vx_IrBlock *block;
-    const vx_IrVar var;
+bool vx_IrBlock_var_used(const vx_IrBlock *block,
+                         const vx_IrVar var)
 {
     for (size_t i = 0; i < block->outs_len; i++)
         if (block->outs[i] == var)
@@ -73,10 +70,9 @@ bool vx_IrBlock_var_used(block, var)
     return false;
 }
 
-vx_IrOp *vx_IrBlock_inside_out_vardecl_before(block, var, before)
-    const vx_IrBlock *block;
-    const vx_IrVar var;
-    size_t before;
+vx_IrOp *vx_IrBlock_inside_out_vardecl_before(const vx_IrBlock *block,
+                                              const vx_IrVar var,
+                                              size_t before)
 {
     while (before --> 0) {
         vx_IrOp *op = &block->ops[before];
@@ -92,8 +88,7 @@ vx_IrOp *vx_IrBlock_inside_out_vardecl_before(block, var, before)
     return vx_IrBlock_inside_out_vardecl_before(block->parent, var, block->parent_index);
 }
 
-bool vx_IrOp_is_volatile(op)
-    vx_IrOp *op;
+bool vx_IrOp_is_volatile(vx_IrOp *op)
 {
     switch (op->id) {
         case VX_IR_OP_NOP:
@@ -149,11 +144,11 @@ bool vx_IrOp_is_volatile(op)
 
         default:
             assert(false);
+            return false; // never reached
     }
 }
 
-bool vx_IrBlock_is_volatile(block)
-    const vx_IrBlock *block;
+bool vx_IrBlock_is_volatile(const vx_IrBlock *block)
 {
     for (size_t j = 0; j < block->ops_len; j ++)
         if (vx_IrOp_is_volatile(&block->ops[j]))
