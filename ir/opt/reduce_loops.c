@@ -29,9 +29,8 @@
 *
 * But when the condition is always true, we need to make it an infinite loop!
 */
-void vx_opt_reduce_loops(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_reduce_loops(vx_IrView view,
+                         vx_IrBlock *block)
 {
     assert(view.block == block);
     

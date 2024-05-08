@@ -9,3 +9,4 @@ void vx_error_param_type(vx_Errors *errors, vx_OpPath path, const char *expected
 void vx_error_param_missing(vx_Errors *errors, vx_OpPath path, const char *param);
 
 #endif
+

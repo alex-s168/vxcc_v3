@@ -2,9 +2,8 @@
 
 #include <assert.h>
 
-void vx_opt_constant_eval(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_constant_eval(vx_IrView view,
+                          vx_IrBlock *block)
 {
     assert(view.block == block);
 

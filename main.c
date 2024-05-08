@@ -2,6 +2,8 @@
 #include "ir/opt.h"
 #include "ir/cir.h"
 
+static vx_IrType *ty_int = NULL;
+
 static int ir_test(void) {
     vx_IrBlock block;
     vx_IrBlock_init(&block, NULL, 0);
@@ -16,7 +18,7 @@ static int ir_test(void) {
     {
         vx_IrOp cmp_op;
         vx_IrOp_init(&cmp_op, VX_IR_OP_LT, &cond);
-        vx_IrOp_add_out(&cmp_op, 1, "bool");
+        vx_IrOp_add_out(&cmp_op, 1, ty_int);
         vx_IrOp_add_param_s(&cmp_op, VX_IR_NAME_OPERAND_A, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = 2 });
         vx_IrOp_add_param_s(&cmp_op, VX_IR_NAME_OPERAND_B, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 10 });
 
@@ -53,7 +55,7 @@ static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
 
     vx_IrOp assign;
     vx_IrOp_init(&assign, VX_IR_OP_IMM, block);
-    vx_IrOp_add_out(&assign, temp_var, "int");
+    vx_IrOp_add_out(&assign, temp_var, ty_int);
     vx_IrOp_add_param_s(&assign, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 1 });
     vx_IrBlock_add_op(block, &assign);
 
@@ -69,7 +71,7 @@ static vx_IrBlock *conditional_c_assign(vx_IrVar dest, vx_IrBlock *parent, vx_Ir
     {
         vx_IrOp op2;
         vx_IrOp_init(&op2, VX_IR_OP_IMM, then);
-        vx_IrOp_add_out(&op2, dest, "int");
+        vx_IrOp_add_out(&op2, dest, ty_int);
         vx_IrOp_add_param_s(&op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 2 });
         vx_IrBlock_add_op(then, &op2);
     }
@@ -92,7 +94,7 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
     {
         vx_IrOp op2;
         vx_IrOp_init(&op2, VX_IR_OP_IMM, els);
-        vx_IrOp_add_out(&op2, dest, "int");
+        vx_IrOp_add_out(&op2, dest, ty_int);
         vx_IrOp_add_param_s(&op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 2 });
         vx_IrBlock_add_op(els, &op2);
     }
@@ -112,7 +114,7 @@ static int cir_test(void) {
     {
         vx_IrOp op;
         vx_IrOp_init(&op, VX_IR_OP_IMM, &block);
-        vx_IrOp_add_out(&op, 0, "int");
+        vx_IrOp_add_out(&op, 0, ty_int);
         vx_IrOp_add_param_s(&op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 1 });
         vx_IrBlock_add_op(&block, &op);
     }
@@ -123,7 +125,7 @@ static int cir_test(void) {
     {
         vx_IrOp op;
         vx_IrOp_init(&op, VX_IR_OP_IMM, &block);
-        vx_IrOp_add_out(&op, 1, "int");
+        vx_IrOp_add_out(&op, 1, ty_int);
         vx_IrOp_add_param_s(&op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = 0 });
         vx_IrBlock_add_op(&block, &op);
     }

@@ -1,8 +1,7 @@
 #include "../opt.h"
 
-void vx_opt_loop_simplify(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_loop_simplify(vx_IrView view,
+                          vx_IrBlock *block)
 {
     while (vx_IrView_find(&view, VX_IR_OP_FOR)) {
         vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);

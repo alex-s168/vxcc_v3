@@ -165,7 +165,8 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
         for (size_t i = 0; i < op->types_len; i ++) {
             if (i > 0)
                 fputc(',', out);
-            fputs(op->types[i], out);
+            // TODO
+            //fputs(op->types[i], out);
         }
 
         fputc('>', out);

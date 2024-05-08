@@ -2,9 +2,8 @@
 
 #include "../opt.h"
 
-void vx_opt_reduce_if(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_reduce_if(vx_IrView view,
+                      vx_IrBlock *block)
 {
     const vx_IrBlock *root = vx_IrBlock_root(block);
 

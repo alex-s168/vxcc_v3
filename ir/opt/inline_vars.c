@@ -1,8 +1,7 @@
 #include "../opt.h"
 
-static void trav(op, data)
-    vx_IrOp *op;
-    void *data;
+static void trav(vx_IrOp *op,
+                 void *data)
 {
     vx_IrBlock *block = data;
 
@@ -17,9 +16,8 @@ static void trav(op, data)
     }
 }
 
-void vx_opt_inline_vars(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_inline_vars(vx_IrView view,
+                        vx_IrBlock *block)
 {
     vx_IrView_deep_traverse(view, trav, block);
 }

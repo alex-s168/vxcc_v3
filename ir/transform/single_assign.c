@@ -7,8 +7,7 @@
  *
  * inside out!
  */
-void vx_CIrBlock_mksa_final(block)
-    vx_IrBlock *block;
+void vx_CIrBlock_mksa_final(vx_IrBlock *block)
 {
     for (size_t i = 0; i < block->ops_len; i ++) {
         vx_IrOp *op = &block->ops[i];

@@ -5,9 +5,8 @@
 /**
  * Find identical computations and join them
  */
-void vx_opt_join_compute(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_join_compute(vx_IrView view,
+                         vx_IrBlock *block)
 {
     assert(view.block == block);
 

@@ -3,8 +3,7 @@
 
 #include "../cir.h"
 
-void vx_CIrBlock_normalize(block)
-    vx_IrBlock *block;
+void vx_CIrBlock_normalize(vx_IrBlock *block)
 {
     assert(block->is_root);
 

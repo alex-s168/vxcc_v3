@@ -2,8 +2,7 @@
 
 #include "../opt.h"
 
-void vx_opt_remove_vars(block)
-    vx_IrBlock *block;
+void vx_opt_remove_vars(vx_IrBlock *block)
 {
     assert(block->is_root);
 

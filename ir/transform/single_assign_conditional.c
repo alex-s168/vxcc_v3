@@ -47,14 +47,13 @@
  * @param var affected variable
  * @param manipIn 
  */
-static vx_IrVar megic(outer, outerOff, conditional, condOff, ifOp, var, manipIn)
-    vx_IrBlock *outer;
-    const size_t outerOff;
-    vx_IrBlock *conditional;
-    const size_t condOff;
-    vx_IrOp *ifOp;
-    const vx_IrVar var;
-    const vx_OptIrVar manipIn;
+static vx_IrVar megic(vx_IrBlock *outer,
+                      const size_t outerOff,
+                      vx_IrBlock *conditional,
+                      const size_t condOff,
+                      vx_IrOp *ifOp,
+                      const vx_IrVar var,
+                      const vx_OptIrVar manipIn)
 {
     // stage 1
     const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
@@ -132,8 +131,7 @@ static vx_IrVar megic(outer, outerOff, conditional, condOff, ifOp, var, manipIn)
 
 // call megic somehow
 // detect the patter from the inside out!!
-vx_OptIrVar vx_CIrBlock_mksa_states(block)
-    vx_IrBlock *block;
+vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
 {
     vx_OptIrVar rvar = VX_IRVAR_OPT_NONE;
 

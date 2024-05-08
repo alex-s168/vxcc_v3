@@ -6,9 +6,8 @@
  * `constant < a` -> `a > constant`
  * `constant > a` -> `a < constant`
  */
-void vx_opt_comparisions(view, block)
-    vx_IrView view;
-    vx_IrBlock *block;
+void vx_opt_comparisions(vx_IrView view,
+                         vx_IrBlock *block)
 {
     for (size_t i = view.start; i < view.end; i ++) {
         vx_IrOp *op = &block->ops[i];

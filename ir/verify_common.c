@@ -24,11 +24,10 @@ void vx_error_param_missing(vx_Errors *errors, const vx_OpPath path, const char 
     vx_Errors_add(errors, &error);
 }
 
-static bool analyze_if(dest, op, i, path)
-    vx_Errors *dest;
-    const vx_IrOp *op;
-    size_t i;
-    vx_OpPath path;
+static bool analyze_if(vx_Errors *dest,
+                       const vx_IrOp *op,
+                       size_t i,
+                       vx_OpPath path)
 {
     bool err = false;
 
@@ -88,11 +87,10 @@ static bool analyze_if(dest, op, i, path)
     return err;
 }
 
-static void analyze_loops(dest, op, i, path)
-    vx_Errors *dest;
-    const vx_IrOp *op;
-    size_t i;
-    vx_OpPath path;
+static void analyze_loops(vx_Errors *dest,
+                          const vx_IrOp *op,
+                          size_t i,
+                          vx_OpPath path)
 {
     const size_t states_count = op->outs_len;
     if (states_count != op->states_len) {
@@ -163,7 +161,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
         case VX_IR_OP_REPEAT:
         case VX_IR_OP_INFINITE:
         case VX_IR_OP_WHILE:
-            analyze_loops(dest, block, i, path);
+            analyze_loops(dest, op, i, path);
             break;
 
         case VX_IR_OP_IF:
