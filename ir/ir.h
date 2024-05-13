@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../common.h"
 
@@ -64,6 +65,10 @@ struct vx_IrType_s {
         vx_IrTypeCIRUnion   cir_union;
     };
 };
+
+static vx_IrType* vx_IrType_heap(void) {
+    return (vx_IrType*) malloc(sizeof(vx_IrType));
+}
 
 struct vx_IrBlock_s;
 typedef struct vx_IrBlock_s vx_IrBlock;
