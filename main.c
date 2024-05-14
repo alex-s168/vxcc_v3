@@ -2,7 +2,7 @@
 #include "ir/opt.h"
 #include "ir/cir.h"
 
-static vx_IrType *ty_int = NULL;
+static vx_IrType *ty_int;
 
 static int ir_test(void) {
     vx_IrBlock block;
@@ -150,6 +150,12 @@ static int cir_test(void) {
 }
 
 int main(void) {
+    ty_int = vx_IrType_heap();
+    ty_int->debugName = "i32";
+    ty_int->kind = VX_IR_TYPE_KIND_BASE;
+    ty_int->base.align = 4;
+    ty_int->base.size = 4;
+
     printf("C-IR test:\n");
     if (cir_test() != 0)
         return 1;

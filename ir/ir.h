@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../common.h"
 
@@ -67,7 +68,7 @@ struct vx_IrType_s {
 };
 
 static vx_IrType* vx_IrType_heap(void) {
-    return (vx_IrType*) malloc(sizeof(vx_IrType));
+    return (vx_IrType*) memset(malloc(sizeof(vx_IrType)), 0, sizeof(vx_IrType));
 }
 
 struct vx_IrBlock_s;
@@ -153,7 +154,9 @@ typedef struct {
         long long imm_int;
         double imm_flt;
         vx_IrVar var;
+
         vx_IrBlock *block;
+        vx_IrType *ty;
     };
 } vx_IrValue;
 
