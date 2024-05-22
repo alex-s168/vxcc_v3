@@ -86,6 +86,7 @@ struct vx_IrBlock_s {
         size_t vars_len;
 
         struct {
+            vx_IrOp *decl;
         } *labels;
         size_t labels_len;
     } as_root;
@@ -127,16 +128,20 @@ void vx_IrBlock_init(vx_IrBlock *block, vx_IrBlock *parent, size_t parent_index)
 void vx_IrBlock_make_root(vx_IrBlock *block, size_t total_vars);
 void vx_IrBlock_add_in(vx_IrBlock *block, vx_IrVar var);
 void vx_IrBlock_add_op(vx_IrBlock *block, const vx_IrOp *op);
+/** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
+vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block);
 void vx_IrBlock_add_all_op(vx_IrBlock *dest, const vx_IrBlock *src);
 void vx_IrBlock_add_out(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);
 vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var);
 
 vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl);
+size_t   vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl);
 TRANSFORM_PASS void vx_IrBlock_flatten(vx_IrBlock *block);
 void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
+size_t vx_IrBlock_insert_label_op(vx_IrBlock *block);
 
 bool vx_IrBlock_var_used(const vx_IrBlock *block, vx_IrVar var);
 

@@ -65,10 +65,15 @@ void vx_IrBlock_add_in(vx_IrBlock *block,
 void vx_IrBlock_add_op(vx_IrBlock *block,
                        const vx_IrOp *op)
 {
-    block->ops = realloc(block->ops, sizeof(vx_IrOp) * (block->ops_len + 1));
-    block->ops[block->ops_len ++] = *op;
+    *vx_IrBlock_add_op_building(block) = *op;
 
     // TODO: make sure that out variables are in root block (add them if not)!!!!!!!
+}
+
+/** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
+vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block) {
+    block->ops = realloc(block->ops, sizeof(vx_IrOp) * (block->ops_len + 1));
+    return &block->ops[block->ops_len ++];
 }
 
 void vx_IrBlock_add_all_op(vx_IrBlock *dest,

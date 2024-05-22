@@ -66,7 +66,9 @@ const char *vx_IrName_str[] = {
 
     [VX_IR_NAME_BLOCK] = "block",
     [VX_IR_NAME_VALUE] = "val",
+    [VX_IR_NAME_ADDR] = "addr",
     [VX_IR_NAME_COND] = "cond",
+    [VX_IR_NAME_VAR] = "var",
 
     [VX_IR_NAME_COND_THEN] = "then",
     [VX_IR_NAME_COND_ELSE] = "else",
@@ -84,6 +86,11 @@ const char *vx_IrName_str[] = {
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
     switch (value.type) {
+        case VX_IR_VAL_ID: {
+            fprintf(out, "$%zu", value.id);
+        }
+        break;
+
         case VX_IR_VAL_UNINIT: {
             fprintf(out, "uninit");
         }

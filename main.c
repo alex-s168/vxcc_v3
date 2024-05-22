@@ -1,54 +1,8 @@
 #include "ir/ir.h"
-#include "ir/opt.h"
 #include "ir/cir.h"
+#include "ir/llir.h"
 
 static vx_IrType *ty_int;
-
-static int ir_test(void) {
-    vx_IrBlock block;
-    vx_IrBlock_init(&block, NULL, 0);
-
-    vx_IrOp for_op;
-    vx_IrOp_init(&for_op, VX_IR_OP_FOR, &block);
-    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_LOOP_START, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 });
-
-    vx_IrBlock cond;
-    vx_IrBlock_init(&cond, &block, block.ops_len);
-    vx_IrBlock_add_in(&cond, 2);
-    {
-        vx_IrOp cmp_op;
-        vx_IrOp_init(&cmp_op, VX_IR_OP_LT, &cond);
-        vx_IrOp_add_out(&cmp_op, 1, ty_int);
-        vx_IrOp_add_param_s(&cmp_op, VX_IR_NAME_OPERAND_A, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = 2 });
-        vx_IrOp_add_param_s(&cmp_op, VX_IR_NAME_OPERAND_B, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 10 });
-
-        vx_IrBlock_add_op(&cond, &cmp_op);
-    }
-    vx_IrBlock_add_out(&cond, 1);
-
-    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = &cond });
-
-    vx_IrBlock loop;
-    vx_IrBlock_init(&loop, &block, block.ops_len);
-    vx_IrBlock_add_in(&loop, 0);
-    // let's assume that this block prints the number
-
-    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_LOOP_STRIDE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 1 });
-    vx_IrOp_add_param_s(&for_op, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = &loop });
-
-    vx_IrBlock_add_op(&block, &for_op);
-
-    vx_IrBlock_make_root(&block, 3);
-
-    if (vx_ir_verify(&block) != 0)
-        return 1;
-
-    opt(&block);
-
-    vx_IrBlock_dump(&block, stdout, 0);
-
-    return 0;
-}
 
 static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
     vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->ops_len);
@@ -108,43 +62,50 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
 }
 
 static int cir_test(void) {
-    vx_IrBlock block;
-    vx_IrBlock_init(&block, NULL, 0);
+    vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
 
     {
         vx_IrOp op;
-        vx_IrOp_init(&op, VX_IR_OP_IMM, &block);
+        vx_IrOp_init(&op, VX_IR_OP_IMM, block);
         vx_IrOp_add_out(&op, 0, ty_int);
         vx_IrOp_add_param_s(&op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 1 });
-        vx_IrBlock_add_op(&block, &op);
+        vx_IrBlock_add_op(block, &op);
     }
 
-    vx_IrBlock *els = conditional_c_assign_else(0, &block, 1);
+    vx_IrBlock *els = conditional_c_assign_else(0, block, 1);
     conditional_c_assign_else(0, els, 2);
 
     {
         vx_IrOp op;
-        vx_IrOp_init(&op, VX_IR_OP_IMM, &block);
+        vx_IrOp_init(&op, VX_IR_OP_IMM, block);
         vx_IrOp_add_out(&op, 1, ty_int);
         vx_IrOp_add_param_s(&op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = 0 });
-        vx_IrBlock_add_op(&block, &op);
+        vx_IrBlock_add_op(block, &op);
     }
 
-    vx_IrBlock_make_root(&block, 1);
+    vx_IrBlock_make_root(block, 1);
 
-    if (vx_cir_verify(&block) != 0)
+    if (vx_cir_verify(block) != 0)
         return 1;
 
-    printf("Pre:\n");
-    vx_IrBlock_dump(&block, stdout, 0);
+    printf("Input:\n");
+    vx_IrBlock_dump(block, stdout, 0);
 
-    vx_CIrBlock_mksa_states(&block);
-    vx_CIrBlock_mksa_final(&block);
+    vx_CIrBlock_mksa_states(block);
+    vx_CIrBlock_mksa_final(block);
 
-    printf("Post:\n");
-    vx_IrBlock_dump(&block, stdout, 0);
+    printf("After C IR lower:\n");
+    vx_IrBlock_dump(block, stdout, 0);
 
-    vx_IrBlock_destroy(&block);
+    if (vx_ir_verify(block) != 0)
+        return 1;
+
+    vx_IrBlock_llir_lower(block);
+
+    printf("After SSA IR lower:\n");
+    vx_IrBlock_dump(block, stdout, 0);
+
+    vx_IrBlock_destroy(block);
 
     return 0;
 }
