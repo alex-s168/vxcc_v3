@@ -51,9 +51,13 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_IR_OP_FOREACH] = "foreach",
     [VX_IR_OP_FOREACH_UNTIL] = "foreach_until",
     [VX_IR_OP_REPEAT] = "repeat",
-    [CVX_IR_OP_CFOR] = "cfor",
+    [VX_CIR_OP_CFOR] = "cfor",
 
-    [VX_IR_OP_IF] = "if"
+    [VX_IR_OP_IF] = "if",
+
+    [VX_LIR_OP_LABEL] = "label",
+    [VX_LIR_GOTO] = "goto",
+    [VX_LIR_COND] = "cond",
 };
 
 const char *vx_IrName_str[] = {
@@ -74,6 +78,8 @@ const char *vx_IrName_str[] = {
 
     [VX_IR_NAME_ALTERNATIVE_A] = "a",
     [VX_IR_NAME_ALTERNATIVE_B] = "b",
+
+    [VX_IR_NAME_ID] = "id",
 };
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {

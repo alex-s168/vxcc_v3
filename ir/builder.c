@@ -42,14 +42,17 @@ void vx_IrBlock_make_root(vx_IrBlock *block,
     assert(block->parent == NULL);
 
     block->is_root = true;
+
     block->as_root.vars_len = total_vars;
     block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
-
     for (size_t i = 0; i < total_vars; i ++) {
         vx_IrOp *decl = vx_IrBlock_find_var_decl(block, i);
         // decl can be null!
         block->as_root.vars[i].decl = decl;
     }
+
+    block->as_root.labels = NULL;
+    block->as_root.labels_len = 0;
 }
 
 void vx_IrBlock_add_in(vx_IrBlock *block,
@@ -64,6 +67,8 @@ void vx_IrBlock_add_op(vx_IrBlock *block,
 {
     block->ops = realloc(block->ops, sizeof(vx_IrOp) * (block->ops_len + 1));
     block->ops[block->ops_len ++] = *op;
+
+    // TODO: make sure that out variables are in root block (add them if not)!!!!!!!
 }
 
 void vx_IrBlock_add_all_op(vx_IrBlock *dest,

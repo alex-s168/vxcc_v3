@@ -84,6 +84,10 @@ struct vx_IrBlock_s {
             vx_IrOp *decl;
         } *vars;
         size_t vars_len;
+
+        struct {
+        } *labels;
+        size_t labels_len;
     } as_root;
     
     vx_IrVar *ins;
@@ -126,6 +130,7 @@ void vx_IrBlock_add_op(vx_IrBlock *block, const vx_IrOp *op);
 void vx_IrBlock_add_all_op(vx_IrBlock *dest, const vx_IrBlock *src);
 void vx_IrBlock_add_out(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);
+vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var);
 
 vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl);
 TRANSFORM_PASS void vx_IrBlock_flatten(vx_IrBlock *block);
@@ -148,6 +153,7 @@ typedef struct {
         // not storable
         VX_IR_VAL_BLOCK,
         VX_IR_VAL_TYPE,
+        VX_IR_VAL_ID,
     } type;
 
     union {
@@ -157,6 +163,7 @@ typedef struct {
 
         vx_IrBlock *block;
         vx_IrType *ty;
+        size_t id;
     };
 } vx_IrValue;
 
@@ -190,6 +197,8 @@ typedef enum {
 
     VX_IR_NAME_ALTERNATIVE_A,
     VX_IR_NAME_ALTERNATIVE_B,
+
+    VX_IR_NAME_ID,
 } vx_IrName;
 
 extern const char *vx_IrName_str[];
@@ -268,11 +277,14 @@ typedef enum {
     VX_IR_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
     VX_IR_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
     VX_IR_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
-    CVX_IR_OP_CFOR,           // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->.
-    
-    // conditional
-    VX_IR_OP_IF,     // "cond": bool, "then": ()->R, ("else": ()->R)
+    VX_CIR_OP_CFOR,          // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->. 
 
+    // conditional
+    VX_IR_OP_IF,            // "cond": bool, "then": ()->R, ("else": ()->R)
+
+    VX_LIR_OP_LABEL,        // "id"
+    VX_LIR_GOTO,            // "id"
+    VX_LIR_COND,            // "id", "val": bool
 
     VX_IR_OP____END,
 } vx_IrOpType;

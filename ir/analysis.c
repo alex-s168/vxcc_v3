@@ -129,7 +129,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
             return true;
         
         case VX_IR_OP_REPEAT:
-        case CVX_IR_OP_CFOR:
+        case VX_CIR_OP_CFOR:
         case VX_IR_OP_IF:
         case VX_IR_OP_FLATTEN_PLEASE:
         case VX_IR_OP_INFINITE:
@@ -154,4 +154,12 @@ bool vx_IrBlock_is_volatile(const vx_IrBlock *block)
         if (vx_IrOp_is_volatile(&block->ops[j]))
             return true;
     return false;
+}
+
+vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
+    vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
+    for (size_t i = 0; i < decl->outs_len; i ++)
+        if (decl->outs[i].var == var)
+            return decl->outs[i].type;
+    assert(false);
 }
