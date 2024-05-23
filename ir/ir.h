@@ -71,6 +71,15 @@ static vx_IrType* vx_IrType_heap(void) {
     return (vx_IrType*) memset(malloc(sizeof(vx_IrType)), 0, sizeof(vx_IrType));
 }
 
+static bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
+    return a == b; // TODO
+}
+
+typedef struct {
+    vx_IrOp *first;
+    vx_IrOp *last;
+} lifetime;
+
 struct vx_IrBlock_s;
 typedef struct vx_IrBlock_s vx_IrBlock;
 
@@ -82,6 +91,9 @@ struct vx_IrBlock_s {
     struct {
         struct {
             vx_IrOp *decl;
+
+            lifetime  ll_lifetime;
+            vx_IrType *ll_type;
         } *vars;
         size_t vars_len;
 
@@ -144,6 +156,7 @@ void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
 size_t vx_IrBlock_insert_label_op(vx_IrBlock *block);
 
 bool vx_IrBlock_var_used(const vx_IrBlock *block, vx_IrVar var);
+bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var);
 
 void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, size_t indent);
 
@@ -313,6 +326,7 @@ struct vx_IrOp_s {
     vx_IrNamedValue *params;
     size_t           params_len;
 
+    // TODO: TODO TODO MOST FNS IGNORE THAT!!!! BAD!!! (also rename)
     vx_IrValue *states;
     size_t      states_len;
 

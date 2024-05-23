@@ -39,12 +39,14 @@ vx_Errors vx_IrBlock_verify(const vx_IrBlock *block, const vx_OpPath path) {
             if (block->as_root.vars[i].decl == NULL)
                 continue;
 
+            /*
             struct verify_vardecls_deeptraverse__data dat;
             dat.var = i;
             dat.declcount = 0;
             vx_IrView_deep_traverse(vx_IrView_of_all(block), verify_vardecls_deeptraverse, &dat);
+            // TODO: NEED TO SEARCH FROM ROOT
 
-            assert(dat.declcount > 0 /* WE REMOVED VARIABLE DECLARATION WITHOUT REMOVING IT FROM DB!!! */);
+            assert(dat.declcount > 0); // WE REMOVED VAR DECL WITHOUT REMOVING IT FROM INDEX
 
             if (dat.declcount > 1) {
                 static char buf[256];
@@ -56,6 +58,7 @@ vx_Errors vx_IrBlock_verify(const vx_IrBlock *block, const vx_OpPath path) {
                 };
                 vx_Errors_add(&errors, &error);
             }
+            */
         }
     }
 

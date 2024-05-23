@@ -44,6 +44,23 @@ vx_IrOp *vx_IrBlock_find_var_decl(const vx_IrBlock *block,
     return NULL;
 }
 
+bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
+    for (size_t j = 0; j < op->outs_len; j++)
+        if (op->outs[j].var == var)
+            return true;
+    for (size_t j = 0; j < op->params_len; j++) {
+        if (op->params[j].val.type == VX_IR_VAL_BLOCK) {
+            if (vx_IrBlock_var_used(op->params[j].val.block, var)) {
+                return true;
+            }
+        } else if (op->params[j].val.type == VX_IR_VAL_VAR) {
+            if (op->params[j].val.var == var) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 bool vx_IrBlock_var_used(const vx_IrBlock *block,
                          const vx_IrVar var)
@@ -54,17 +71,8 @@ bool vx_IrBlock_var_used(const vx_IrBlock *block,
 
     for (long int i = block->ops_len - 1; i >= 0; i--) {
         const vx_IrOp *op = &block->ops[i];
-        for (size_t j = 0; j < op->params_len; j++) {
-            if (op->params[j].val.type == VX_IR_VAL_BLOCK) {
-                if (vx_IrBlock_var_used(op->params[j].val.block, var)) {
-                    return true;
-                }
-            } else if (op->params[j].val.type == VX_IR_VAL_VAR) {
-                if (op->params[j].val.var == var) {
-                    return true;
-                }
-            }
-        }
+        if (vx_IrOp_var_used(op, var))
+            return true;
     }
 
     return false;
