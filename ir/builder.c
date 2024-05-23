@@ -62,12 +62,47 @@ void vx_IrBlock_add_in(vx_IrBlock *block,
     block->ins[block->ins_len ++] = var;
 }
 
+static void root_block_put_var(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
+    assert(root->is_root);
+    if (var >= root->as_root.vars_len) {
+        root->as_root.vars = realloc(root->as_root.vars, sizeof(*root->as_root.vars) * (var + 1));
+        root->as_root.vars_len = var + 1;
+    }
+    root->as_root.vars[var].decl = decl;
+}
+
+struct add_op__data {
+    vx_IrBlock *root; 
+    vx_IrOp *new;
+};
+
+static void add_op__trav(vx_IrOp *op, void *dataIn) {
+    struct add_op__data *data = dataIn;
+
+    for (size_t i = 0; i < op->outs_len; i ++) {
+        vx_IrTypedVar vv = op->outs[i];
+        root_block_put_var(data->root, vv.var, op);
+    }
+
+    // TODO: also fix labels
+}
+
 void vx_IrBlock_add_op(vx_IrBlock *block,
                        const vx_IrOp *op)
 {
-    *vx_IrBlock_add_op_building(block) = *op;
+    vx_IrOp *new = vx_IrBlock_add_op_building(block);
+    *new = *op;
 
-    // TODO: make sure that out variables are in root block (add them if not)!!!!!!!
+    // make sure that out variables and labels are in root block (add them if not)
+
+    struct add_op__data data;
+    data.new = new;
+    data.root = (vx_IrBlock*) vx_IrBlock_root(block->parent);
+
+    if (data.root == NULL)
+        return;
+
+    vx_IrView_deep_traverse(vx_IrView_of_single(new->parent, new - block->ops), add_op__trav, &data);
 }
 
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */

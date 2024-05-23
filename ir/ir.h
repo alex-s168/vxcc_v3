@@ -294,6 +294,9 @@ typedef enum {
     VX_IR_OP____END,
 } vx_IrOpType;
 
+/** false for nop and label   true for everything else */
+bool vx_IrOpType_has_effect(vx_IrOpType type);
+
 #define SSAOPTYPE_LEN (VX_IR_OP____END - VX_IR_OP_NOP)
 
 extern const char *vx_IrOpType_names[SSAOPTYPE_LEN];

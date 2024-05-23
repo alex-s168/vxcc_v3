@@ -71,3 +71,15 @@ size_t vx_IrBlock_insert_label_op(vx_IrBlock *block) {
     return label_id;
 }
 
+/** false for nop and label   true for everything else */
+bool vx_IrOpType_has_effect(vx_IrOpType type) {
+    switch (type) {
+    case VX_IR_OP_NOP:
+    case VX_LIR_OP_LABEL:
+        return false;
+
+    default:
+        return true;
+    }
+}
+

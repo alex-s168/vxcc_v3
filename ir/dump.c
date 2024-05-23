@@ -195,6 +195,8 @@ void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, const size_t indent) {
     fputc('\n', out);
 
     for (size_t i = 0; i < block->ops_len; i ++) {
+        if (block->ops[i].id == VX_IR_OP_NOP)
+            continue;
         vx_IrOp_dump(block->ops + i, out, indent + 1);
     }
 

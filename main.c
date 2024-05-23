@@ -1,6 +1,7 @@
 #include "ir/ir.h"
 #include "ir/cir.h"
 #include "ir/llir.h"
+#include "ir/opt.h"
 
 static vx_IrType *ty_int;
 
@@ -103,6 +104,12 @@ static int cir_test(void) {
     vx_IrBlock_llir_lower(block);
 
     printf("After SSA IR lower:\n");
+    vx_IrBlock_dump(block, stdout, 0);
+
+
+    opt_ll(block);
+
+    printf("After LL IR opt:\n");
     vx_IrBlock_dump(block, stdout, 0);
 
     vx_IrBlock_destroy(block);

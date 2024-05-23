@@ -11,6 +11,8 @@ OPT_PASS void vx_opt_join_compute(vx_IrView view, vx_IrBlock *block);
 OPT_PASS void vx_opt_reduce_if(vx_IrView view, vx_IrBlock *block);
 OPT_PASS void vx_opt_reduce_loops(vx_IrView view, vx_IrBlock *block);
 
+OPT_PASS void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block);
+
 /** Can only be applied to root blocks */
 OPT_PASS void vx_opt_remove_vars(vx_IrBlock *block);
 
@@ -39,6 +41,10 @@ static void opt(vx_IrBlock *block) {
     opt_pre(block);
     vx_opt_reduce_loops(vx_IrView_of_all(block), block);
     vx_opt_loop_simplify(vx_IrView_of_all(block), block);
+}
+
+static void opt_ll(vx_IrBlock *block) {
+    vx_opt_ll_jumps(vx_IrView_of_all(block), block);
 }
 
 #endif //OPT_H
