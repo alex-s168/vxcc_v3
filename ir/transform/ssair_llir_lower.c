@@ -129,7 +129,6 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
                 }
 
                 into(then, op, dest);
-
                 size_t label_end = vx_IrBlock_insert_label_op(dest);
 
                 {
@@ -179,6 +178,23 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
                     vx_IrOp_add_param_s(jump, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
                 }
             }
+        }
+        else if (op->id == VX_IR_OP_FLATTEN_PLEASE) {
+            vx_IrBlock *body = vx_IrOp_param(op, VX_IR_NAME_BLOCK)->block;
+            into(body, op, dest);    
+        }
+        else if (op->id == VX_IR_OP_CMOV) {
+            vx_IrValue *pcond = vx_IrOp_param(op, VX_IR_NAME_COND);
+            vx_IrBlock *cond = pcond->block;
+
+            vx_IrVar cond_var = cond->outs[0];
+
+            lower_into(cond->ops, cond->ops_len, dest);
+
+            pcond->type = VX_IR_VAL_VAR;
+            pcond->var = cond_var;
+
+            vx_IrBlock_add_op(dest, op);
         }
         // TODO: lower loops
         else {

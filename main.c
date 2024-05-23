@@ -9,9 +9,9 @@ static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
     vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->ops_len);
 
     vx_IrOp assign;
-    vx_IrOp_init(&assign, VX_IR_OP_LOAD_VOLATILE, block);
+    vx_IrOp_init(&assign, VX_IR_OP_IMM, block);
     vx_IrOp_add_out(&assign, temp_var, ty_int);
-    vx_IrOp_add_param_s(&assign, VX_IR_NAME_ADDR, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 });
+    vx_IrOp_add_param_s(&assign, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 1 });
     vx_IrBlock_add_op(block, &assign);
 
     vx_IrBlock_add_out(block, temp_var);
@@ -101,9 +101,7 @@ static int cir_test(void) {
     if (vx_ir_verify(block) != 0)
         return 1;
 
-    vx_opt_inline_vars(vx_IrView_of_all(block), block);
-    vx_opt_reduce_if(vx_IrView_of_all(block), block);
-    // opt(block);
+    opt(block);
 
     printf("After SSA IR opt:\n");
     vx_IrBlock_dump(block, stdout, 0);
@@ -127,6 +125,9 @@ static int cir_test(void) {
 }
 
 int main(void) {
+    vx_g_optconfig.loop_simplify = false;
+    vx_g_optconfig.if_eval = false;
+
     ty_int = vx_IrType_heap();
     ty_int->debugName = "i32";
     ty_int->kind = VX_IR_TYPE_KIND_BASE;

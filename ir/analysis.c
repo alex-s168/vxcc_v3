@@ -130,6 +130,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_LOAD:
         case VX_IR_OP_STORE:
         case VX_IR_OP_PLACE:
+        case VX_IR_OP_CMOV:
             return false;
 
         case VX_IR_OP_LOAD_VOLATILE:
@@ -170,4 +171,74 @@ vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
         if (decl->outs[i].var == var)
             return decl->outs[i].type;
     assert(false);
+}
+
+static size_t cost_lut[VX_IR_OP____END] = {
+    [VX_IR_OP_NOP] = 0,
+    [VX_IR_OP_IMM] = 1,
+    [VX_IR_OP_FLATTEN_PLEASE] = 0,
+    [VX_IR_OP_REINTERPRET] = 0,
+    [VX_IR_OP_ZEROEXT] = 1,
+    [VX_IR_OP_SIGNEXT] = 1,
+    [VX_IR_OP_TOFLT] = 1,
+    [VX_IR_OP_FROMFLT] = 1,
+    [VX_IR_OP_BITCAST] = 1,
+    [VX_IR_OP_LOAD] = 1,
+    [VX_IR_OP_LOAD_VOLATILE] = 1,
+    [VX_IR_OP_STORE] = 1,
+    [VX_IR_OP_STORE_VOLATILE] = 1,
+    [VX_IR_OP_PLACE] = 0,
+    [VX_IR_OP_ADD] = 1,
+    [VX_IR_OP_SUB] = 1,
+    [VX_IR_OP_MUL] = 1,
+    [VX_IR_OP_DIV] = 1,
+    [VX_IR_OP_MOD] = 1,
+    [VX_IR_OP_GT] = 1,
+    [VX_IR_OP_GTE] = 1,
+    [VX_IR_OP_LT] = 1,
+    [VX_IR_OP_LTE] = 1,
+    [VX_IR_OP_EQ] = 1,
+    [VX_IR_OP_NEQ] = 1,
+    [VX_IR_OP_NOT] = 1,
+    [VX_IR_OP_AND] = 1,
+    [VX_IR_OP_OR] = 1,
+    [VX_IR_OP_BITWISE_NOT] = 1,
+    [VX_IR_OP_BITWISE_AND] = 1,
+    [VX_IR_OP_BITIWSE_OR] = 1,
+    [VX_IR_OP_SHL] = 1,
+    [VX_IR_OP_FOR] = 1,
+    [VX_IR_OP_INFINITE] = 1,
+    [VX_IR_OP_WHILE] = 1,
+    [VX_IR_OP_CONTINUE] = 1,
+    [VX_IR_OP_BREAK] = 1,
+    [VX_IR_OP_FOREACH] = 2,
+    [VX_IR_OP_FOREACH_UNTIL] = 2,
+    [VX_IR_OP_REPEAT] = 1,
+    [VX_CIR_OP_CFOR] = 2,
+    [VX_IR_OP_IF] = 1,
+    [VX_IR_OP_CMOV] = 1,
+    [VX_LIR_OP_LABEL] = 1,
+    [VX_LIR_GOTO] = 1,
+    [VX_LIR_COND] = 1,
+};
+
+size_t vx_IrOp_inline_cost(vx_IrOp *op) {
+    size_t total = 0;
+
+    for (size_t i = 0; i < op->params_len; i ++)
+        if (op->params[i].val.type == VX_IR_NAME_BLOCK)
+            total += vx_IrBlock_inline_cost(op->params[i].val.block);
+
+    total += cost_lut[op->id];
+
+    return total;
+}
+
+size_t vx_IrBlock_inline_cost(const vx_IrBlock *block) {
+    size_t total = 0;
+    for (size_t i = 0; i < block->ops_len; i ++) {
+        vx_IrOp *op = &block->ops[i];
+        total += vx_IrOp_inline_cost(op);
+    }
+    return total;
 }

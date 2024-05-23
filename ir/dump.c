@@ -54,6 +54,7 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_CIR_OP_CFOR] = "cfor",
 
     [VX_IR_OP_IF] = "if",
+    [VX_IR_OP_CMOV] = "cmov",
 
     [VX_LIR_OP_LABEL] = "label",
     [VX_LIR_GOTO] = "goto",

@@ -149,7 +149,6 @@ vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var);
 
 vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl);
 size_t   vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl);
-TRANSFORM_PASS void vx_IrBlock_flatten(vx_IrBlock *block);
 void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
@@ -298,7 +297,8 @@ typedef enum {
     VX_CIR_OP_CFOR,          // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->. 
 
     // conditional
-    VX_IR_OP_IF,            // "cond": bool, "then": ()->R, ("else": ()->R)
+    VX_IR_OP_IF,            // "cond": ()->bool, "then": ()->R, ("else": ()->R)
+    VX_IR_OP_CMOV,          // "cond": ()->bool, "then": value, "else": value
 
     VX_LIR_OP_LABEL,        // "id"
     VX_LIR_GOTO,            // "id"
@@ -396,6 +396,7 @@ void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src);
 void vx_IrOp_destroy(vx_IrOp *op);
 void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);
 bool vx_IrOp_is_volatile(vx_IrOp *op);
+size_t vx_IrOp_inline_cost(vx_IrOp *op);
 void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
 
 struct IrStaticIncrement {
@@ -407,5 +408,6 @@ struct IrStaticIncrement vx_IrOp_detect_static_increment(const vx_IrOp *op);
 
 vx_IrOp *vx_IrBlock_inside_out_vardecl_before(const vx_IrBlock *block, vx_IrVar var, size_t before);
 bool vx_IrBlock_is_volatile(const vx_IrBlock *block);
+size_t vx_IrBlock_inline_cost(const vx_IrBlock *block);
 
 #endif //IR_H
