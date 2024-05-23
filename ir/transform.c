@@ -41,7 +41,7 @@ void vx_IrView_rename_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, vx_Ir
             if (block->outs[j] == old)
                 block->outs[j] = new;
 
-    vx_IrBlock_root(block)->as_root.vars[old].decl = NULL;
+    vx_IrBlock_root(block)->as_root.vars[old].decl_parent = NULL;
 
     for (size_t i = view.start; i < view.end; i ++) {
         const vx_IrOp op = block->ops[i];

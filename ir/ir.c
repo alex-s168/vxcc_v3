@@ -48,7 +48,7 @@ vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
     assert(root != NULL);
     root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
     vx_IrVar new = root->as_root.vars_len ++;
-    root->as_root.vars[new].decl = decl;
+    vx_IrBlock_root_set_var_decl(root, new, decl);
     return new;
 }
 

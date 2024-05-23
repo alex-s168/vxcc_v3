@@ -47,8 +47,11 @@ void vx_IrBlock_make_root(vx_IrBlock *block,
     block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
     for (size_t i = 0; i < total_vars; i ++) {
         vx_IrOp *decl = vx_IrBlock_find_var_decl(block, i);
-        // decl can be null!
-        block->as_root.vars[i].decl = decl;
+        if (decl == NULL) {
+            block->as_root.vars[i].decl_parent = NULL;
+            continue;
+        }
+        vx_IrBlock_root_set_var_decl(block, i, decl);
     }
 
     block->as_root.labels = NULL;
@@ -68,7 +71,7 @@ static void root_block_put_var(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
         root->as_root.vars = realloc(root->as_root.vars, sizeof(*root->as_root.vars) * (var + 1));
         root->as_root.vars_len = var + 1;
     }
-    root->as_root.vars[var].decl = decl;
+    vx_IrBlock_root_set_var_decl(root, var, decl);
 }
 
 struct add_op__data {

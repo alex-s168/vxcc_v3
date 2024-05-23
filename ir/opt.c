@@ -9,11 +9,12 @@ vx_OptConfig vx_g_optconfig = {
 };
 
 static void opt_pre(vx_IrBlock *block) {
-    // TODO: re-enable
-    (void) block;
-/*
     // place immediates into params
     vx_opt_inline_vars(vx_IrView_of_all(block), block);
+
+    if (block->is_root)
+        vx_opt_remove_vars(block);
+
     for (size_t i = 0; i < vx_g_optconfig.consteval_iterations; i ++) {
         // evaluate constants
         vx_opt_constant_eval(vx_IrView_of_all(block), block);
@@ -21,11 +22,7 @@ static void opt_pre(vx_IrBlock *block) {
         vx_opt_inline_vars(vx_IrView_of_all(block), block);
     }
 
-    if (block->is_root)
-        vx_opt_remove_vars(block);
-
     vx_opt_comparisions(vx_IrView_of_all(block), block);
-*/
 }
 
 void opt(vx_IrBlock *block) {

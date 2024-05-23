@@ -7,8 +7,11 @@ void vx_opt_remove_vars(vx_IrBlock *block)
     assert(block->is_root);
 
     for (size_t i = 0; i < block->as_root.vars_len; i ++) {
-        vx_IrOp *decl = block->as_root.vars[i].decl;
+        vx_IrOp *decl = vx_IrBlock_root_get_var_decl(block, i);
         if (decl == NULL)
+            continue;
+
+        if (vx_IrOp_is_volatile(decl))
             continue;
 
         if (decl->id == VX_IR_OP_IF)
@@ -44,6 +47,6 @@ void vx_opt_remove_vars(vx_IrBlock *block)
         vx_IrOp_init(decl, VX_IR_OP_NOP, decl->parent);
 
         for (size_t j = 0; j < decl->outs_len; j ++)
-            block->as_root.vars[decl->outs[j].var].decl = NULL;
+            block->as_root.vars[decl->outs[j].var].decl_parent = NULL;
     }
 }

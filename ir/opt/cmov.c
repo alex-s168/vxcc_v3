@@ -81,6 +81,7 @@ void vx_opt_cmov(vx_IrView view, vx_IrBlock *block)
         op->params = NULL;
         op->params_len = 0;
         vx_IrOp_destroy(op);
+        memset(op, 0, sizeof(vx_IrOp));
         vx_IrOp_init(op, VX_IR_OP_FLATTEN_PLEASE, block);
 
         vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = body });

@@ -7,7 +7,7 @@
 #include "../utils.h"
 
 bool vx_IrBlock_eval_var(const vx_IrBlock *block, const vx_IrVar var, vx_IrValue *dest) {
-    const vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
+    const vx_IrOp *decl = vx_IrBlock_root_get_var_decl(vx_IrBlock_root(block), var);
     if (decl == NULL)
         return false;
 

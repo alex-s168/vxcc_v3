@@ -36,7 +36,7 @@ vx_Errors vx_IrBlock_verify(const vx_IrBlock *block, const vx_OpPath path) {
 
     if (block->is_root) {
         for (size_t i = 0; i < block->as_root.vars_len; i ++) {
-            if (block->as_root.vars[i].decl == NULL)
+            if (block->as_root.vars[i].decl_parent == NULL)
                 continue;
 
             /*

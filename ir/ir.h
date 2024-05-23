@@ -90,7 +90,8 @@ struct vx_IrBlock_s {
     bool is_root;
     struct {
         struct {
-            vx_IrOp *decl;
+            vx_IrBlock *decl_parent;
+            size_t      decl_idx;
 
             lifetime  ll_lifetime;
             vx_IrType *ll_type;
@@ -398,6 +399,18 @@ void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);
 bool vx_IrOp_is_volatile(vx_IrOp *op);
 size_t vx_IrOp_inline_cost(vx_IrOp *op);
 void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
+
+static void vx_IrBlock_root_set_var_decl(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
+    root->as_root.vars[var].decl_parent = decl->parent;
+    root->as_root.vars[var].decl_idx = decl - decl->parent->ops;
+}
+
+static vx_IrOp *vx_IrBlock_root_get_var_decl(const vx_IrBlock *root, vx_IrVar var) {
+    vx_IrBlock *parent = root->as_root.vars[var].decl_parent;
+    if (parent == NULL)
+        return NULL;
+    return parent->ops + root->as_root.vars[var].decl_idx;
+}
 
 struct IrStaticIncrement {
     bool detected;
