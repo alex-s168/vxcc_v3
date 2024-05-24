@@ -23,7 +23,7 @@ void vx_opt_comparisions(vx_IrView view,
 
             case VX_IR_OP_GTE: {
                 vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);
-                if (b->type == VX_IR_VAL_IMM_INT) {
+                if (b->type == VX_IR_VAL_IMM_INT && b->imm_int != 0) {
                     b->imm_int --;
                     op->id = VX_IR_OP_GT;
                 }

@@ -128,10 +128,12 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_SHR:
         case VX_IR_OP_FOR:
         case VX_IR_OP_LOAD:
-        case VX_IR_OP_STORE:
-        case VX_IR_OP_PLACE:
         case VX_IR_OP_CMOV:
             return false;
+
+        case VX_IR_OP_STORE:
+        case VX_IR_OP_PLACE: 
+            return true;
 
         case VX_IR_OP_LOAD_VOLATILE:
         case VX_IR_OP_STORE_VOLATILE:
