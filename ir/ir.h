@@ -7,7 +7,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+// not all things should use these functions 
+// main usages: codegen
+
+/** alloc things that are not meant to be freed before end of compilation */
+void * fastalloc(size_t bytes);
+
+void fastfreeall(void);
+
+
+
 #include "../common.h"
+#include "../cg/cg.h"
 
 struct vx_IrOp_s;
 typedef struct vx_IrOp_s vx_IrOp;
@@ -330,11 +342,13 @@ struct vx_IrOp_s {
     size_t           params_len;
 
     // TODO: TODO TODO MOST FNS IGNORE THAT!!!! BAD!!! (also rename)
-    vx_IrValue *states;
-    size_t      states_len;
+    vx_IrValue  * states;
+    size_t        states_len;
 
-    vx_IrBlock  *parent;
-    vx_IrOpType  id;
+    vx_IrBlock  * parent;
+    vx_IrOpType   id;
+
+    vx_OpInfoList info;
 };
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1);

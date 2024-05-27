@@ -157,6 +157,10 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
     }
 }
 
+static const char * opinfo_names[] = {
+    [VX_OPINFO_X86CG] = "x86cg",
+};
+
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
     for (size_t j = 0; j < indent; j ++)
         fputs("  ", out);
@@ -173,12 +177,24 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
 
     fprintf(out, "%s ", vx_IrOpType_names[op->id]);
 
+    for (size_t i = 0; i < op->states_len; i ++) {
+        const vx_IrValue val = op->states[i];
+        fprintf(out, "state%zu=", i);
+        vx_IrValue_dump(val, out, indent);
+        fputc(' ', out);
+    }
+
     for (size_t j = 0; j < op->params_len; j ++) {
         if (j > 0)
             fputc(' ', out);
         const vx_IrNamedValue param = op->params[j];
         fprintf(out, "%s=", vx_IrName_str[param.name]);
         vx_IrValue_dump(param.val, out, indent);
+    }
+
+    for (size_t i = 0; i < op->info.count; i ++) {
+        vx_OpInfo info = op->info.items[i];
+        fprintf(out, "\ninfo %s = ...", opinfo_names[i]);
     }
 
     fputs(";\n", out);

@@ -176,6 +176,8 @@ void vx_IrOp_init(vx_IrOp *op,
 
     op->states = NULL;
     op->states_len = 0;
+
+    op->info = vx_OpInfoList_create();
 }
 
 void vx_IrOp_add_out(vx_IrOp *op,
@@ -215,10 +217,11 @@ void vx_IrOp_undeclare(vx_IrOp *op)
 
 void vx_IrOp_destroy(vx_IrOp *op)
 {
-    // BEFORE CHANGING NOTE THAT MOST PASSES MISUSE THIS!!!
+    // BEFORE CHANGING NOTE THAT MOST PASSES MISUSE THIS FUNCTION!!!
     vx_IrOp_remove_params(op);
     free(op->outs);
     free(op->states);
+    vx_OpInfoList_destroy(&op->info);
 }
 
 void vx_IrOp_remove_params(vx_IrOp *op)
