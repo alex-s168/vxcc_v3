@@ -119,12 +119,18 @@ static int cir_test(void) {
     printf("After LL IR opt:\n");
     vx_IrBlock_dump(block, stdout, 0);
 
+    llir_prep_lower(block);
+
+    printf("After LL IR lower prepare:\n");
+    vx_IrBlock_dump(block, stdout, 0);
+
     vx_IrBlock_destroy(block);
 
     return 0;
 }
 
 int main(void) {
+    // TODO: figure out why these break things
     vx_g_optconfig.loop_simplify = false;
     vx_g_optconfig.if_eval = false;
 

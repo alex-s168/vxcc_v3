@@ -1,7 +1,40 @@
 #include "ir.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
+
+
+void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
+    assert(root->is_root);
+
+    // TODO: WHY THE FUCK IS THIS EVEN REQUIRED????
+
+    memset(root->as_root.vars, 0, sizeof(*root->as_root.vars) * root->as_root.vars_len);
+
+    size_t total = 0; 
+    for (size_t i = 0; i < root->ops_len; i ++) {
+        vx_IrOp *op = &root->ops[i];
+
+        for (size_t j = 0; j < op->outs_len; j ++) {
+            vx_IrTypedVar out = op->outs[j];
+            if (root->as_root.vars[out.var].decl_parent == NULL) {
+                vx_IrBlock_root_set_var_decl(root, out.var, op);
+                root->as_root.vars[out.var].ll_type = out.type;
+                total ++;
+            }
+        }
+    }
+}
+
+void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
+    vx_IrBlock *parent = op ? op->parent : NULL;
+    if (parent) {
+        fprintf(stderr, "WARN: in op idx %zu: %s %s\n", parent->ops - op, optMsg0 ? optMsg0 : "", optMsg1 ? optMsg1 : "");
+    } else {
+        fprintf(stderr, "WARN: trying to warn() for non existant op!\n");
+    }
+}
 
 // TODO: add boolean to stop traverse
 void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *data), void *data) {

@@ -169,10 +169,16 @@ bool vx_IrBlock_is_volatile(const vx_IrBlock *block)
 
 vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
     vx_IrOp *decl = vx_IrBlock_root_get_var_decl(vx_IrBlock_root(block), var);
+    if (decl == NULL)
+        goto warn;
+
     for (size_t i = 0; i < decl->outs_len; i ++)
         if (decl->outs[i].var == var)
             return decl->outs[i].type;
-    assert(false);
+
+warn:
+    fprintf(stderr, "VARIABLE %%%zu DECL ERROR (typeof_var)\n", var);
+    return NULL;
 }
 
 static size_t cost_lut[VX_IR_OP____END] = {

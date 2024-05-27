@@ -311,6 +311,8 @@ typedef enum {
 /** false for nop and label   true for everything else */
 bool vx_IrOpType_has_effect(vx_IrOpType type);
 
+void vx_IrOp_undeclare(vx_IrOp *op);
+
 #define SSAOPTYPE_LEN (VX_IR_OP____END - VX_IR_OP_NOP)
 
 extern const char *vx_IrOpType_names[SSAOPTYPE_LEN];
@@ -334,6 +336,8 @@ struct vx_IrOp_s {
     vx_IrBlock  *parent;
     vx_IrOpType  id;
 };
+
+void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1);
 
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent);
 
@@ -409,7 +413,10 @@ static vx_IrOp *vx_IrBlock_root_get_var_decl(const vx_IrBlock *root, vx_IrVar va
     vx_IrBlock *parent = root->as_root.vars[var].decl_parent;
     if (parent == NULL)
         return NULL;
-    return parent->ops + root->as_root.vars[var].decl_idx;
+    size_t idx = root->as_root.vars[var].decl_idx;
+    if (idx >= parent->ops_len)
+        return NULL;
+    return parent->ops + idx;
 }
 
 struct IrStaticIncrement {

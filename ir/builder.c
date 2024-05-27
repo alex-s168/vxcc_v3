@@ -200,8 +200,22 @@ void vx_IrOp_add_param_s(vx_IrOp *op,
     vx_IrOp_add_param(op, vx_IrNamedValue_create(name, val));
 }
 
+void vx_IrOp_undeclare(vx_IrOp *op)
+{
+    vx_IrBlock *root = (vx_IrBlock*) vx_IrBlock_root(op->parent);
+    if (root) {
+        for (size_t i = 0; i < op->outs_len; i ++) { 
+            vx_IrVar var = op->outs[i].var;
+            if (var < root->as_root.vars_len && vx_IrBlock_root_get_var_decl(root, var) == op) {
+                root->as_root.vars[var].decl_parent = NULL;
+            }
+        }
+    }
+}
+
 void vx_IrOp_destroy(vx_IrOp *op)
 {
+    // BEFORE CHANGING NOTE THAT MOST PASSES MISUSE THIS!!!
     vx_IrOp_remove_params(op);
     free(op->outs);
     free(op->states);

@@ -6,8 +6,15 @@
 // if start of lifetime A == end of lifetime B, we can still merge 
 
 // block needs to be 100% flat, decl of vars must be known, decl won't be known after this fn anymore
+
+// TODO: figure out why it doesn't apply for overlapping*? lifetimes
+
 void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        if (block->as_root.vars[var].decl_parent == NULL)
+            continue;
+
+        // TODO: only search in lifetime: IrView of lifetime
         vx_IrView view = vx_IrView_of_all(block);
         bool get_rid = false;
         while (vx_IrView_find(&view, VX_IR_OP_PLACE)) {
@@ -33,10 +40,11 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         lifetime *lt = &block->as_root.vars[var].ll_lifetime;
-        vx_IrType *type = block->as_root.vars[var].ll_type;
 
         if (lt->first == NULL)
             continue;
+        
+        vx_IrType *type = block->as_root.vars[var].ll_type;
 
         for (vx_IrVar var2 = 0; var < block->as_root.vars_len; var ++) {
             if (var == var2)
@@ -58,7 +66,15 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
                 cmp_high = *lt;
             }
 
-            // TODO
+            if (cmp_low.last > cmp_high.first)
+                continue;
+
+            // it's okay if end0 = start1 
+
+            vx_IrView view = vx_IrView_of_all(block);
+            vx_IrView_rename_var(view, block, var, var2);
+
+            break;
         }
     }
 }

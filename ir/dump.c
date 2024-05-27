@@ -165,7 +165,7 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
         if (j > 0)
             fputc(',', out);
         const vx_IrTypedVar var = op->outs[j];
-        fprintf(out, "%s %%%zu", var.type->debugName, var.var);
+        fprintf(out, "%s %%%zu", var.type ? var.type->debugName : "NULLTYPE", var.var);
     }
 
     if (op->outs_len > 0)
