@@ -210,9 +210,6 @@ static int cir_test(void) {
 }
 
 int main(void) {
-    // TODO: figure out why these break things
-    vx_g_optconfig.loop_simplify = false;
-
     ty_int = vx_IrType_heap();
     ty_int->debugName = "i32";
     ty_int->kind = VX_IR_TYPE_KIND_BASE;
