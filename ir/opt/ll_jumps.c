@@ -2,16 +2,9 @@
 
 #include "../opt.h"
 
-// part 1:
-//   we go trough all ops between the jump and the label
-//   if all of them have no effect (labels, nops), we can remove the jump instruction
-// part 2:
-//   is the jump dest just another jump? optimize that
-
-void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block) {
-    assert(view.block == block);
-    
-    // part 1
+// we go trough all ops between the jump and the label
+// if all of them have no effect (labels, nops), we can remove the jump instruction
+static void part1(vx_IrBlock *block) {
     for (size_t opid = 0; opid < block->ops_len; opid ++) {
         vx_IrOp *op = &block->ops[opid];
 
@@ -43,8 +36,10 @@ void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block) {
 
         vx_IrOp_init(op, VX_IR_OP_NOP, block);
     }
+}
 
-    // part 2
+// is the jump dest just another jump? optimize that
+static void part2(vx_IrBlock *block) {
     for (size_t opid = 0; opid < block->ops_len; opid ++) {
         vx_IrOp *op = &block->ops[opid];
 
@@ -67,5 +62,35 @@ void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block) {
             }
         }
     }
+}
+
+static void rmcode_before_label(vx_IrBlock *block, size_t first) {
+    for (size_t i = first; i < block->ops_len; i ++) {
+        vx_IrOp *op = &block->ops[i];
+
+        if (op->id == VX_LIR_OP_LABEL)
+            break;
+
+        vx_IrOp_destroy(op);
+        vx_IrOp_init(op, VX_IR_OP_NOP, block);
+    }
+}
+
+// code after tailcall before label? remove
+static void part3(vx_IrBlock *block) {
+    for (size_t i = 0; i < block->ops_len; i ++) {
+        vx_IrOp *op = &block->ops[i];
+        if (op->id == VX_IR_OP_TAILCALL) {
+            rmcode_before_label(block, i + 1);
+        }
+    }
+}
+
+void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block) {
+    assert(view.block == block);
+    
+    part1(block);
+    part2(block);
+    part3(block);
 }
 

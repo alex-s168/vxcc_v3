@@ -64,11 +64,11 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
     return els;
 }
 
-static void gen_call_op(vx_IrBlock *dest) {
+static void gen_call_op(vx_IrBlock *dest, long long addr) {
     vx_IrOp op;
     vx_IrOp_init(&op, VX_IR_OP_CALL, dest);
 
-    vx_IrOp_add_param_s(&op, VX_IR_NAME_ADDR, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 123});
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_ADDR, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = addr});
 
     vx_IrBlock_add_op(dest, &op);
 }
@@ -144,8 +144,8 @@ void eq(int a, int b, int c, int d) {
         vx_IrBlock_add_out(cond, temp2);
     }
 
-    gen_call_op(then);
-    gen_call_op(els);
+    gen_call_op(then, 1);
+    gen_call_op(els, 0);
 
     vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = cond});
     vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND_THEN, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = then});

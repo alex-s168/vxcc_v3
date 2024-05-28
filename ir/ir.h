@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TOOD: conditional tailcall & use in ssa->ll lowering
+
 
 // not all things should use these functions 
 // main usages: codegen
