@@ -325,6 +325,8 @@ typedef enum {
     VX_IR_OP____END,
 } vx_IrOpType;
 
+bool vx_IrOp_ends_flow(vx_IrOp *op);
+
 /** false for nop and label   true for everything else */
 bool vx_IrOpType_has_effect(vx_IrOpType type);
 
