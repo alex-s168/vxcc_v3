@@ -430,7 +430,7 @@ void vx_IrView_substitute_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, v
 static bool vx_IrView_has_next(const vx_IrView view) {
     return view.start < view.end;
 }
-void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *data), void *data);
+bool vx_IrView_deep_traverse(vx_IrView top, bool (*callback)(vx_IrOp *op, void *data), void *data);
 
 vx_IrValue *vx_IrOp_param(const vx_IrOp *op, vx_IrName name);
 

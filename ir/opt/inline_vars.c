@@ -1,12 +1,12 @@
 #include "../opt.h"
 
-static void trav(vx_IrOp *op,
+static bool trav (vx_IrOp *op,
                  void *data)
 {
     vx_IrBlock *block = data;
 
     if (op->id != VX_IR_OP_IMM)
-        return;
+        return false;
 
     const vx_IrValue value = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
 
@@ -14,6 +14,8 @@ static void trav(vx_IrOp *op,
         const vx_IrVar out = op->outs[i].var;
         vx_IrView_substitute_var(vx_IrView_of_all(block), block, out, value);
     }
+
+    return false;
 }
 
 void vx_opt_inline_vars(vx_IrView view,

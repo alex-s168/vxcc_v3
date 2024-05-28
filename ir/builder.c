@@ -79,7 +79,7 @@ struct add_op__data {
     vx_IrOp *new;
 };
 
-static void add_op__trav(vx_IrOp *op, void *dataIn) {
+static bool add_op__trav(vx_IrOp *op, void *dataIn) {
     struct add_op__data *data = dataIn;
 
     for (size_t i = 0; i < op->outs_len; i ++) {
@@ -88,6 +88,8 @@ static void add_op__trav(vx_IrOp *op, void *dataIn) {
     }
 
     // TODO: also fix labels
+
+    return false;
 }
 
 void vx_IrBlock_add_op(vx_IrBlock *block,
@@ -237,7 +239,6 @@ void vx_IrOp_remove_params(vx_IrOp *op)
     op->params = NULL;
     op->params_len = 0;
 }
-
 
 void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src)
 {

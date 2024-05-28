@@ -52,17 +52,20 @@ void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
     }
 }
 
-// TODO: add boolean to stop traverse
-void vx_IrView_deep_traverse(vx_IrView top, void (*callback)(vx_IrOp *op, void *data), void *data) {
+bool vx_IrView_deep_traverse(vx_IrView top, bool (*callback)(vx_IrOp *op, void *data), void *data) {
     for (size_t i = top.start; i < top.end; i ++) {
         vx_IrOp *op = &top.block->ops[i];
 
         for (size_t j = 0; j < op->params_len; j ++)
             if (op->params[j].val.type == VX_IR_VAL_BLOCK)
-                vx_IrView_deep_traverse(vx_IrView_of_all(op->params[j].val.block), callback, data);
+                if (vx_IrView_deep_traverse(vx_IrView_of_all(op->params[j].val.block), callback, data))
+                    return true;
 
-        callback(op, data);
+        if (callback(op, data)) {
+            return true;
+        }
     }
+    return false;
 }
 
 const vx_IrBlock *vx_IrBlock_root(const vx_IrBlock *block) {

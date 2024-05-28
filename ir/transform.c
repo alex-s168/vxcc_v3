@@ -68,12 +68,14 @@ struct vx_IrView_substitute_var__data {
     vx_IrValue new;
 };
 
-static void vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
+static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
     struct vx_IrView_substitute_var__data *data = dataIn;
 
     for (size_t i = 0; i < op->params_len; i ++)
         if (op->params[i].val.type == VX_IR_VAL_VAR && op->params[i].val.var == data->old)
             op->params[i].val = data->new;
+
+    return false;
 }
 
 void vx_IrView_substitute_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, vx_IrValue new) {
