@@ -138,6 +138,16 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
     for (size_t i = 0; i < block->ops_len; i++) {
         const vx_IrOp *op = &block->ops[i];
 
+        if (op->parent != block) {
+            const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+            const vx_Error error = {
+                .path = newpath,
+                .error = "Invalid parent",
+                .additional = "OP has different parent"
+            };
+            vx_Errors_add(dest, &error);
+        }
+
         // verify states in general
         for (size_t j = 0; j < op->states_len; j ++) {
             if (op->states[j].type == VX_IR_VAL_BLOCK ||

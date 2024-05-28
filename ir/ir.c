@@ -5,6 +5,22 @@
 #include <stdlib.h>
 
 
+vx_IrOp *vx_IrOp_next(vx_IrOp *op) {
+    if (op == NULL)
+        return NULL;
+
+    vx_IrBlock *parent = op->parent;
+    if (parent == NULL)
+        return NULL;
+    
+    size_t idx = op - parent->ops;
+
+    if (idx + 1 >= parent->ops_len)
+        return NULL;
+
+    return &parent->ops[idx + 1];
+}
+
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
     assert(root->is_root);
 
@@ -92,14 +108,14 @@ size_t vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl) {
     assert(root != NULL);
     root->as_root.labels = realloc(root->as_root.labels, (root->as_root.labels_len + 1) * sizeof(*root->as_root.labels));
     size_t new = root->as_root.labels_len ++;
-    root->as_root.labels[new].decl = decl;
+    vx_IrBlock_root_set_label_decl(root, new, decl);
     return new;
 }
 
 size_t vx_IrBlock_insert_label_op(vx_IrBlock *block) {
     vx_IrOp *label_decl = vx_IrBlock_add_op_building(block);
-    size_t label_id = vx_IrBlock_new_label(block, label_decl);
     vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
+    size_t label_id = vx_IrBlock_new_label(block, label_decl);
     vx_IrOp_add_param_s(label_decl, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
     return label_id;
 }

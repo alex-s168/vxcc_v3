@@ -5,6 +5,7 @@
 // we go trough all ops between the jump and the label
 // if all of them have no effect (labels, nops), we can remove the jump instruction
 static void part1(vx_IrBlock *block) {
+    vx_IrBlock *root = (vx_IrBlock*)vx_IrBlock_root(block);
     for (size_t opid = 0; opid < block->ops_len; opid ++) {
         vx_IrOp *op = &block->ops[opid];
 
@@ -13,7 +14,7 @@ static void part1(vx_IrBlock *block) {
 
         size_t label_id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
 
-        vx_IrOp *decl = vx_IrBlock_root(block)->as_root.labels[label_id].decl;
+        vx_IrOp *decl = vx_IrBlock_root_get_label_decl(root, label_id);
 
         if (decl->parent != op->parent)
             continue;
@@ -40,6 +41,7 @@ static void part1(vx_IrBlock *block) {
 
 // is the jump dest just another jump? optimize that
 static void part2(vx_IrBlock *block) {
+    vx_IrBlock *root = (vx_IrBlock*)vx_IrBlock_root(block);
     for (size_t opid = 0; opid < block->ops_len; opid ++) {
         vx_IrOp *op = &block->ops[opid];
 
@@ -48,7 +50,7 @@ static void part2(vx_IrBlock *block) {
 
         size_t label_id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
 
-        vx_IrOp *decl = vx_IrBlock_root(block)->as_root.labels[label_id].decl;
+        vx_IrOp *decl = vx_IrBlock_root_get_label_decl(root, label_id);
         if (decl->parent != block)
             continue;
         size_t decl_id = decl - block->ops;

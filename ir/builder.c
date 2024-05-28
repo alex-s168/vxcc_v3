@@ -96,6 +96,8 @@ void vx_IrBlock_add_op(vx_IrBlock *block,
     vx_IrOp *new = vx_IrBlock_add_op_building(block);
     *new = *op;
 
+    new->parent = block;
+
     // make sure that out variables and labels are in root block (add them if not)
 
     struct add_op__data data;
@@ -119,6 +121,9 @@ void vx_IrBlock_add_all_op(vx_IrBlock *dest,
 {
     dest->ops = realloc(dest->ops, sizeof(vx_IrOp) * (dest->ops_len + src->ops_len));
     memcpy(dest->ops + dest->ops_len, src->ops, src->ops_len);
+    for (size_t i = dest->ops_len; i < dest->ops_len + src->ops_len; i ++) {
+        dest->ops[i].parent = dest;
+    }
     dest->ops_len += src->ops_len;
 }
 

@@ -137,7 +137,8 @@ struct vx_IrBlock_s {
         size_t vars_len;
 
         struct {
-            vx_IrOp *decl;
+            vx_IrBlock *decl_parent;
+            size_t      decl_idx;
         } *labels;
         size_t labels_len;
     } as_root;
@@ -450,6 +451,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op);
 size_t vx_IrOp_inline_cost(vx_IrOp *op);
 void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
 bool vx_IrOp_is_tail(vx_IrOp *op);
+vx_IrOp *vx_IrOp_next(vx_IrOp *op);
 
 static void vx_IrBlock_root_set_var_decl(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
     root->as_root.vars[var].decl_parent = decl->parent;
@@ -461,6 +463,21 @@ static vx_IrOp *vx_IrBlock_root_get_var_decl(const vx_IrBlock *root, vx_IrVar va
     if (parent == NULL)
         return NULL;
     size_t idx = root->as_root.vars[var].decl_idx;
+    if (idx >= parent->ops_len)
+        return NULL;
+    return parent->ops + idx;
+}
+
+static void vx_IrBlock_root_set_label_decl(vx_IrBlock *root, size_t label , vx_IrOp *decl) {
+    root->as_root.labels[label].decl_parent = decl->parent;
+    root->as_root.labels[label].decl_idx = decl - decl->parent->ops;
+}
+
+static vx_IrOp *vx_IrBlock_root_get_label_decl(const vx_IrBlock *root, size_t label) {
+    vx_IrBlock *parent = root->as_root.labels[label].decl_parent;
+    if (parent == NULL)
+        return NULL;
+    size_t idx = root->as_root.labels[label].decl_idx;
     if (idx >= parent->ops_len)
         return NULL;
     return parent->ops + idx;
