@@ -275,17 +275,12 @@ void vx_IrOp_remove_state_at(vx_IrOp *op,
     op->states_len --;
 }
 
-vx_IrValue vx_IrValue_clone(const vx_IrValue value) {
-    // TODO: who uses it? should implement? implement?
-    return value;
-}
-
 void vx_IrOp_steal_states(vx_IrOp *dest,
                           const vx_IrOp *src)
 {
     free(dest->states);
     dest->states = malloc(sizeof(vx_IrValue) * src->states_len);
     for (size_t i = 0; i < src->states_len; i ++)
-        dest->states[i] = vx_IrValue_clone(src->states[i]);
+        dest->states[i] = src->states[i];
     dest->states_len = src->states_len;
 }

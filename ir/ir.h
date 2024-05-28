@@ -225,7 +225,6 @@ typedef struct {
     };
 } vx_IrValue;
 
-vx_IrValue vx_IrValue_clone(vx_IrValue value);
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 
 vx_IrOp *vx_IrBlock_find_var_decl(const vx_IrBlock *block, vx_IrVar var);
@@ -440,7 +439,7 @@ void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
 void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
 void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);
 static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
-    vx_IrOp_add_param_s(dest, param, vx_IrValue_clone(*vx_IrOp_param(src, param)));
+    vx_IrOp_add_param_s(dest, param, *vx_IrOp_param(src, param));
 }
 void vx_IrOp_remove_params(vx_IrOp *op);
 void vx_IrOp_remove_out_at(vx_IrOp *op, size_t id);

@@ -48,7 +48,7 @@ void vx_opt_loop_simplify(vx_IrView view,
                 if (cond->ops[0].outs[0].var != cond->outs[0])
                     break;
             
-                const vx_IrValue b = vx_IrValue_clone(*vx_IrOp_param(&cond->ops[0], VX_IR_NAME_OPERAND_B));
+                const vx_IrValue b = *vx_IrOp_param(&cond->ops[0], VX_IR_NAME_OPERAND_B);
 
                 vx_IrOp new;
                 vx_IrOp_init(&new, VX_IR_OP_REPEAT, block);
