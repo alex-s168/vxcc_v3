@@ -48,6 +48,8 @@ void opt(vx_IrBlock *block) {
         vx_opt_loop_simplify(vx_IrView_of_all(block), block);
     }
 
+    vx_opt_tailcall(block);
+
     for (size_t i = 0; i < block->ops_len; i ++) {
         vx_IrOp *op = &block->ops[i];
 

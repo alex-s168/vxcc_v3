@@ -2,6 +2,9 @@
 
 #include "ir.h"
 
+// TODO: vx_IrOp_ends_flow() and if true, ssa->ll lower doesn't emit gotos
+//       true for: break, continue, tailcall
+
 bool vx_IrView_find(vx_IrView *view,
                     const vx_IrOpType type)
 {
