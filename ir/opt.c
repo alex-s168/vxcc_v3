@@ -26,8 +26,6 @@ static void opt_pre(vx_IrBlock *block) {
 }
 
 void opt(vx_IrBlock *block) {
-    // TODO: remove opt() calls from opt pass bodies
-
     for (size_t i = 0; i < block->ops_len; i ++) {
          vx_IrOp *op = &block->ops[i];
 
