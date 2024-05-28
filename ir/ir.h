@@ -143,6 +143,7 @@ struct vx_IrBlock_s {
         size_t labels_len;
     } as_root;
     
+    // TODO: make typed
     vx_IrVar *ins;
     size_t    ins_len;
     
