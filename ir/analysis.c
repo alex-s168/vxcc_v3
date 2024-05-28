@@ -7,6 +7,7 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
     case VX_IR_OP_BREAK:
     case VX_IR_OP_CONTINUE:
     case VX_IR_OP_TAILCALL:
+    case VX_IR_OP_CONDTAILCALL:
         return true;
 
     default:
@@ -147,6 +148,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_CONTINUE:
         case VX_IR_OP_CALL:
         case VX_IR_OP_TAILCALL:
+        case VX_IR_OP_CONDTAILCALL:
             return true;
 
         case VX_IR_OP_STORE:
@@ -253,6 +255,7 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_LIR_COND] = 1,
     [VX_IR_OP_CALL] = 1,
     [VX_IR_OP_TAILCALL] = 1,
+    [VX_IR_OP_CONDTAILCALL] = 1,
 };
 
 size_t vx_IrOp_inline_cost(vx_IrOp *op) {

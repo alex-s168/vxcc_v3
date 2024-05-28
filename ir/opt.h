@@ -24,6 +24,7 @@ OPT_PASS void vx_opt_cmov(vx_IrView view, vx_IrBlock *block);
 OPT_PASS void vx_opt_tailcall(vx_IrBlock *block);
 
 OPT_PASS void vx_opt_ll_dce(vx_IrBlock *block);
+OPT_PASS void vx_opt_ll_condtailcall(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_vars(vx_IrView view, vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block);
 

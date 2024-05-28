@@ -62,6 +62,7 @@ void opt(vx_IrBlock *block) {
 
 void opt_ll(vx_IrBlock *block) {
     vx_opt_ll_dce(block);
+    vx_opt_ll_condtailcall(block);
     vx_opt_inline_vars(vx_IrView_of_all(block), block);
     vx_opt_ll_vars(vx_IrView_of_all(block), block);
     vx_opt_ll_jumps(vx_IrView_of_all(block), block);

@@ -345,6 +345,7 @@ typedef enum {
 
     VX_IR_OP_CALL,          // "addr": int / fnref
     VX_IR_OP_TAILCALL,      // "addr": int / fnref
+    VX_IR_OP_CONDTAILCALL,  // "addr": int / fnref, "cond": bool
 
     VX_IR_OP____END,
 } vx_IrOpType;

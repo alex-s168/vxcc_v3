@@ -62,6 +62,7 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
 
     [VX_IR_OP_CALL] = "call",
     [VX_IR_OP_TAILCALL] = "tail-call",
+    [VX_IR_OP_CONDTAILCALL] = "cond-tail-call",
 };
 
 const char *vx_IrName_str[] = {
