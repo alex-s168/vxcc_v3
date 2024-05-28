@@ -128,7 +128,7 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
             for (size_t i = 0; i < block->ins_len; i ++) {
                 if (i > 0)
                     fputc(',', out);
-                const vx_IrVar in = block->ins[i];
+                const vx_IrVar in = block->ins[i].var;
                 fprintf(out, "%%%zu", in);
             }
             fputs("){\n", out);
@@ -211,7 +211,7 @@ void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, const size_t indent) {
 
     fputs("BLOCK", out);
     for (size_t i = 0; i < block->ins_len; i ++) {
-        const vx_IrVar in = block->ins[i];
+        const vx_IrVar in = block->ins[i].var;
         fprintf(out, " %%%zu", in);
     }
     fputc('\n', out);

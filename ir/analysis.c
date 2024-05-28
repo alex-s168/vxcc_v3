@@ -44,7 +44,7 @@ vx_IrOp *vx_IrBlock_find_var_decl(const vx_IrBlock *block,
 
             if (param.type == VX_IR_VAL_BLOCK) {
                 for (size_t k = 0; k < param.block->ins_len; k ++)
-                    if (param.block->ins[k] == var)
+                    if (param.block->ins[k].var == var)
                         return op;
 
                 vx_IrOp *res = vx_IrBlock_find_var_decl(param.block, var);

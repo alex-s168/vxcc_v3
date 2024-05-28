@@ -33,8 +33,8 @@ void vx_IrView_rename_var(vx_IrView view, vx_IrBlock *block, vx_IrVar old, vx_Ir
 
     if (view.start == 0)
         for (size_t j = 0; j < block->ins_len; j ++)
-            if (block->ins[j] == old)
-                block->ins[j] = new;
+            if (block->ins[j].var == old)
+                block->ins[j].var = new;
 
     if (view.end >= block->ops_len)
         for (size_t j = 0; j < block->outs_len; j ++)

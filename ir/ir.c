@@ -79,9 +79,9 @@ void vx_IrBlock_swap_in_at(vx_IrBlock *block, const size_t a, const size_t b) {
     if (a == b)
         return;
 
-    const vx_IrVar va = block->ins[a];
+    const vx_IrVar va = block->ins[a].var;
     block->ins[a] = block->ins[b];
-    block->ins[b] = va;
+    block->ins[b].var = va;
 }
 
 void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b) {

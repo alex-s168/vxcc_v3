@@ -55,7 +55,7 @@ void vx_opt_reduce_loops(vx_IrView view,
                     si = vx_IrOp_detect_static_increment(incOp);
                     if (si.detected &&
                         incOp->outs[0].var == op->outs[stateId].var &&
-                        si.var == newcond->ins[stateId])
+                        si.var == newcond->ins[stateId].var)
                     {
                         found = true;
                         break;

@@ -114,6 +114,11 @@ static bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
 }
 
 typedef struct {
+    vx_IrVar var;
+    vx_IrType *type;
+} vx_IrTypedVar;
+
+typedef struct {
     vx_IrOp *first;
     vx_IrOp *last;
 } lifetime;
@@ -142,9 +147,8 @@ struct vx_IrBlock_s {
         } *labels;
         size_t labels_len;
     } as_root;
-    
-    // TODO: make typed
-    vx_IrVar *ins;
+
+    vx_IrTypedVar *ins;
     size_t    ins_len;
     
     vx_IrOp *ops;
@@ -361,11 +365,6 @@ void vx_IrOp_undeclare(vx_IrOp *op);
 #define SSAOPTYPE_LEN (VX_IR_OP____END - VX_IR_OP_NOP)
 
 extern const char *vx_IrOpType_names[SSAOPTYPE_LEN];
-
-typedef struct {
-    vx_IrVar var;
-    vx_IrType *type;
-} vx_IrTypedVar;
 
 struct vx_IrOp_s {
     vx_IrTypedVar *outs;

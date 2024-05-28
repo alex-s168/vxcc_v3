@@ -40,7 +40,7 @@ void vx_opt_loop_simplify(vx_IrView view,
                 // require it to be the counter
                 if (a->type != VX_IR_VAL_VAR)
                     break;
-                if (a->var != cond->ins[0])
+                if (a->var != cond->ins[0].var)
                     break;
                 if (cond->ops[0].outs[0].var != cond->outs[0])
                     break;

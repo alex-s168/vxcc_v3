@@ -205,8 +205,8 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
                     vx_Errors_add(dest, &error);
                 } else if (root->as_root.vars[var].decl_parent == NULL) {
                     bool found = false;
-                    for (size_t i = 0; i < root->ins_len; i ++) {
-                        if (root->ins[i] == var) {
+                    for (size_t k = 0; k < root->ins_len; k ++) {
+                        if (root->ins[k].var == var) {
                             found = true;
                             break;
                         }

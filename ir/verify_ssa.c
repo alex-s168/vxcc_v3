@@ -21,7 +21,7 @@ static void verify_vardecls_deeptraverse(vx_IrOp *op, void *dataIn) {
 
         if (param.type == VX_IR_VAL_BLOCK) {
             for (size_t k = 0; k < param.block->ins_len; k ++)
-                if (param.block->ins[k] == va->var)
+                if (param.block->ins[k].var == va->var)
                     va->declcount ++;
         }
     }

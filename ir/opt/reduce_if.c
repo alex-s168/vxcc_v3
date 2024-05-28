@@ -11,6 +11,8 @@ void vx_opt_reduce_if(vx_IrView view,
         vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
         const vx_IrVar condVar = cond->outs[0];
 
+        // TODO: remove if empty
+
         vx_IrValue *pthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
         if (pthen) {
             vx_IrBlock *then = pthen->block;
@@ -44,8 +46,6 @@ void vx_opt_reduce_if(vx_IrView view,
                 continue;
             }
         }
-
-        // TODO: remove if empty
 
         for (size_t i = 0; i < op->outs_len; i ++) {
             if (!vx_IrBlock_var_used(root, op->outs[i].var)) {
