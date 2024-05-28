@@ -11,12 +11,19 @@ void vx_opt_reduce_if(vx_IrView view,
         vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
         const vx_IrVar condVar = cond->outs[0];
 
-        // TODO: remove if empty
-
         vx_IrValue *pthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
-        if (pthen) {
-            vx_IrBlock *then = pthen->block;
+        vx_IrBlock *then = pthen ? pthen->block : NULL;
 
+        vx_IrValue *pelse = vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
+        vx_IrBlock *els = pelse ? pelse->block : NULL;
+
+        if (vx_IrBlock_empty(then) && vx_IrBlock_empty(els)) {
+            vx_IrOp_destroy(op);
+            vx_IrOp_init(op, VX_IR_OP_NOP, block);
+            goto cont;
+        }
+
+        if (then) {
             // if it will never be 0 (not might be 0), it is always true => only execute then block
             if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
@@ -30,10 +37,7 @@ void vx_opt_reduce_if(vx_IrView view,
             }
         }
 
-        vx_IrValue *pelse = vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
-        if (pelse) {
-            vx_IrBlock *els = pelse->block;
-
+        if (els) {
             // if it will always we 0, only the else block will ever be executed
             if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
@@ -58,6 +62,7 @@ void vx_opt_reduce_if(vx_IrView view,
             }
         }
 
+    cont:
         view = vx_IrView_drop(view, 1);
     }
 }

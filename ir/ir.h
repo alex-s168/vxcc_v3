@@ -199,6 +199,11 @@ void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
 size_t vx_IrBlock_insert_label_op(vx_IrBlock *block);
 
+static bool vx_IrBlock_empty(vx_IrBlock *block) {
+    if (!block)
+        return true;
+    return block->ops_len == 0;
+}
 bool vx_IrBlock_var_used(const vx_IrBlock *block, vx_IrVar var);
 bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var);
 
