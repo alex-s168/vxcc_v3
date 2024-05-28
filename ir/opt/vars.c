@@ -1,8 +1,6 @@
 #include "../opt.h"
 
-// TODO: remove ssa var rem pass and replace with this
-
-void vx_opt_ll_vars(vx_IrView view, vx_IrBlock *block) {
+void vx_opt_vars(vx_IrView view, vx_IrBlock *block) {
     const vx_IrBlock *root = vx_IrBlock_root(block);
     if (root == NULL)
         root = block;

@@ -13,7 +13,7 @@ static void opt_pre(vx_IrBlock *block) {
     vx_opt_inline_vars(vx_IrView_of_all(block), block);
 
     if (block->is_root)
-        vx_opt_remove_vars(block);
+        vx_opt_vars(vx_IrView_of_all(block), block);
 
     for (size_t i = 0; i < vx_g_optconfig.consteval_iterations; i ++) {
         // evaluate constants
@@ -62,6 +62,6 @@ void opt_ll(vx_IrBlock *block) {
     vx_opt_ll_dce(block);
     vx_opt_ll_condtailcall(block);
     vx_opt_inline_vars(vx_IrView_of_all(block), block);
-    vx_opt_ll_vars(vx_IrView_of_all(block), block);
+    vx_opt_vars(vx_IrView_of_all(block), block);
     vx_opt_ll_jumps(vx_IrView_of_all(block), block);
 }
