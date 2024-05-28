@@ -211,8 +211,10 @@ void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, const size_t indent) {
 
     fputs("BLOCK", out);
     for (size_t i = 0; i < block->ins_len; i ++) {
-        const vx_IrVar in = block->ins[i].var;
-        fprintf(out, " %%%zu", in);
+        if (i > 0)
+            fputc(',', out);
+        vx_IrTypedVar in = block->ins[i];
+        fprintf(out, " %s %%%zu", in.type->debugName, in.var);
     }
     fputc('\n', out);
 

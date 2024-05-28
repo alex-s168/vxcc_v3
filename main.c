@@ -125,10 +125,10 @@ void eq(int a, int b, int c, int d) {
     vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
     vx_IrVar a = 0, b = 1, c = 2, d = 3, temp0 = 4, temp1 = 5, temp2 = 6;
 
-    vx_IrBlock_add_in(block, a);
-    vx_IrBlock_add_in(block, b);
-    vx_IrBlock_add_in(block, c);
-    vx_IrBlock_add_in(block, d);
+    vx_IrBlock_add_in(block, a, ty_int);
+    vx_IrBlock_add_in(block, b, ty_int);
+    vx_IrBlock_add_in(block, c, ty_int);
+    vx_IrBlock_add_in(block, d, ty_int);
 
     vx_IrOp iff;
     vx_IrOp_init(&iff, VX_IR_OP_IF, block);

@@ -183,7 +183,7 @@ vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent, size_t parent_index);
 void vx_IrBlock_init(vx_IrBlock *block, vx_IrBlock *parent, size_t parent_index);
 /** run AFTER you finished building it! */
 void vx_IrBlock_make_root(vx_IrBlock *block, size_t total_vars);
-void vx_IrBlock_add_in(vx_IrBlock *block, vx_IrVar var);
+void vx_IrBlock_add_in(vx_IrBlock *block, vx_IrVar var, vx_IrType *type);
 void vx_IrBlock_add_op(vx_IrBlock *block, const vx_IrOp *op);
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block);

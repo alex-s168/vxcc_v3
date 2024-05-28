@@ -59,10 +59,13 @@ void vx_IrBlock_make_root(vx_IrBlock *block,
 }
 
 void vx_IrBlock_add_in(vx_IrBlock *block,
-                       const vx_IrVar var)
+                       const vx_IrVar var,
+                       vx_IrType *ty)
 {
     block->ins = realloc(block->ins, sizeof(vx_IrTypedVar) * (block->ins_len + 1));
-    block->ins[block->ins_len ++].var = var;
+    vx_IrTypedVar* v = &block->ins[block->ins_len ++];
+    v->var = var;
+    v->type = ty;
 }
 
 static void root_block_put_var(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
