@@ -7,7 +7,6 @@ void vx_opt_loop_simplify(vx_IrView view,
         vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);
 
         vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
-        opt(cond); // !
         const vx_IrVar condVar = cond->outs[0];
 
         // if it will always we 0, we optimize it out
@@ -16,8 +15,6 @@ void vx_opt_loop_simplify(vx_IrView view,
 
             goto next;
         }
-
-        opt(vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block);
 
         // if it will never be 0 (not might be 0), it is always true => infinite loop
         if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
