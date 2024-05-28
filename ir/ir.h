@@ -373,9 +373,8 @@ struct vx_IrOp_s {
     vx_IrNamedValue *params;
     size_t           params_len;
 
-    // TODO: TODO TODO MOST FNS IGNORE THAT!!!! BAD!!! (also rename and use in alternatives too)
-    vx_IrValue  * states;
-    size_t        states_len;
+    vx_IrValue  * args;
+    size_t        args_len;
 
     vx_IrBlock  * parent;
     vx_IrOpType   id;

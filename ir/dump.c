@@ -181,8 +181,8 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
 
     fprintf(out, "%s ", vx_IrOpType_names[op->id]);
 
-    for (size_t i = 0; i < op->states_len; i ++) {
-        const vx_IrValue val = op->states[i];
+    for (size_t i = 0; i < op->args_len; i ++) {
+        const vx_IrValue val = op->args[i];
         fprintf(out, "state%zu=", i);
         vx_IrValue_dump(val, out, indent);
         fputc(' ', out);

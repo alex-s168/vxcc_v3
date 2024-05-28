@@ -181,8 +181,8 @@ void vx_IrOp_init(vx_IrOp *op,
 
     op->parent = parent;
 
-    op->states = NULL;
-    op->states_len = 0;
+    op->args = NULL;
+    op->args_len = 0;
 
     op->info = vx_OpInfoList_create();
 }
@@ -227,7 +227,7 @@ void vx_IrOp_destroy(vx_IrOp *op)
     // BEFORE CHANGING NOTE THAT MOST PASSES MISUSE THIS FUNCTION!!!
     vx_IrOp_remove_params(op);
     free(op->outs);
-    free(op->states);
+    free(op->args);
     vx_OpInfoList_destroy(&op->info);
 }
 
@@ -272,16 +272,16 @@ void vx_IrOp_remove_param_at(vx_IrOp *op,
 void vx_IrOp_remove_state_at(vx_IrOp *op,
                              const size_t id)
 {
-    memmove(op->states + id, op->states + id + 1, sizeof(vx_IrNamedValue) * (op->states_len - id - 1));
-    op->states_len --;
+    memmove(op->args + id, op->args + id + 1, sizeof(vx_IrNamedValue) * (op->args_len - id - 1));
+    op->args_len --;
 }
 
 void vx_IrOp_steal_states(vx_IrOp *dest,
                           const vx_IrOp *src)
 {
-    free(dest->states);
-    dest->states = malloc(sizeof(vx_IrValue) * src->states_len);
-    for (size_t i = 0; i < src->states_len; i ++)
-        dest->states[i] = src->states[i];
-    dest->states_len = src->states_len;
+    free(dest->args);
+    dest->args = malloc(sizeof(vx_IrValue) * src->args_len);
+    for (size_t i = 0; i < src->args_len; i ++)
+        dest->args[i] = src->args[i];
+    dest->args_len = src->args_len;
 }

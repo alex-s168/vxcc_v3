@@ -72,7 +72,7 @@ void vx_opt_reduce_loops(vx_IrView view,
             *bcond = NULL;
             *bdo = NULL;
 
-            const vx_IrValue init = op->states[stateId];
+            const vx_IrValue init = op->args[stateId];
 
             // counter needs to be at pos 0 oviously
             vx_IrBlock_swap_in_at(newcond, stateId, 0);

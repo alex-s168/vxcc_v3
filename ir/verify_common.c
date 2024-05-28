@@ -93,7 +93,7 @@ static void analyze_loops(vx_Errors *dest,
                           vx_OpPath path)
 {
     const size_t states_count = op->outs_len;
-    if (states_count != op->states_len) {
+    if (states_count != op->args_len) {
         const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
         vx_Error error = {
             .path = newpath,
@@ -149,9 +149,9 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
         }
 
         // verify states in general
-        for (size_t j = 0; j < op->states_len; j ++) {
-            if (op->states[j].type == VX_IR_VAL_BLOCK ||
-                op->states[j].type == VX_IR_VAL_TYPE)
+        for (size_t j = 0; j < op->args_len; j ++) {
+            if (op->args[j].type == VX_IR_VAL_BLOCK ||
+                op->args[j].type == VX_IR_VAL_TYPE)
             {
                 const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
                 const vx_Error error = {

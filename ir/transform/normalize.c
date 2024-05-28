@@ -20,7 +20,7 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
             // we free manually because we don't want to free blocks if should_free
             // TODO: ^ is stupid
             free(op->outs);
-            free(op->states);
+            free(op->args);
             vx_IrOp_remove_params(op);
 
             {
