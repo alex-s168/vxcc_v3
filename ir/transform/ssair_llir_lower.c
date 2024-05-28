@@ -109,7 +109,7 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
                     vx_IrOp *jmp_cond = vx_IrBlock_add_op_building(dest);
                     jmp_cond_idx = jmp_cond - dest->ops;
                     vx_IrOp_init(jmp_cond, VX_LIR_COND, dest);
-                    vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
+                    vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
                 }
 
                 into(els, op, dest);
@@ -149,7 +149,7 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
                     vx_IrVar new = vx_IrBlock_new_var(dest, inv);
                     vx_IrOp_init(inv, VX_IR_OP_NOT, dest);
                     vx_IrOp_add_out(inv, new, vx_IrBlock_typeof_var(cond, cond_var));
-                    vx_IrOp_add_param_s(inv, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
+                    vx_IrOp_add_param_s(inv, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
                     cond_var = new;
 
                     els = then;
@@ -166,7 +166,7 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
                     vx_IrOp *jump = vx_IrBlock_add_op_building(dest);
                     jump_idx = jump - dest->ops;
                     vx_IrOp_init(jump, VX_LIR_COND, dest);
-                    vx_IrOp_add_param_s(jump, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
+                    vx_IrOp_add_param_s(jump, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
                 }
 
                 into(els, op, dest);

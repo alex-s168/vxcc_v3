@@ -5,6 +5,7 @@
 #include "cg/x86/x86.h"
 
 static vx_IrType *ty_int;
+static vx_IrType *ty_bool;
 
 static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
     vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->ops_len);
@@ -63,7 +64,28 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
     return els;
 }
 
-static int cir_test(void) {
+static void gen_call_op(vx_IrBlock *dest) {
+    vx_IrOp op;
+    vx_IrOp_init(&op, VX_IR_OP_CALL, dest);
+
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_ADDR, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 123});
+
+    vx_IrBlock_add_op(dest, &op);
+}
+
+static void gen_bin_op(vx_IrBlock *dest, vx_IrOpType optype, vx_IrType *outtype, vx_IrVar d, vx_IrVar a, vx_IrVar b) {
+    vx_IrOp op;
+    vx_IrOp_init(&op, optype, dest);
+
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = a});
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = b});
+
+    vx_IrOp_add_out(&op, d, outtype);
+
+    vx_IrBlock_add_op(dest, &op);
+}
+
+static vx_IrBlock * build_test_cmov(void) {
     vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
 
     {
@@ -86,6 +108,58 @@ static int cir_test(void) {
     }
 
     vx_IrBlock_make_root(block, 1);
+
+    return block;
+}
+
+static vx_IrBlock * build_test_bool(void) {
+/*
+void eq(int a, int b, int c, int d) {
+    if (a == b && c == d) {
+        call();
+    } else {
+        call2();
+    }
+}
+*/
+    vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
+    vx_IrVar a = 0, b = 1, c = 2, d = 3, temp0 = 4, temp1 = 5, temp2 = 6;
+
+    vx_IrBlock_add_in(block, a);
+    vx_IrBlock_add_in(block, b);
+    vx_IrBlock_add_in(block, c);
+    vx_IrBlock_add_in(block, d);
+
+    vx_IrOp iff;
+    vx_IrOp_init(&iff, VX_IR_OP_IF, block);
+
+    vx_IrBlock *cond = vx_IrBlock_init_heap(block, 0);
+    vx_IrBlock *then = vx_IrBlock_init_heap(block, 0);
+    vx_IrBlock *els  = vx_IrBlock_init_heap(block, 0);
+
+    {
+        gen_bin_op(cond, VX_IR_OP_EQ, ty_bool, temp0, a, b);
+        gen_bin_op(cond, VX_IR_OP_EQ, ty_bool, temp1, c, d);
+        gen_bin_op(cond, VX_IR_OP_AND, ty_bool, temp2, temp0, temp1);
+        vx_IrBlock_add_out(cond, temp2);
+    }
+
+    gen_call_op(then);
+    gen_call_op(els);
+
+    vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = cond});
+    vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND_THEN, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = then});
+    vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND_ELSE, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = els});
+
+    vx_IrBlock_add_op(block, &iff);
+
+    vx_IrBlock_make_root(block, 7);
+
+    return block;
+}
+
+static int cir_test(void) {
+    vx_IrBlock *block = build_test_bool();
 
     if (vx_cir_verify(block) != 0)
         return 1;
@@ -111,9 +185,13 @@ static int cir_test(void) {
         return 1;
 
     vx_IrBlock_llir_lower(block);
+
+    printf("After SSA IR lower:\n");
+    vx_IrBlock_dump(block, stdout, 0);
+
     vx_x86cg_prepare(block);
 
-    printf("After SSA IR lower & cg prepare:\n");
+    printf("After CG prepare:\n");
     vx_IrBlock_dump(block, stdout, 0);
 
     opt_ll(block);
@@ -134,13 +212,18 @@ static int cir_test(void) {
 int main(void) {
     // TODO: figure out why these break things
     vx_g_optconfig.loop_simplify = false;
-    vx_g_optconfig.if_eval = false;
 
     ty_int = vx_IrType_heap();
     ty_int->debugName = "i32";
     ty_int->kind = VX_IR_TYPE_KIND_BASE;
     ty_int->base.align = 4;
     ty_int->base.size = 4;
+
+    ty_bool = vx_IrType_heap();
+    ty_bool->debugName = "i8";
+    ty_bool->kind = VX_IR_TYPE_KIND_BASE;
+    ty_bool->base.align = 2; // depends on arch
+    ty_bool->base.size = 1;
 
     printf("C-IR test:\n");
     if (cir_test() != 0)

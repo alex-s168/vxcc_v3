@@ -20,7 +20,7 @@ static void add_cond_comp_info(vx_IrBlock * block) {
     for (size_t i = 0; i < block->ops_len; i ++) {
         vx_IrOp *op = &block->ops[i];
 
-        if (!(op->id == VX_IR_OP_CMOV || op->id == VX_LIR_GOTO || op->id == VX_LIR_COND))
+        if (!(op->id == VX_IR_OP_CMOV || op->id == VX_LIR_COND))
             continue;
 
         vx_IrVar cond = vx_IrOp_param(op, VX_IR_NAME_COND)->var;

@@ -315,7 +315,10 @@ typedef enum {
 
     VX_LIR_OP_LABEL,        // "id"
     VX_LIR_GOTO,            // "id"
-    VX_LIR_COND,            // "id", "val": bool
+    VX_LIR_COND,            // "id", "cond": bool
+
+    VX_IR_OP_CALL,          // "addr": int / fnref
+    VX_IR_OP_TAILCALL,      // "addr": int / fnref
 
     VX_IR_OP____END,
 } vx_IrOpType;
@@ -341,7 +344,7 @@ struct vx_IrOp_s {
     vx_IrNamedValue *params;
     size_t           params_len;
 
-    // TODO: TODO TODO MOST FNS IGNORE THAT!!!! BAD!!! (also rename)
+    // TODO: TODO TODO MOST FNS IGNORE THAT!!!! BAD!!! (also rename and use in alternatives too)
     vx_IrValue  * states;
     size_t        states_len;
 
@@ -417,6 +420,7 @@ void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);
 bool vx_IrOp_is_volatile(vx_IrOp *op);
 size_t vx_IrOp_inline_cost(vx_IrOp *op);
 void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
+bool vx_IrOp_is_tail(vx_IrOp *op);
 
 static void vx_IrBlock_root_set_var_decl(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
     root->as_root.vars[var].decl_parent = decl->parent;

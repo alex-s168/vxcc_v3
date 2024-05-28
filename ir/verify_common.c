@@ -194,15 +194,25 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, const vx_IrBlock *block, const
                     };
                     vx_Errors_add(dest, &error);
                 } else if (root->as_root.vars[var].decl_parent == NULL) {
-                    static char buf[256];
-                    sprintf(buf, "Variable %%%zu is never declared!", var);
-                    const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
-                    vx_Error error = {
-                        .path = newpath,
-                        .error = "Undeclared variable",
-                        .additional = buf
-                    };
-                    vx_Errors_add(dest, &error);
+                    bool found = false;
+                    for (size_t i = 0; i < root->ins_len; i ++) {
+                        if (root->ins[i] == var) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        static char buf[256];
+                        sprintf(buf, "Variable %%%zu is never declared!", var);
+                        const vx_OpPath newpath = vx_OpPath_copy_add(path, i);
+                        vx_Error error = {
+                            .path = newpath,
+                            .error = "Undeclared variable",
+                            .additional = buf
+                        };
+                        vx_Errors_add(dest, &error);
+                    }
                 }
             }
         }

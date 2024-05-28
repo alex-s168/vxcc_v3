@@ -131,6 +131,12 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_CMOV:
             return false;
 
+        case VX_IR_OP_BREAK:
+        case VX_IR_OP_CONTINUE:
+        case VX_IR_OP_CALL:
+        case VX_IR_OP_TAILCALL:
+            return true;
+
         case VX_IR_OP_STORE:
         case VX_IR_OP_PLACE: 
             return true;
@@ -153,9 +159,14 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
                         return true;
             return false;
 
-        default:
+        case VX_LIR_COND:
+        case VX_LIR_GOTO:
+        case VX_LIR_OP_LABEL:
+            return true;
+
+        case VX_IR_OP____END:
             assert(false);
-            return false; // never reached
+            return false;
     }
 }
 
@@ -228,6 +239,8 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_LIR_OP_LABEL] = 1,
     [VX_LIR_GOTO] = 1,
     [VX_LIR_COND] = 1,
+    [VX_IR_OP_CALL] = 1,
+    [VX_IR_OP_TAILCALL] = 1,
 };
 
 size_t vx_IrOp_inline_cost(vx_IrOp *op) {
@@ -250,3 +263,17 @@ size_t vx_IrBlock_inline_cost(const vx_IrBlock *block) {
     }
     return total;
 }
+
+static bool is_tail__rec(vx_IrBlock *block, size_t off) {
+    if (off == block->ops_len - 1) {
+        if (block->parent)
+            return is_tail__rec(block->parent, block->parent_index);
+        return true;
+    }
+    return false;
+}
+
+bool vx_IrOp_is_tail(vx_IrOp *op) {
+    return is_tail__rec(op->parent,  op - op->parent->ops);
+}
+

@@ -59,6 +59,9 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_LIR_OP_LABEL] = "label",
     [VX_LIR_GOTO] = "goto",
     [VX_LIR_COND] = "cond",
+
+    [VX_IR_OP_CALL] = "call",
+    [VX_IR_OP_TAILCALL] = "tail-call",
 };
 
 const char *vx_IrName_str[] = {
