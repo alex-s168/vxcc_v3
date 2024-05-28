@@ -56,7 +56,7 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
             vx_IrType *type2 = block->as_root.vars[var].ll_type;
 
-            if (!vx_IrType_compatible(type2, type))
+            if (vx_IrType_size(type) == vx_IrType_size(type2)) // dont use vx_IrType_compatible() here
                 continue;
 
             lifetime cmp_low = *lt;

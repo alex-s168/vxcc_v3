@@ -85,8 +85,32 @@ static vx_IrType* vx_IrType_heap(void) {
     return (vx_IrType*) memset(malloc(sizeof(vx_IrType)), 0, sizeof(vx_IrType));
 }
 
+// TODO: remove cir checks and make sure fn called after cir type expand & MAKE TYPE EXPAND AWARE OF MEMBER ALIGN FOR UNIONS
+static size_t vx_IrType_size(vx_IrType *ty) {
+    size_t total = 0; 
+
+    switch (ty->kind) {
+    case VX_IR_TYPE_KIND_BASE:
+        return ty->base.size;
+
+    case VX_IR_TYPE_KIND_CIR_UNION:
+        for (size_t i = 0; i < ty->cir_union.members_len; i ++) {
+            size_t val = vx_IrType_size(ty->cir_union.members[i]);
+            if (val > total)
+                total = val;
+        }
+        return total;
+
+    case VX_IR_TYPE_KIND_CIR_STRUCT:
+        for (size_t i = 0; i < ty->cir_struct.members_len; i ++) {
+            total += vx_IrType_size(ty->cir_struct.members[i]);
+        }
+        return total;
+    }
+}
+
 static bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
-    return a == b; // TODO
+    return a == b; // TODO (not used right now)
 }
 
 typedef struct {
