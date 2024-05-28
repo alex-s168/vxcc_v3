@@ -198,6 +198,7 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
 
     for (size_t i = 0; i < op->info.count; i ++) {
         vx_OpInfo info = op->info.items[i];
+        (void) info;
         fprintf(out, "\ninfo %s = ...", opinfo_names[i]);
     }
 
