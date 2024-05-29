@@ -10,47 +10,42 @@ vx_OptConfig vx_g_optconfig = {
 
 static void opt_pre(vx_IrBlock *block) {
     // place immediates into params
-    vx_opt_inline_vars(vx_IrView_of_all(block), block);
+    vx_opt_inline_vars(block);
 
     if (block->is_root)
-        vx_opt_vars(vx_IrView_of_all(block), block);
+        vx_opt_vars(block);
 
     for (size_t i = 0; i < vx_g_optconfig.consteval_iterations; i ++) {
         // evaluate constants
-        vx_opt_constant_eval(vx_IrView_of_all(block), block);
+        vx_opt_constant_eval(block);
         // place results into params
-        vx_opt_inline_vars(vx_IrView_of_all(block), block);
+        vx_opt_inline_vars(block);
     }
 
-    vx_opt_comparisions(vx_IrView_of_all(block), block);
+    vx_opt_comparisions(block);
 }
 
 void opt(vx_IrBlock *block) {
-    for (size_t i = 0; i < block->ops_len; i ++) {
-         vx_IrOp *op = &block->ops[i];
-
+    for (vx_IrOp *op = block->first; op; op = op->next)
          for (size_t i = 0; i < op->params_len; i ++)
              if (op->params[i].val.type == VX_IR_VAL_BLOCK)
                  opt(op->params[i].val.block);
-    }
 
     opt_pre(block);
-    vx_opt_join_compute(vx_IrView_of_all(block), block);
+    vx_opt_join_compute(block);
     if (vx_g_optconfig.if_eval) {
-        vx_opt_reduce_if(vx_IrView_of_all(block), block);
+        vx_opt_reduce_if(block);
     }
-    vx_opt_cmov(vx_IrView_of_all(block), block);
+    vx_opt_cmov(block);
     opt_pre(block);
     if (vx_g_optconfig.loop_simplify) {
-        vx_opt_reduce_loops(vx_IrView_of_all(block), block);
-        vx_opt_loop_simplify(vx_IrView_of_all(block), block);
+        vx_opt_reduce_loops(block);
+        vx_opt_loop_simplify(block);
     }
 
     vx_opt_tailcall(block);
 
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id == VX_IR_OP_FLATTEN_PLEASE) {
             vx_IrBlock *body = vx_IrOp_param(op, VX_IR_NAME_BLOCK)->block;
             opt(body);
@@ -61,7 +56,7 @@ void opt(vx_IrBlock *block) {
 void opt_ll(vx_IrBlock *block) {
     vx_opt_ll_dce(block);
     vx_opt_ll_condtailcall(block);
-    vx_opt_inline_vars(vx_IrView_of_all(block), block);
-    vx_opt_vars(vx_IrView_of_all(block), block);
-    vx_opt_ll_jumps(vx_IrView_of_all(block), block);
+    vx_opt_inline_vars(block);
+    vx_opt_vars(block);
+    vx_opt_ll_jumps(block);
 }

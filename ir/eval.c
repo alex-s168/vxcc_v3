@@ -4,10 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../utils.h"
 
-bool vx_IrBlock_eval_var(const vx_IrBlock *block, const vx_IrVar var, vx_IrValue *dest) {
-    const vx_IrOp *decl = vx_IrBlock_root_get_var_decl(vx_IrBlock_root(block), var);
+bool vx_IrBlock_eval_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest) {
+    vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
     if (decl == NULL)
         return false;
 
@@ -26,7 +25,7 @@ bool vx_IrBlock_eval_var(const vx_IrBlock *block, const vx_IrVar var, vx_IrValue
     return false;
 }
 
-bool vx_Irblock_mightbe_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
+bool vx_Irblock_mightbe_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
     vx_IrValue is;
     if (vx_IrBlock_eval_var(block, var, &is)) {
         return memcmp(&is, &v, sizeof(vx_IrValue)) == 0;
@@ -34,7 +33,7 @@ bool vx_Irblock_mightbe_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v)
     return true;
 }
 
-bool vx_Irblock_alwaysis_var(const vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
+bool vx_Irblock_alwaysis_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
     vx_IrValue is;
     if (!vx_IrBlock_eval_var(block, var, &is))
         return false;
@@ -47,7 +46,7 @@ void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v) {
 }
 
 
-struct IrStaticIncrement vx_IrOp_detect_static_increment(const vx_IrOp *op) {
+struct IrStaticIncrement vx_IrOp_detect_static_increment(vx_IrOp *op) {
     if (op->id != VX_IR_OP_ADD && op->id != VX_IR_OP_SUB)
         return (struct IrStaticIncrement) { .detected = false };
 

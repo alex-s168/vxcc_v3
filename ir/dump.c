@@ -1,7 +1,6 @@
 #include "ir.h"
 
 const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
-    [VX_IR_OP_NOP] = "nop",
     [VX_IR_OP_IMM] = "imm",
     [VX_IR_OP_FLATTEN_PLEASE] = ".",
     
@@ -133,8 +132,8 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
             }
             fputs("){\n", out);
 
-            for (size_t i = 0; i < block->ops_len; i ++) {
-                vx_IrOp_dump(block->ops + i, out, indent + 1);
+            for (vx_IrOp *op = block->first; op; op = op->next) {
+                vx_IrOp_dump(op, out, indent + 1);
             }
 
             if (block->outs_len > 0) {
@@ -218,10 +217,8 @@ void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, const size_t indent) {
     }
     fputc('\n', out);
 
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        if (block->ops[i].id == VX_IR_OP_NOP)
-            continue;
-        vx_IrOp_dump(block->ops + i, out, indent + 1);
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        vx_IrOp_dump(op, out, indent + 1);
     }
 
     for (size_t i = 0; i < indent; i ++)

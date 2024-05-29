@@ -12,21 +12,20 @@ typedef struct {
 
 extern vx_OptConfig vx_g_optconfig;
 
-// TODO: get rid of most view params here
-OPT_PASS void vx_opt_loop_simplify(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_comparisions(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_constant_eval(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_inline_vars(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_join_compute(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_reduce_if(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_reduce_loops(vx_IrView view, vx_IrBlock *block);
-OPT_PASS void vx_opt_cmov(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_loop_simplify(vx_IrBlock *block);
+OPT_PASS void vx_opt_comparisions(vx_IrBlock *block);
+OPT_PASS void vx_opt_constant_eval(vx_IrBlock *block);
+OPT_PASS void vx_opt_inline_vars(vx_IrBlock *block);
+OPT_PASS void vx_opt_join_compute(vx_IrBlock *block);
+OPT_PASS void vx_opt_reduce_if(vx_IrBlock *block);
+OPT_PASS void vx_opt_reduce_loops(vx_IrBlock *block);
+OPT_PASS void vx_opt_cmov(vx_IrBlock *block);
 OPT_PASS void vx_opt_tailcall(vx_IrBlock *block);
-OPT_PASS void vx_opt_vars(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_vars(vx_IrBlock *block);
 
 OPT_PASS void vx_opt_ll_dce(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_condtailcall(vx_IrBlock *block);
-OPT_PASS void vx_opt_ll_jumps(vx_IrView view, vx_IrBlock *block);
+OPT_PASS void vx_opt_ll_jumps(vx_IrBlock *block);
 
 void opt(vx_IrBlock *block);
 void opt_ll(vx_IrBlock *block);

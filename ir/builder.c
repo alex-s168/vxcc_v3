@@ -6,18 +6,17 @@
 
 void vx_IrBlock_init(vx_IrBlock *block,
                      vx_IrBlock *parent,
-                     size_t parent_index)
+                      vx_IrOp *parent_op)
 {
     block->parent = parent;
-    block->parent_index = parent_index;
+    block->parent_op = parent_op;
 
     block->is_root = false;
 
     block->ins = NULL;
     block->ins_len = 0;
 
-    block->ops = NULL;
-    block->ops_len = 0;
+    block->first = NULL;
 
     block->outs = NULL;
     block->outs_len = 0;
@@ -25,15 +24,39 @@ void vx_IrBlock_init(vx_IrBlock *block,
     block->should_free = false;
 }
 
-vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent,
-                                 size_t parent_index)
+vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent, vx_IrOp *parent_op)
 {
     vx_IrBlock *new = malloc(sizeof(vx_IrBlock));
     if (new == NULL)
         return NULL;
-    vx_IrBlock_init(new, parent, parent_index);
+    vx_IrBlock_init(new, parent, parent_op);
     new->should_free = true;
     return new;
+}
+
+static vx_IrOp *find_var_decl(const vx_IrBlock *block, const vx_IrVar var)
+{
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        for (size_t j = 0; j < op->outs_len; j ++)
+            if (op->outs[j].var == var)
+                return op;
+
+        for (size_t j = 0; j < op->params_len; j ++) {
+            const vx_IrValue param = op->params[j].val;
+
+            if (param.type == VX_IR_VAL_BLOCK) {
+                for (size_t k = 0; k < param.block->ins_len; k ++)
+                    if (param.block->ins[k].var == var)
+                        return op;
+
+                vx_IrOp *res = find_var_decl(param.block, var);
+                if (res != NULL)
+                    return res;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 void vx_IrBlock_make_root(vx_IrBlock *block,
@@ -46,12 +69,12 @@ void vx_IrBlock_make_root(vx_IrBlock *block,
     block->as_root.vars_len = total_vars;
     block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
     for (size_t i = 0; i < total_vars; i ++) {
-        vx_IrOp *decl = vx_IrBlock_find_var_decl(block, i);
+        vx_IrOp *decl = find_var_decl(block, i);
         if (decl == NULL) {
-            block->as_root.vars[i].decl_parent = NULL;
+            block->as_root.vars[i].decl = NULL;
             continue;
         }
-        vx_IrBlock_root_set_var_decl(block, i, decl);
+        block->as_root.vars[i].decl = decl;
     }
 
     block->as_root.labels = NULL;
@@ -74,7 +97,16 @@ static void root_block_put_var(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
         root->as_root.vars = realloc(root->as_root.vars, sizeof(*root->as_root.vars) * (var + 1));
         root->as_root.vars_len = var + 1;
     }
-    vx_IrBlock_root_set_var_decl(root, var, decl);
+    root->as_root.vars[var].decl = decl;
+}
+
+static void root_block_put_label(vx_IrBlock *root, size_t label, vx_IrOp *decl) {
+    assert(root->is_root);
+    if (label >= root->as_root.labels_len) {
+        root->as_root.labels = realloc(root->as_root.labels, sizeof(*root->as_root.labels) * (label + 1));
+        root->as_root.labels_len = label + 1;
+    }
+    root->as_root.labels[label].decl = decl;
 }
 
 struct add_op__data {
@@ -90,7 +122,10 @@ static bool add_op__trav(vx_IrOp *op, void *dataIn) {
         root_block_put_var(data->root, vv.var, op);
     }
 
-    // TODO: also fix labels
+    if (op->id == VX_LIR_OP_LABEL) {
+        size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+        root_block_put_label(data->root, label, op);
+    }
 
     return false;
 }
@@ -112,39 +147,35 @@ void vx_IrBlock_add_op(vx_IrBlock *block,
     if (data.root == NULL)
         return;
 
-    vx_IrView_deep_traverse(vx_IrView_of_single(new->parent, new - block->ops), add_op__trav, &data);
+    vx_IrBlock_deep_traverse(new->parent, add_op__trav, &data);
 }
 
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block) {
-    block->ops = realloc(block->ops, sizeof(vx_IrOp) * (block->ops_len + 1));
-    return &block->ops[block->ops_len ++];
+    vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
+    new->next = NULL;
+
+    vx_IrOp *end = block->first;
+    while (end->next)
+        end = end->next;
+    
+    end->next = new;
+
+    return new;
 }
 
 vx_IrOp *vx_IrBlock_insert_op_building_after(vx_IrOp *after) {
     assert(after);
     vx_IrBlock *block = after->parent;
     assert(block);
-    size_t after_idx = after - block->ops;
-    size_t new_idx = after_idx + 1;
 
-    if (new_idx < block->ops_len && block->ops[new_idx].id == VX_IR_OP_NOP)
-        return &block->ops[new_idx];
+    vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
 
-    assert(false);
-    // TODO: DO AFTER LINKED LIST OPS
-    return NULL;
-}
+    new->next = after->next;
 
-void vx_IrBlock_add_all_op(vx_IrBlock *dest,
-                           const vx_IrBlock *src)
-{
-    dest->ops = realloc(dest->ops, sizeof(vx_IrOp) * (dest->ops_len + src->ops_len));
-    memcpy(dest->ops + dest->ops_len, src->ops, src->ops_len);
-    for (size_t i = dest->ops_len; i < dest->ops_len + src->ops_len; i ++) {
-        dest->ops[i].parent = dest;
-    }
-    dest->ops_len += src->ops_len;
+    after->next = new;
+
+    return new;
 }
 
 void vx_IrBlock_add_out(vx_IrBlock *block,
@@ -159,9 +190,8 @@ void vx_IrBlock_destroy(vx_IrBlock *block)
     if (block == NULL)
         return;
     free(block->ins);
-    for (size_t i = 0; i < block->ops_len; i ++)
-        vx_IrOp_destroy(&block->ops[i]);
-    free(block->ops);
+    for (vx_IrOp *op = block->first; op; op = op->next)
+        vx_IrOp_destroy(op);
     free(block->outs);
     if (block->is_root)
         free(block->as_root.vars);
@@ -233,8 +263,15 @@ void vx_IrOp_undeclare(vx_IrOp *op)
     if (root) {
         for (size_t i = 0; i < op->outs_len; i ++) { 
             vx_IrVar var = op->outs[i].var;
-            if (var < root->as_root.vars_len && vx_IrBlock_root_get_var_decl(root, var) == op) {
-                root->as_root.vars[var].decl_parent = NULL;
+            if (var < root->as_root.vars_len && root->as_root.vars[var].decl == op) {
+                root->as_root.vars[var].decl = NULL;
+            }
+        }
+
+        if (op->id == VX_LIR_OP_LABEL) {
+            size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+            if (label < root->as_root.labels_len && root->as_root.labels[label].decl == op) {
+                root->as_root.labels[label].decl = NULL;
             }
         }
     }
@@ -302,4 +339,40 @@ void vx_IrOp_steal_states(vx_IrOp *dest,
     for (size_t i = 0; i < src->args_len; i ++)
         dest->args[i] = src->args[i];
     dest->args_len = src->args_len;
+}
+
+void vx_IrOp_remove_successor(vx_IrOp *op) {
+    if (op && op->next) {
+        vx_IrOp *newnext = op->next->next;
+        vx_IrOp *old = op->next;
+        old->next = NULL;
+        op->next = newnext;
+    }
+}
+
+vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op) {
+    if (op) {
+        assert(op->parent);
+        for (vx_IrOp *curr = op->parent->first; curr; curr = curr->next)
+            if (curr->next == op)
+                return curr;
+    }
+    return NULL;
+}
+
+/** should use remove_successor whenever possible! */
+void vx_IrOp_remove(vx_IrOp *op) {
+    if (op == NULL || op->parent == NULL)
+        return;
+
+    if (op->parent->first == op) {
+        op->parent->first = op->next;
+        return;
+    }
+
+    vx_IrOp *pred = vx_IrOp_predecessor(op);
+    if (pred == NULL)
+        return;
+
+    vx_IrOp_remove_successor(pred);
 }

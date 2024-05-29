@@ -27,16 +27,16 @@ static void verify_vardecls_deeptraverse(vx_IrOp *op, void *dataIn) {
     }
 }
 
-vx_Errors vx_IrBlock_verify(const vx_IrBlock *block, const vx_OpPath path) {
+vx_Errors vx_IrBlock_verify(vx_IrBlock *block) {
     vx_Errors errors;
     errors.len = 0;
     errors.items = NULL;
 
-    vx_IrBlock_verify_ssa_based(&errors, block, path);
+    vx_IrBlock_verify_ssa_based(&errors, block);
 
     if (block->is_root) {
         for (size_t i = 0; i < block->as_root.vars_len; i ++) {
-            if (block->as_root.vars[i].decl_parent == NULL)
+            if (block->as_root.vars[i].decl == NULL)
                 continue;
 
             /*
