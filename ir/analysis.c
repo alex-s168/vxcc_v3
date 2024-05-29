@@ -242,6 +242,8 @@ size_t vx_IrBlock_inline_cost(vx_IrBlock *block) {
 }
 
 static bool is_tail__rec(vx_IrBlock *block, vx_IrOp *op) {
+    if (!op)
+        return false;
     if (op->next == NULL) {
         if (block->parent)
             return is_tail__rec(block->parent, block->parent_op);

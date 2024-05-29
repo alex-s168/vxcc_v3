@@ -221,6 +221,8 @@ void vx_IrOp_init(vx_IrOp *op,
                   const vx_IrOpType type,
                   vx_IrBlock *parent)
 {
+    op->next = NULL;
+
     op->outs = NULL;
     op->outs_len = 0;
 
