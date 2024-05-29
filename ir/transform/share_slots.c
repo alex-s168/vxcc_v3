@@ -11,15 +11,12 @@
 
 void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        if (block->as_root.vars[var].decl_parent == NULL)
+        if (block->as_root.vars[var].decl == NULL)
             continue;
 
-        // TODO: only search in lifetime: IrView of lifetime
-        vx_IrView view = vx_IrView_of_all(block);
+        // TODO (perf): only search in lifetime
         bool get_rid = false;
-        while (vx_IrView_find(&view, VX_IR_OP_PLACE)) {
-            const vx_IrOp *op = vx_IrView_take(view);
-
+        for (vx_IrOp *op = block->first; op; op = op->next) {
             for (size_t i = 0; i < op->params_len; i ++) {
                 if (op->params[i].val.id == VX_IR_VAL_VAR && op->params[i].val.var == var) {
                     get_rid = true;
@@ -29,8 +26,6 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
             if (get_rid)
                 break;
-
-            view = vx_IrView_drop(view, 1);
         }
 
         if (get_rid) {
@@ -71,8 +66,7 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
             // it's okay if end0 = start1 
 
-            vx_IrView view = vx_IrView_of_all(block);
-            vx_IrView_rename_var(view, block, var, var2);
+            vx_IrBlock_rename_var(block, var, var2);
 
             break;
         }

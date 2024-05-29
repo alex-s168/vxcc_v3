@@ -8,10 +8,10 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
     assert(block->is_root);
 
     for (size_t i = 0; i < block->ins_len; i ++) {
-        vx_IrOp *op = block->ops;
+        vx_IrOp *op = block->first;
 
         if (op->id == VX_CIR_OP_CFOR) {
-            vx_IrBlock *new = vx_IrBlock_init_heap(block, i);
+            vx_IrBlock *new = vx_IrBlock_init_heap(block, op);
 
             vx_IrBlock *b_init = vx_IrOp_param(op, VX_IR_NAME_LOOP_START)->block;
             vx_IrBlock *b_cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
@@ -30,11 +30,11 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
                 vx_IrBlock_add_op(new, &opdo);
             }
 
-            vx_IrOp opwhile;
-            vx_IrOp_init(&opwhile, VX_IR_OP_WHILE, new);
-            vx_IrOp_add_param_s(&opwhile, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = b_cond });
+            vx_IrOp *opwhile = vx_IrBlock_add_op_building(new);
+            vx_IrOp_init(opwhile, VX_IR_OP_WHILE, new);
+            vx_IrOp_add_param_s(opwhile, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = b_cond });
 
-            vx_IrBlock *doblock = vx_IrBlock_init_heap(new, new->ops_len);
+            vx_IrBlock *doblock = vx_IrBlock_init_heap(new, opwhile);
             {
                 vx_IrOp opdo;
                 vx_IrOp_init(&opdo, VX_IR_OP_FLATTEN_PLEASE, new);
@@ -48,9 +48,7 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
                 vx_IrBlock_add_op(doblock, &opdo);
             }
 
-            vx_IrOp_add_param_s(&opwhile, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = doblock });
-
-            vx_IrBlock_add_op(new, &opwhile);
+            vx_IrOp_add_param_s(opwhile, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = doblock });
 
             op->id = VX_IR_OP_FLATTEN_PLEASE;
             vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = new });

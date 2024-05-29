@@ -155,11 +155,13 @@ vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block) {
     vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
     new->next = NULL;
 
-    vx_IrOp *end = block->first;
-    while (end->next)
-        end = end->next;
-    
-    end->next = new;
+    vx_IrOp *end = vx_IrBlock_tail(block);
+
+    if (end == NULL) {
+        block->first = new;
+    } else {
+        end->next = new;
+    }
 
     return new;
 }

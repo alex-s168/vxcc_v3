@@ -2,6 +2,33 @@
 
 #include "ir.h"
 
+// used for C IR transforms
+//
+// block is optional
+//
+// block:
+//   __  nested blocks can also exist
+//  /\
+//    \ search here
+//     \
+//     before
+//
+vx_IrOp *vx_IrBlock_vardecl_out_before(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before) {
+    for (vx_IrOp *op = before->parent->first; op; op = op->next) {
+        for (size_t i = 0; i < op->outs_len; i ++)
+            if (op->outs[i].var == var)
+                return op;
+
+        if (op == before) {
+            if (before->parent->parent_op)
+                return vx_IrBlock_vardecl_out_before(block, var, before->parent->parent_op);
+
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
 bool vx_IrOp_ends_flow(vx_IrOp *op) {
     switch (op->id) {
     case VX_IR_OP_BREAK:
@@ -33,8 +60,7 @@ bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
     return false;
 }
 
-bool vx_IrBlock_var_used(const vx_IrBlock *block,
-                         const vx_IrVar var)
+bool vx_IrBlock_var_used(vx_IrBlock *block, vx_IrVar var)
 {
     for (size_t i = 0; i < block->outs_len; i++)
         if (block->outs[i] == var)
@@ -122,7 +148,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
     }
 }
 
-bool vx_IrBlock_is_volatile(const vx_IrBlock *block)
+bool vx_IrBlock_is_volatile(vx_IrBlock *block)
 {
     for (vx_IrOp *op = block->first; op; op = op->next)
         if (vx_IrOp_is_volatile(op))
@@ -207,7 +233,7 @@ size_t vx_IrOp_inline_cost(vx_IrOp *op) {
     return total;
 }
 
-size_t vx_IrBlock_inline_cost(const vx_IrBlock *block) {
+size_t vx_IrBlock_inline_cost(vx_IrBlock *block) {
     size_t total = 0;
     for (vx_IrOp *op = block->first; op; op = op->next) {
         total += vx_IrOp_inline_cost(op);

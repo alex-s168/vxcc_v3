@@ -2,7 +2,7 @@
 
 #include "../llir.h"
 
-static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest);
+static void lower_into(vx_IrBlock *old, vx_IrBlock *dest);
 
 static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
     bool *usedarr = malloc(sizeof(bool) * parent->outs_len);
@@ -12,13 +12,12 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
 
         bool used = false;
 
-        vx_IrOp *decl = vx_IrBlock_root_get_var_decl(vx_IrBlock_root(src->parent), vv);
+        vx_IrOp *decl = vx_IrBlock_root(src->parent)->as_root.vars[vv].decl;
         if (decl->parent != src)
             used = true;
 
         if (!used) {
-            for (size_t opid = (decl - decl->parent->ops) + 1; opid < src->parent->ops_len; opid ++) {
-                vx_IrOp *op = &src->parent->ops[opid];
+            for (vx_IrOp *op = decl->next; op; op = op->next) {
                 for (size_t i = 0; i < op->params_len; i ++) {
                     if (op->params[i].val.type == VX_IR_VAL_VAR && op->params[i].val.var == vv) {
                         used = true;
@@ -47,8 +46,8 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
         }
     }
     
-    lower_into(src->ops, src->ops_len, dest);
-    
+    lower_into(src, dest);
+
     for (size_t outid = 0; outid < parent->outs_len; outid ++) {
         if (usedarr[outid]) {
             vx_IrTypedVar var = parent->outs[outid];
@@ -68,10 +67,8 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
     free(usedarr);
 }
 
-static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
-    for (size_t i = 0; i < oldops_len; i ++) {
-        vx_IrOp * op = &oldops[i];
-
+static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
+    for (vx_IrOp *op = old->first; op; op = op->next) {
         if (op->id == VX_IR_OP_IF) {
             vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
             
@@ -94,7 +91,7 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
 
             vx_IrVar cond_var = cond->outs[0];
 
-            lower_into(cond->ops, cond->ops_len, dest);
+            lower_into(cond, dest);
 
             if (els && then) {
                 //   cond .then COND
@@ -104,37 +101,24 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
                 //   THEN
                 // .end:
 
-                size_t jmp_cond_idx;
-                {
-                    vx_IrOp *jmp_cond = vx_IrBlock_add_op_building(dest);
-                    jmp_cond_idx = jmp_cond - dest->ops;
-                    vx_IrOp_init(jmp_cond, VX_LIR_COND, dest);
-                    vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
-                }
+                vx_IrOp *jmp_cond = vx_IrBlock_add_op_building(dest);
+                vx_IrOp_init(jmp_cond, VX_LIR_COND, dest);
+                vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
 
                 into(els, op, dest);
 
-                size_t jmp_end_idx;
-                {
-                    vx_IrOp *jmp_end = vx_IrBlock_add_op_building(dest);
-                    jmp_end_idx = jmp_end - dest->ops;
-                    vx_IrOp_init(jmp_end, VX_LIR_GOTO, dest);
-                }
+                vx_IrOp *jmp_end = vx_IrBlock_add_op_building(dest);
+                vx_IrOp_init(jmp_end, VX_LIR_GOTO, dest);
 
-                size_t label_then = vx_IrBlock_insert_label_op(dest);
+                size_t label_then = vx_IrBlock_append_label_op(dest);
 
-                {
-                    vx_IrOp *jmp_cond = dest->ops + jmp_cond_idx;
-                    vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_then });
-                }
+                vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_then });
 
                 into(then, op, dest);
-                size_t label_end = vx_IrBlock_insert_label_op(dest);
 
-                {
-                    vx_IrOp *jmp_end = dest->ops + jmp_end_idx;
-                    vx_IrOp_add_param_s(jmp_end, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_end });
-                }
+                size_t label_end = vx_IrBlock_append_label_op(dest);
+
+                vx_IrOp_add_param_s(jmp_end, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_end });
             } else {
                 if (then) {
                     assert(!els);
@@ -161,22 +145,15 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
 
                 // conditional jump to after the else block 
 
-                size_t jump_idx;
-                {
-                    vx_IrOp *jump = vx_IrBlock_add_op_building(dest);
-                    jump_idx = jump - dest->ops;
-                    vx_IrOp_init(jump, VX_LIR_COND, dest);
-                    vx_IrOp_add_param_s(jump, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
-                }
+                vx_IrOp *jump = vx_IrBlock_add_op_building(dest);
+                vx_IrOp_init(jump, VX_LIR_COND, dest);
+                vx_IrOp_add_param_s(jump, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
 
                 into(els, op, dest);
 
-                size_t label_id = vx_IrBlock_insert_label_op(dest);
+                size_t label_id = vx_IrBlock_append_label_op(dest);
 
-                {
-                    vx_IrOp *jump = dest->ops + jump_idx;
-                    vx_IrOp_add_param_s(jump, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
-                }
+                vx_IrOp_add_param_s(jump, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
             }
         }
         else if (op->id == VX_IR_OP_FLATTEN_PLEASE) {
@@ -189,7 +166,7 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
 
             vx_IrVar cond_var = cond->outs[0];
 
-            lower_into(cond->ops, cond->ops_len, dest);
+            lower_into(cond, dest);
 
             pcond->type = VX_IR_VAL_VAR;
             pcond->var = cond_var;
@@ -205,10 +182,8 @@ static void lower_into(vx_IrOp *oldops, size_t oldops_len, vx_IrBlock *dest) {
 }
 
 void vx_IrBlock_llir_lower(vx_IrBlock *block) {
-    vx_IrOp *old_ops = block->ops;
-    block->ops = NULL;
-    const size_t old_ops_len = block->ops_len;
-    block->ops_len = 0;
-    lower_into(old_ops, old_ops_len, block);
-    free(old_ops);
+    static vx_IrBlock copy;
+    copy = *block;
+    block->first = NULL;
+    lower_into(&copy, block);
 }

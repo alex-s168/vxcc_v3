@@ -229,6 +229,19 @@ typedef struct {
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 
+// used for C IR transforms
+//
+// block is optional
+//
+// block:
+//   __  nested blocks can also exist
+//  /\
+//    \ search here
+//     \
+//     before
+//
+vx_IrOp *vx_IrBlock_vardecl_out_before(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before);
+vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block);
 /** DON'T RUN INIT AFTERWARDS */
 vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent, vx_IrOp *parent_op);
 void vx_IrBlock_init(vx_IrBlock *block, vx_IrBlock *parent, vx_IrOp *parent_op);

@@ -6,6 +6,15 @@
 
 
 
+vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
+    vx_IrOp *op = block->first;
+    if (!op)
+        return NULL;
+    while (op->next)
+        op = op->next;
+    return op;
+}
+
 vx_RegRefList vx_RegRefList_fixed(size_t count) {
     vx_RegRefList list;
     list.count = count;

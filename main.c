@@ -8,7 +8,7 @@ static vx_IrType *ty_int;
 static vx_IrType *ty_bool;
 
 static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
-    vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->ops_len);
+    vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->parent_op);
 
     vx_IrOp assign;
     vx_IrOp_init(&assign, VX_IR_OP_IMM, block);
@@ -24,7 +24,7 @@ static vx_IrBlock *conditional_c_assign(vx_IrVar dest, vx_IrBlock *parent, vx_Ir
     vx_IrOp op;
     vx_IrOp_init(&op, VX_IR_OP_IF, parent);
     
-    vx_IrBlock *then = vx_IrBlock_init_heap(parent, parent->ops_len);
+    vx_IrBlock *then = vx_IrBlock_init_heap(parent, parent->parent_op);
     {
         vx_IrOp op2;
         vx_IrOp_init(&op2, VX_IR_OP_IMM, then);
@@ -45,9 +45,9 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
     vx_IrOp op;
     vx_IrOp_init(&op, VX_IR_OP_IF, parent);
     
-    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND_THEN, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = vx_IrBlock_init_heap(parent, parent->ops_len) });
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_COND_THEN, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = vx_IrBlock_init_heap(parent, parent->parent_op) });
 
-    vx_IrBlock *els = vx_IrBlock_init_heap(parent, parent->ops_len);
+    vx_IrBlock *els = vx_IrBlock_init_heap(parent, parent->parent_op);
     {
         vx_IrOp op2;
         vx_IrOp_init(&op2, VX_IR_OP_IMM, els);

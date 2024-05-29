@@ -9,9 +9,7 @@
  */
 void vx_CIrBlock_mksa_final(vx_IrBlock *block)
 {
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         for (size_t j = 0; j < op->params_len; j ++)
             if (op->params[j].val.type == VX_IR_VAL_BLOCK)
                 vx_CIrBlock_mksa_final(op->params[j].val.block);
@@ -21,9 +19,11 @@ void vx_CIrBlock_mksa_final(vx_IrBlock *block)
             const vx_IrVar old = *var;
             const vx_IrVar new = vx_IrBlock_new_var(block, op);
             *var = new;
-            vx_IrView view = vx_IrView_of_all(block);
-            view.start = i + 1;
-            vx_IrView_rename_var(view, block, old, new);
+
+            vx_IrOp *oldstart = block->first;
+                block->first = op->next;
+                vx_IrBlock_rename_var(block, old, new);
+            block->first = oldstart;
         }
     }
 }

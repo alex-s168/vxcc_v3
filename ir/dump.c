@@ -204,7 +204,7 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
     fputs(";\n", out);
 }
 
-void vx_IrBlock_dump(const vx_IrBlock *block, FILE *out, const size_t indent) {
+void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, const size_t indent) {
     for (size_t i = 0; i < indent; i ++)
         fputs("  ", out);
 
