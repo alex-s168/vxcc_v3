@@ -23,6 +23,35 @@ void fastfreeall(void);
 #include "../common.h"
 #include "../cg/cg.h"
 
+typedef enum {
+    VX_SEL_ONE_OF,
+    VX_SEL_NONE_OF,
+    VX_SEL_ANY,
+    VX_SEL_NONE,
+} vx_SelKind;
+
+typedef size_t vx_RegRef;
+
+typedef struct {
+    vx_RegRef *items;
+    size_t     count;
+} vx_RegRefList;
+
+/** uses fastalloc!! */
+vx_RegRefList vx_RegRefList_fixed(size_t count);
+bool vx_RegRefList_contains(vx_RegRefList list, vx_RegRef reg);
+vx_RegRefList vx_RegRefList_intersect(vx_RegRefList a, vx_RegRefList b);
+vx_RegRefList vx_RegRefList_union(vx_RegRefList a, vx_RegRefList b);
+vx_RegRefList vx_RegRefList_remove(vx_RegRefList a, vx_RegRefList rem);
+
+typedef struct {
+    vx_SelKind kind;
+    vx_RegRefList value;
+} vx_RegAllocConstraint;
+
+bool vx_RegAllocConstraint_matches(vx_RegAllocConstraint constraint, vx_RegRef reg);
+vx_RegAllocConstraint vx_RegAllocConstraint_merge(vx_RegAllocConstraint a, vx_RegAllocConstraint b);
+
 struct vx_IrOp_s;
 typedef struct vx_IrOp_s vx_IrOp;
 
@@ -138,6 +167,8 @@ struct vx_IrBlock_s {
 
             lifetime  ll_lifetime;
             vx_IrType *ll_type;
+
+            vx_RegAllocConstraint cg_regconstraint;
         } *vars;
         size_t vars_len;
 
@@ -187,6 +218,7 @@ void vx_IrBlock_add_in(vx_IrBlock *block, vx_IrVar var, vx_IrType *type);
 void vx_IrBlock_add_op(vx_IrBlock *block, const vx_IrOp *op);
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block);
+vx_IrOp *vx_IrBlock_insert_op_building_after(vx_IrOp *after);
 void vx_IrBlock_add_all_op(vx_IrBlock *dest, const vx_IrBlock *src);
 void vx_IrBlock_add_out(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);

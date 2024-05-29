@@ -5,6 +5,110 @@
 #include <stdlib.h>
 
 
+
+vx_RegRefList vx_RegRefList_fixed(size_t count) {
+    vx_RegRefList list;
+    list.count = count;
+    list.items = fastalloc(sizeof(vx_RegRef) * count);
+    return list;
+}
+
+bool vx_RegRefList_contains(vx_RegRefList list, vx_RegRef reg) {
+    for (size_t i = 0; i < list.count; i ++)
+        if (list.items[i] == reg)
+            return true;
+    return false;
+}
+
+vx_RegRefList vx_RegRefList_intersect(vx_RegRefList a, vx_RegRefList b) {
+    vx_RegRefList res = vx_RegRefList_fixed(a.count);
+    res.count = 0;
+
+    for (size_t i = 0; i < a.count; i ++) {
+        vx_RegRef reg = a.items[i];
+        if (vx_RegRefList_contains(b, reg)) {
+            res.items[res.count ++] = reg;
+        }
+    }
+
+    return res;
+}
+
+vx_RegRefList vx_RegRefList_union(vx_RegRefList a, vx_RegRefList b) {
+    vx_RegRefList res = vx_RegRefList_fixed(a.count + b.count);
+
+    for (size_t i = 0; i < a.count; i ++)
+        res.items[i] = a.items[i];
+
+    for (size_t i = 0; i < b.count; i ++)
+        res.items[i + a.count] = b.items[i];
+
+    return res;
+}
+
+vx_RegRefList vx_RegRefList_remove(vx_RegRefList a, vx_RegRefList rem) {
+    vx_RegRefList res = vx_RegRefList_fixed(a.count);
+    res.count = 0;
+
+    for (size_t i = 0; i < a.count; i ++) {
+        vx_RegRef ref = a.items[i];
+        if (!vx_RegRefList_contains(rem, ref)) {
+            res.items[res.count ++] = ref;
+        }
+    }
+
+    return res;
+}
+
+bool vx_RegAllocConstraint_matches(vx_RegAllocConstraint constraint, vx_RegRef reg) {
+    switch (constraint.kind) {
+    case VX_SEL_ANY:
+        return true;
+
+    case VX_SEL_NONE:
+        return false;
+
+    case VX_SEL_ONE_OF:
+        return vx_RegRefList_contains(constraint.value, reg);
+
+    case VX_SEL_NONE_OF:
+        return !vx_RegRefList_contains(constraint.value, reg);
+    }
+}
+
+vx_RegAllocConstraint vx_RegAllocConstraint_merge(vx_RegAllocConstraint a, vx_RegAllocConstraint b) {
+    if (a.kind == VX_SEL_NONE || b.kind == VX_SEL_NONE)
+        return a;
+
+    if (a.kind == VX_SEL_ANY)
+        return b;
+
+    if (b.kind == VX_SEL_ANY)
+        return a;
+
+    if (a.kind == VX_SEL_ONE_OF && b.kind == VX_SEL_ONE_OF) {
+        a.value = vx_RegRefList_intersect(a.value, b.value);
+        return a;
+    }
+
+    if (a.kind == VX_SEL_NONE_OF && b.kind == VX_SEL_NONE_OF) {
+        a.value = vx_RegRefList_union(a.value, b.value);
+        return a;
+    }
+
+    if (a.kind == VX_SEL_NONE_OF) {
+        vx_RegAllocConstraint temp = a;
+        a = b;
+        b = temp;
+    }
+
+    assert(a.kind == VX_SEL_ONE_OF);
+    assert(b.kind == VX_SEL_NONE_OF);
+
+    a.value = vx_RegRefList_remove(a.value, b.value);
+    return a;
+}
+
 vx_IrOp *vx_IrOp_next(vx_IrOp *op) {
     if (op == NULL)
         return NULL;

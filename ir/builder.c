@@ -121,6 +121,21 @@ vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block) {
     return &block->ops[block->ops_len ++];
 }
 
+vx_IrOp *vx_IrBlock_insert_op_building_after(vx_IrOp *after) {
+    assert(after);
+    vx_IrBlock *block = after->parent;
+    assert(block);
+    size_t after_idx = after - block->ops;
+    size_t new_idx = after_idx + 1;
+
+    if (new_idx < block->ops_len && block->ops[new_idx].id == VX_IR_OP_NOP)
+        return &block->ops[new_idx];
+
+    assert(false);
+    // TODO: DO AFTER LINKED LIST OPS
+    return NULL;
+}
+
 void vx_IrBlock_add_all_op(vx_IrBlock *dest,
                            const vx_IrBlock *src)
 {
