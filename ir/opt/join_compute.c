@@ -5,18 +5,10 @@
 /**
  * Find identical computations and join them
  */
-void vx_opt_join_compute(vx_IrView view,
-                         vx_IrBlock *block)
+void vx_opt_join_compute(vx_IrBlock *block)
 {
-    assert(view.block == block);
-
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
-        size_t j = i;
-        while (j --> 0) {
-            vx_IrOp *prev = &block->ops[j];
-
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        for (vx_IrOp *prev = block->first; prev != op; prev = prev->next) {
             if (prev->id != op->id || vx_IrOp_is_volatile(op) || prev->params_len != op->params_len || prev->outs_len == 0)
                 continue;
 

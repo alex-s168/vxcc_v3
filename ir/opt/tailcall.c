@@ -11,21 +11,19 @@ static bool trav(vx_IrOp *op, void *ignore) {
 }
 
 void vx_opt_tailcall(vx_IrBlock *block) {
-   vx_IrView_deep_traverse(vx_IrView_of_all(block), trav, NULL); 
+   vx_IrBlock_deep_traverse(block, trav, NULL); 
 }
 
 void vx_opt_ll_condtailcall(vx_IrBlock *block) {
     assert(block->is_root);
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
 
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id != VX_LIR_COND)
             continue;
 
         size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
-        vx_IrOp *label_op = vx_IrBlock_root_get_label_decl(block, label);
-
-        vx_IrOp *tailcall = vx_IrOp_next(label_op);
+        vx_IrOp *label_op = block->as_root.labels[label].decl;
+        vx_IrOp *tailcall = label_op->next;
         if (tailcall == NULL)
             continue;
 
@@ -41,7 +39,6 @@ void vx_opt_ll_condtailcall(vx_IrBlock *block) {
 
         vx_IrOp_steal_param(op, tailcall, VX_IR_NAME_ADDR);
 
-        vx_IrOp_destroy(tailcall);
-        vx_IrOp_init(tailcall, VX_IR_OP_NOP, block);
+        vx_IrOp_remove(tailcall);
     }
 }

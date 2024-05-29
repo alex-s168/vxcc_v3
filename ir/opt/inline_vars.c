@@ -1,7 +1,6 @@
 #include "../opt.h"
 
-static bool trav (vx_IrOp *op,
-                 void *data)
+static bool trav (vx_IrOp *op, void *data)
 {
     vx_IrBlock *block = data;
 
@@ -12,14 +11,12 @@ static bool trav (vx_IrOp *op,
 
     for (size_t i = 0; i < op->outs_len; i ++) {
         const vx_IrVar out = op->outs[i].var;
-        vx_IrView_substitute_var(vx_IrView_of_all(block), block, out, value);
+        vx_IrBlock_substitute_var(block, out, value);
     }
 
     return false;
 }
 
-void vx_opt_inline_vars(vx_IrView view,
-                        vx_IrBlock *block)
-{
-    vx_IrView_deep_traverse(view, trav, block);
+void vx_opt_inline_vars(vx_IrBlock *block) {
+    vx_IrBlock_deep_traverse(block, trav, block);
 }

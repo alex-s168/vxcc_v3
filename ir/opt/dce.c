@@ -1,23 +1,17 @@
 #include "../opt.h"
 
-static void rmcode_before_label(vx_IrBlock *block, size_t first) {
-    for (size_t i = first; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
+static void rmcode_before_label(vx_IrOp *op) {
+    for (; op; op = op->next) {
         if (op->id == VX_LIR_OP_LABEL)
             break;
 
-        vx_IrOp_destroy(op);
-        vx_IrOp_init(op, VX_IR_OP_NOP, block);
+        vx_IrOp_remove(op);
     }
 }
 
 void vx_opt_ll_dce(vx_IrBlock *block) {
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
-        if (vx_IrOp_ends_flow(op)) {
-            rmcode_before_label(block, i + 1);
-        }
-    }
+    for (vx_IrOp *op = block->first; op; op = op->next)
+        if (vx_IrOp_ends_flow(op))
+            rmcode_before_label(op->next);
 }
 

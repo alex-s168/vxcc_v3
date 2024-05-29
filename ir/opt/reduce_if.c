@@ -1,12 +1,12 @@
 #include "../opt.h"
 
-void vx_opt_reduce_if(vx_IrView view,
-                      vx_IrBlock *block)
+void vx_opt_reduce_if(vx_IrBlock *block)
 {
-    const vx_IrBlock *root = vx_IrBlock_root(block);
+    vx_IrBlock *root = vx_IrBlock_root(block);
 
-    while (vx_IrView_find(&view, VX_IR_OP_IF)) {
-        vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        if (op->id != VX_IR_OP_IF)
+            continue;
 
         vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
         const vx_IrVar condVar = cond->outs[0];
@@ -18,9 +18,8 @@ void vx_opt_reduce_if(vx_IrView view,
         vx_IrBlock *els = pelse ? pelse->block : NULL;
 
         if (vx_IrBlock_empty(then) && vx_IrBlock_empty(els)) {
-            vx_IrOp_destroy(op);
-            vx_IrOp_init(op, VX_IR_OP_NOP, block);
-            goto cont;
+            vx_IrOp_remove(op);
+            continue;
         }
 
         if (then) {
@@ -28,11 +27,11 @@ void vx_opt_reduce_if(vx_IrView view,
             if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
                     const vx_IrVar out = op->outs[i].var;
-                    vx_IrView_rename_var(vx_IrView_of_all(block), block, out, then->outs[i]); // does all the bookkeeping for us
+                    vx_IrBlock_rename_var(block, out, then->outs[i]); // does all the bookkeeping for us
                 }
 
-                vx_IrView_replace(block, view, then->ops, then->ops_len);
-                view = vx_IrView_drop(view, then->ops_len);
+                op->id = VX_IR_OP_FLATTEN_PLEASE;
+                vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, *pthen);
                 continue;
             }
         }
@@ -42,11 +41,11 @@ void vx_opt_reduce_if(vx_IrView view,
             if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
                     const vx_IrVar out = op->outs[i].var;
-                    vx_IrView_rename_var(vx_IrView_of_all(block), block, out, els->outs[i]); // does all the bookkeeping for us
+                    vx_IrBlock_rename_var(block, out, els->outs[i]); // does all the bookkeeping for us
                 }
 
-                vx_IrView_replace(block, view, els->ops, els->ops_len);
-                view = vx_IrView_drop(view, els->ops_len);
+                op->id = VX_IR_OP_FLATTEN_PLEASE;
+                vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, *pelse);
                 continue;
             }
         }
@@ -61,8 +60,5 @@ void vx_opt_reduce_if(vx_IrView view,
                 i --;
             }
         }
-
-    cont:
-        view = vx_IrView_drop(view, 1);
     }
 }
