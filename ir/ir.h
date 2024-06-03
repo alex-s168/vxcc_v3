@@ -420,6 +420,16 @@ struct vx_IrOp_s {
     vx_OpInfoList info;
 };
 
+#define MKARR(...) { __VA_ARGS__ }
+
+#define FOR_PARAMS(op,want,paramn,fn) { \
+    vx_IrName __names[] = want; \
+    for (size_t __it = 0; __it < sizeof(__names) / sizeof(vx_IrName); __it ++) { \
+        vx_IrValue paramn = *vx_IrOp_param(op, __names[__it]); \
+        fn; \
+    } \
+}
+
 vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op);
 void vx_IrOp_remove_successor(vx_IrOp *op);
 /** should use remove_successor whenever possible! */
@@ -442,6 +452,7 @@ static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName par
 void vx_IrOp_remove_params(vx_IrOp *op);
 void vx_IrOp_remove_out_at(vx_IrOp *op, size_t id);
 void vx_IrOp_remove_param_at(vx_IrOp *op, size_t id);
+void vx_IrOp_remove_param(vx_IrOp *op, vx_IrName name);
 void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src);
 void vx_IrOp_destroy(vx_IrOp *op);
 void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);

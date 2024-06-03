@@ -30,7 +30,9 @@ void vx_opt_reduce_if(vx_IrBlock *block)
                     vx_IrBlock_rename_var(block, out, then->outs[i]); // does all the bookkeeping for us
                 }
 
-                op->id = VX_IR_OP_FLATTEN_PLEASE;
+                vx_IrOp_remove_param(op, VX_IR_NAME_COND_THEN); // don't want to delete that block
+                vx_IrOp_destroy(op);
+                vx_IrOp_init(op, VX_IR_OP_FLATTEN_PLEASE, block);
                 vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, *pthen);
                 continue;
             }
@@ -44,7 +46,9 @@ void vx_opt_reduce_if(vx_IrBlock *block)
                     vx_IrBlock_rename_var(block, out, els->outs[i]); // does all the bookkeeping for us
                 }
 
-                op->id = VX_IR_OP_FLATTEN_PLEASE;
+                vx_IrOp_remove_param(op, VX_IR_NAME_COND_ELSE); // don't want to delete that block
+                vx_IrOp_destroy(op);
+                vx_IrOp_init(op, VX_IR_OP_FLATTEN_PLEASE, block);
                 vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, *pelse);
                 continue;
             }

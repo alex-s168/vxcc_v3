@@ -141,11 +141,9 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
         // inside out:
         assert(ifOp->params_len >= 2);
         assert(ifOp->params_len <= 3);
-        for (size_t j = 0; j < ifOp->params_len; j ++) {
-            if (ifOp->params[j].val.type != VX_IR_VAL_BLOCK)
-                continue;
 
-            vx_IrBlock *conditional = ifOp->params[j].val.block;
+        FOR_PARAMS(ifOp, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
+            vx_IrBlock *conditional = param.block;
             vx_OptIrVar manip = vx_CIrBlock_mksa_states(conditional);
 
             // TODO: make work if we have a else block and assign there too!!!!
@@ -161,7 +159,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
                     rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, ifOp, var, manip));
                 }
             }
-        }
+        });
     }
 
     return rvar;

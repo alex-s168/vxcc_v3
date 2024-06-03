@@ -30,9 +30,8 @@ void vx_opt_ll_condtailcall(vx_IrBlock *block) {
         if (tailcall->id != VX_IR_OP_TAILCALL)
             continue;
 
-        // should not be anything that destroy would free
         vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
-
+        vx_IrOp_remove_param(op, VX_IR_NAME_COND); // don't want it to free that
         vx_IrOp_destroy(op);
         vx_IrOp_init(op, VX_IR_OP_CONDTAILCALL, block);
         vx_IrOp_add_param_s(op, VX_IR_NAME_COND, cond);

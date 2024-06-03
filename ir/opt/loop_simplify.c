@@ -17,7 +17,8 @@ void vx_opt_loop_simplify(vx_IrBlock *block)
 
         // if it will never be 0 (not might be 0), it is always true => infinite loop
         if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
-            op->id = VX_IR_OP_INFINITE; // we could remove cond param
+            op->id = VX_IR_OP_INFINITE;
+            vx_IrOp_remove_param(op, VX_IR_NAME_COND);
             continue;
         }
 
