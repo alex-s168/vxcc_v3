@@ -2,6 +2,16 @@
 
 #include "ir.h"
 
+bool vx_IrBlock_vardecl_is_in_ins(vx_IrBlock *block, vx_IrVar var) {
+    vx_IrBlock *root = vx_IrBlock_root(block);
+    for (size_t k = 0; k < root->ins_len; k ++) {
+        if (root->ins[k].var == var) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // used for C IR transforms
 //
 // block is optional

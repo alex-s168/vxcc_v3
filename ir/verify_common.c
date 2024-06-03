@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "ir.h"
 #include "verify.h"
 
 void vx_error_param_type(vx_Errors *errors, const char *expected) {
@@ -156,6 +157,20 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             (void) analyze_if(dest, op);
             break;
 
+        case VX_LIR_GOTO:
+        case VX_LIR_COND: {
+            size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+            if (label >= root->as_root.labels_len || root->as_root.labels[label].decl == NULL) {
+                static char buf[256];
+                sprintf(buf, "Label %%%zu is never declared!", label);
+                vx_Error error = {
+                    .error = "Undeclared label",
+                    .additional = buf
+                };
+                vx_Errors_add(dest, &error);
+            }
+        } break;
+
         default:
             break;
         }
@@ -177,16 +192,8 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
                         .additional = buf
                     };
                     vx_Errors_add(dest, &error);
-                } else if (root->as_root.vars[var].decl == NULL) {
-                    bool found = false;
-                    for (size_t k = 0; k < root->ins_len; k ++) {
-                        if (root->ins[k].var == var) {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
+                } else if (var >= root->as_root.vars_len || root->as_root.vars[var].decl == NULL) {
+                    if (!vx_IrBlock_vardecl_is_in_ins(block, var)) {
                         static char buf[256];
                         sprintf(buf, "Variable %%%zu is never declared!", var);
                         vx_Error error = {

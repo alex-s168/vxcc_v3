@@ -23,7 +23,7 @@ void vx_opt_ll_condtailcall(vx_IrBlock *block) {
 
         size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
         vx_IrOp *label_op = block->as_root.labels[label].decl;
-        vx_IrOp *tailcall = label_op->next;
+        vx_IrOp *tailcall = label_op ? label_op->next : NULL;
         if (tailcall == NULL)
             continue;
 

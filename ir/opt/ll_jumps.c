@@ -14,10 +14,10 @@ static void part1(vx_IrBlock *block) {
         size_t label_id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
 
         vx_IrOp *decl = root->as_root.labels[label_id].decl;
-
         if (decl->parent != op->parent)
             continue;
 
+        // TODO: SHOULD NOT WORK
         if (decl < op) // can't optimize if label decl before this decl
             continue;
         

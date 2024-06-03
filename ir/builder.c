@@ -136,6 +136,7 @@ void vx_IrBlock_add_op(vx_IrBlock *block,
     vx_IrOp *new = vx_IrBlock_add_op_building(block);
     *new = *op;
 
+    new->next = NULL;
     new->parent = block;
 
     // make sure that out variables and labels are in root block (add them if not)

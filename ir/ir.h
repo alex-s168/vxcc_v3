@@ -281,6 +281,7 @@ void vx_IrBlock_substitute_var(vx_IrBlock *block, vx_IrVar old, vx_IrValue newv)
 bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data);
 bool vx_IrBlock_is_volatile(vx_IrBlock *block);
 size_t vx_IrBlock_inline_cost(vx_IrBlock *block);
+bool vx_IrBlock_vardecl_is_in_ins(vx_IrBlock *block, vx_IrVar var);
 
 typedef enum {
     VX_IR_NAME_OPERAND_A,
