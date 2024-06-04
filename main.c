@@ -194,6 +194,7 @@ static int cir_test(void) {
     printf("After CG prepare:\n");
     vx_IrBlock_dump(block, stdout, 0);
 
+    vx_IrBlock_llir_fix_decl(block);
     opt_ll(block);
 
     printf("After LL IR opt:\n");

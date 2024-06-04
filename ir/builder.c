@@ -310,22 +310,28 @@ void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src)
 void vx_IrOp_remove_out_at(vx_IrOp *op,
                            const size_t id)
 {
-    memmove(op->outs + id, op->outs + id + 1, sizeof(vx_IrTypedVar) * (op->outs_len - id - 1));
-    op->outs_len --;
+    if (op && op->outs) {
+        memmove(op->outs + id, op->outs + id + 1, sizeof(vx_IrTypedVar) * (op->outs_len - id - 1));
+        op->outs_len --;
+    }
 }
 
 void vx_IrBlock_remove_out_at(vx_IrBlock *block,
                               size_t id)
 {
-    memmove(block->outs + id, block->outs + id + 1, sizeof(vx_IrVar) * (block->outs_len - id - 1));
-    block->outs_len --;
+    if (block && block->outs) {
+        memmove(block->outs + id, block->outs + id + 1, sizeof(vx_IrVar) * (block->outs_len - id - 1));
+        block->outs_len --;
+    }
 }
 
 void vx_IrOp_remove_param_at(vx_IrOp *op,
                              const size_t id)
 {
-    memmove(op->params + id, op->params + id + 1, sizeof(vx_IrNamedValue) * (op->params_len - id - 1));
-    op->params_len --;
+    if (op && op->params) {
+        memmove(op->params + id, op->params + id + 1, sizeof(vx_IrNamedValue) * (op->params_len - id - 1));
+        op->params_len --;
+    }
 }
 
 void vx_IrOp_remove_param(vx_IrOp *op, vx_IrName param) {
@@ -341,8 +347,10 @@ void vx_IrOp_remove_param(vx_IrOp *op, vx_IrName param) {
 void vx_IrOp_remove_state_at(vx_IrOp *op,
                              const size_t id)
 {
-    memmove(op->args + id, op->args + id + 1, sizeof(vx_IrNamedValue) * (op->args_len - id - 1));
-    op->args_len --;
+    if (op && op->args) {
+        memmove(op->args + id, op->args + id + 1, sizeof(vx_IrNamedValue) * (op->args_len - id - 1));
+        op->args_len --;
+    }
 }
 
 void vx_IrOp_steal_states(vx_IrOp *dest,

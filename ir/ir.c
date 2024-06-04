@@ -129,9 +129,12 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
 
     // TODO: WHY THE FUCK IS THIS EVEN REQUIRED????
 
+    memset(root->as_root.labels, 0, sizeof(*root->as_root.labels) * root->as_root.labels_len);
     memset(root->as_root.vars, 0, sizeof(*root->as_root.vars) * root->as_root.vars_len);
 
-    size_t total = 0; 
+    size_t tot_var = 0;
+    size_t tot_label = 0;
+
     for (vx_IrOp *op = root->first; op; op = op->next) {
         for (size_t j = 0; j < op->outs_len; j ++) {
             vx_IrTypedVar out = op->outs[j];
@@ -139,10 +142,21 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
             if (*decl == NULL) {
                 *decl = op;
                 root->as_root.vars[out.var].ll_type = out.type;
-                total ++;
+                tot_var ++;
+            }
+        }
+
+        if (op->id == VX_LIR_OP_LABEL) {
+            size_t id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+            vx_IrOp **decl = &root->as_root.labels[id].decl;
+            if (*decl == NULL) {
+                *decl = op;
+                tot_label ++;
             }
         }
     }
+
+    printf("recoverd %zu variables and %zu labels\n", tot_var, tot_label);
 }
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
