@@ -6,12 +6,9 @@
  * `constant < a` -> `a > constant`
  * `constant > a` -> `a < constant`
  */
-void vx_opt_comparisions(vx_IrView view,
-                         vx_IrBlock *block)
+void vx_opt_comparisions(vx_IrBlock *block)
 {
-    for (size_t i = view.start; i < view.end; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         switch (op->id) {
             case VX_IR_OP_LTE: {
                 vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B);

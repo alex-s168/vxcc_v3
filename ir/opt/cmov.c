@@ -25,11 +25,9 @@ static vx_IrVar block_res_as_var(vx_IrBlock *parent, vx_IrBlock *block) {
 // cost of then + else is small enough
 // exactly one out
 
-void vx_opt_cmov(vx_IrView view, vx_IrBlock *block)
+void vx_opt_cmov(vx_IrBlock *block)
 {
-    for (size_t i = view.start; i < view.end; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id != VX_IR_OP_IF)
             continue;
 
@@ -59,7 +57,7 @@ void vx_opt_cmov(vx_IrView view, vx_IrBlock *block)
         vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
 
 
-        vx_IrBlock *body = vx_IrBlock_init_heap(block, i);
+        vx_IrBlock *body = vx_IrBlock_init_heap(block, op);
 
         vx_IrVar v0 = block_res_as_var(body, then);
         vx_IrVar v1 = block_res_as_var(body, els);

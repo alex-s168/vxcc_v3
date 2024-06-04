@@ -8,13 +8,10 @@ TRANSFORM_PASS void vx_CIrBlock_normalize(vx_IrBlock *);
 TRANSFORM_PASS vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *);
 TRANSFORM_PASS void vx_CIrBlock_mksa_final(vx_IrBlock *);
 
-vx_Errors vx_CIrBlock_verify(const vx_IrBlock *block, vx_OpPath path);
+vx_Errors vx_CIrBlock_verify(vx_IrBlock *block);
 
-static int vx_cir_verify(const vx_IrBlock *block) {
-    vx_OpPath path;
-    path.ids = NULL;
-    path.len = 0;
-    const vx_Errors errs = vx_CIrBlock_verify(block, path);
+static int vx_cir_verify(vx_IrBlock *block) {
+    const vx_Errors errs = vx_CIrBlock_verify(block);
     vx_Errors_print(errs, stderr);
     vx_Errors_free(errs);
     return errs.len > 0;

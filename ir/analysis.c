@@ -2,6 +2,43 @@
 
 #include "ir.h"
 
+bool vx_IrBlock_vardecl_is_in_ins(vx_IrBlock *block, vx_IrVar var) {
+    vx_IrBlock *root = vx_IrBlock_root(block);
+    for (size_t k = 0; k < root->ins_len; k ++) {
+        if (root->ins[k].var == var) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// used for C IR transforms
+//
+// block is optional
+//
+// block:
+//   __  nested blocks can also exist
+//  /\
+//    \ search here
+//     \
+//     before
+//
+vx_IrOp *vx_IrBlock_vardecl_out_before(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before) {
+    for (vx_IrOp *op = before->parent->first; op; op = op->next) {
+        for (size_t i = 0; i < op->outs_len; i ++)
+            if (op->outs[i].var == var)
+                return op;
+
+        if (op == before) {
+            if (before->parent->parent_op)
+                return vx_IrBlock_vardecl_out_before(block, var, before->parent->parent_op);
+
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
 bool vx_IrOp_ends_flow(vx_IrOp *op) {
     switch (op->id) {
     case VX_IR_OP_BREAK:
@@ -13,48 +50,6 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
     default:
         return false;
     }
-}
-
-bool vx_IrView_find(vx_IrView *view,
-                    const vx_IrOpType type)
-{
-    for (size_t i = view->start; i < view->end; i ++) {
-        if (view->block->ops[i].id == type) {
-            view->start = i;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/** You should use `vx_IrBlock_root(block)->as_root.vars[id].decl` instead! */
-vx_IrOp *vx_IrBlock_find_var_decl(const vx_IrBlock *block,
-                                  const vx_IrVar var)
-{
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
-
-        for (size_t j = 0; j < op->outs_len; j ++)
-            if (op->outs[j].var == var)
-                return op;
-
-        for (size_t j = 0; j < op->params_len; j ++) {
-            const vx_IrValue param = op->params[j].val;
-
-            if (param.type == VX_IR_VAL_BLOCK) {
-                for (size_t k = 0; k < param.block->ins_len; k ++)
-                    if (param.block->ins[k].var == var)
-                        return op;
-
-                vx_IrOp *res = vx_IrBlock_find_var_decl(param.block, var);
-                if (res != NULL)
-                    return res;
-            }
-        }
-    }
-
-    return NULL;
 }
 
 bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
@@ -75,15 +70,13 @@ bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
     return false;
 }
 
-bool vx_IrBlock_var_used(const vx_IrBlock *block,
-                         const vx_IrVar var)
+bool vx_IrBlock_var_used(vx_IrBlock *block, vx_IrVar var)
 {
     for (size_t i = 0; i < block->outs_len; i++)
         if (block->outs[i] == var)
             return true;
 
-    for (long int i = block->ops_len - 1; i >= 0; i--) {
-        const vx_IrOp *op = &block->ops[i];
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         if (vx_IrOp_var_used(op, var))
             return true;
     }
@@ -91,28 +84,9 @@ bool vx_IrBlock_var_used(const vx_IrBlock *block,
     return false;
 }
 
-vx_IrOp *vx_IrBlock_inside_out_vardecl_before(const vx_IrBlock *block,
-                                              const vx_IrVar var,
-                                              size_t before)
-{
-    while (before --> 0) {
-        vx_IrOp *op = &block->ops[before];
-
-        for (size_t i = 0; i < op->outs_len; i ++)
-            if (op->outs[i].var == var)
-                return op;
-    }
-
-    if (block->parent == NULL)
-        return NULL;
-
-    return vx_IrBlock_inside_out_vardecl_before(block->parent, var, block->parent_index);
-}
-
 bool vx_IrOp_is_volatile(vx_IrOp *op)
 {
     switch (op->id) {
-        case VX_IR_OP_NOP:
         case VX_IR_OP_IMM:
         case VX_IR_OP_REINTERPRET:
         case VX_IR_OP_ZEROEXT:
@@ -184,16 +158,16 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
     }
 }
 
-bool vx_IrBlock_is_volatile(const vx_IrBlock *block)
+bool vx_IrBlock_is_volatile(vx_IrBlock *block)
 {
-    for (size_t j = 0; j < block->ops_len; j ++)
-        if (vx_IrOp_is_volatile(&block->ops[j]))
+    for (vx_IrOp *op = block->first; op; op = op->next)
+        if (vx_IrOp_is_volatile(op))
             return true;
     return false;
 }
 
 vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
-    vx_IrOp *decl = vx_IrBlock_root_get_var_decl(vx_IrBlock_root(block), var);
+    vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
     if (decl == NULL)
         goto warn;
 
@@ -207,7 +181,6 @@ warn:
 }
 
 static size_t cost_lut[VX_IR_OP____END] = {
-    [VX_IR_OP_NOP] = 0,
     [VX_IR_OP_IMM] = 1,
     [VX_IR_OP_FLATTEN_PLEASE] = 0,
     [VX_IR_OP_REINTERPRET] = 0,
@@ -270,25 +243,26 @@ size_t vx_IrOp_inline_cost(vx_IrOp *op) {
     return total;
 }
 
-size_t vx_IrBlock_inline_cost(const vx_IrBlock *block) {
+size_t vx_IrBlock_inline_cost(vx_IrBlock *block) {
     size_t total = 0;
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &block->ops[i];
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         total += vx_IrOp_inline_cost(op);
     }
     return total;
 }
 
-static bool is_tail__rec(vx_IrBlock *block, size_t off) {
-    if (off == block->ops_len - 1) {
+static bool is_tail__rec(vx_IrBlock *block, vx_IrOp *op) {
+    if (!op)
+        return true;
+    if (op->next == NULL) {
         if (block->parent)
-            return is_tail__rec(block->parent, block->parent_index);
+            return is_tail__rec(block->parent, block->parent_op);
         return true;
     }
     return false;
 }
 
 bool vx_IrOp_is_tail(vx_IrOp *op) {
-    return is_tail__rec(op->parent,  op - op->parent->ops);
+    return is_tail__rec(op->parent, op);
 }
 

@@ -29,13 +29,11 @@
 *
 * But when the condition is always true, we need to make it an infinite loop!
 */
-void vx_opt_reduce_loops(vx_IrView view,
-                         vx_IrBlock *block)
+void vx_opt_reduce_loops(vx_IrBlock *block)
 {
-    assert(view.block == block);
-    
-    while (vx_IrView_find(&view, VX_IR_OP_FOR)) {
-        vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        if (op->id != VX_IR_OP_IF)
+            continue;
 
         if (op->id == VX_IR_OP_WHILE && op->outs_len > 0) { // "fast path" for when we don't even have states
             vx_IrBlock **bdo = &vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block;
@@ -50,8 +48,7 @@ void vx_opt_reduce_loops(vx_IrView view,
             struct IrStaticIncrement si;
             for (stateId = 0; stateId < op->outs_len; stateId ++) {
                 bool found = false;
-                for (size_t j = 0; j < newdo->ops_len; j ++) {
-                    incOp = &newdo->ops[j];
+                for (vx_IrOp *incOp = newdo->first; incOp; incOp = incOp->next) {
                     si = vx_IrOp_detect_static_increment(incOp);
                     if (si.detected &&
                         incOp->outs[0].var == op->outs[stateId].var &&
@@ -87,13 +84,10 @@ void vx_opt_reduce_loops(vx_IrView view,
             vx_IrOp_add_param_s(&new, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = newcond });
             vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = newdo });
 
-            vx_IrOp_destroy(incOp);
-            vx_IrOp_init(incOp, VX_IR_OP_NOP, block);
+            vx_IrOp_remove(incOp);
 
             vx_IrOp_destroy(op);
-            (void) vx_IrView_replace(block, view, &new, 1);
-        }
-        
-        view = vx_IrView_drop(view, 1);
+            *op = new;
+        } 
     }
 }

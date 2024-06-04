@@ -7,7 +7,7 @@ void vx_IrBlock_lifetimes(vx_IrBlock *block) {
     assert(block->is_root);
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        vx_IrOp *decl = vx_IrBlock_root_get_var_decl(block, var);
+        vx_IrOp *decl = block->as_root.vars[var].decl;
         if (decl == NULL) {
             block->as_root.vars[var].ll_lifetime.first = NULL;
             continue;
@@ -17,8 +17,7 @@ void vx_IrBlock_lifetimes(vx_IrBlock *block) {
 
         vx_IrOp *start = (void*) -1;
         vx_IrOp *end = 0;
-        for (size_t i = 0; i < block->ops_len; i ++) {
-            vx_IrOp *op = &block->ops[i];
+        for (vx_IrOp *op = block->first; op; op = op->next) {
             if (vx_IrOp_var_used(op, var)) {
                 if (op > end)
                     end = op;

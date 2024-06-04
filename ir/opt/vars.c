@@ -1,12 +1,11 @@
 #include "../opt.h"
 
-void vx_opt_vars(vx_IrView view, vx_IrBlock *block) {
-    const vx_IrBlock *root = vx_IrBlock_root(block);
+void vx_opt_vars(vx_IrBlock *block) {
+    vx_IrBlock *root = vx_IrBlock_root(block);
     if (root == NULL)
         root = block;
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *op = &view.block->ops[i];
 
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         if (vx_IrOp_is_volatile(op))
             continue;
 
@@ -25,7 +24,6 @@ void vx_opt_vars(vx_IrView view, vx_IrBlock *block) {
         if (!can_rem)
             continue;
 
-        vx_IrOp_destroy(op);
-        vx_IrOp_init(op, VX_IR_OP_NOP, block);
+        vx_IrOp_remove(op);
     }
 }

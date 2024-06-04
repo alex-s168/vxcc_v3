@@ -2,15 +2,9 @@
 
 #include <assert.h>
 
-void vx_opt_constant_eval(vx_IrView view,
-                          vx_IrBlock *block)
+void vx_opt_constant_eval(vx_IrBlock *block)
 {
-    assert(view.block == block);
-
-    while (vx_IrView_has_next(view)) {
-        // "unsafe", but we own the underlying block anyways
-        vx_IrOp *op = (vx_IrOp *) vx_IrView_take(view);
-
+    for (vx_IrOp *op = block->first; op; op = op->next) {
 #define BINARY(what) { \
         vx_IrValue *a = vx_IrOp_param(op, VX_IR_NAME_OPERAND_A); \
         vx_IrValue *b = vx_IrOp_param(op, VX_IR_NAME_OPERAND_B); \
@@ -140,7 +134,5 @@ void vx_opt_constant_eval(vx_IrView view,
             default:
                 break;
         }
-
-        view = vx_IrView_drop(view, 1);
     }
 }

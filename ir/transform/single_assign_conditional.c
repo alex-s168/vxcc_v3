@@ -48,9 +48,9 @@
  * @param manipIn 
  */
 static vx_IrVar megic(vx_IrBlock *outer,
-                      const size_t outerOff,
+                      vx_IrOp *orig_assign,
                       vx_IrBlock *conditional,
-                      const size_t condOff,
+                      vx_IrOp *cond_op,
                       vx_IrOp *ifOp,
                       const vx_IrVar var,
                       const vx_OptIrVar manipIn)
@@ -58,16 +58,15 @@ static vx_IrVar megic(vx_IrBlock *outer,
     // stage 1
     const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
     {
-        vx_IrView rename = vx_IrView_of_all(outer);
-        rename.start = outerOff + 1;
-        vx_IrView_rename_var(rename, outer, var, manipulate);
+        vx_IrOp *oldstart = outer->first;
+        outer->first = orig_assign->next;
+        vx_IrBlock_rename_var(outer, var, manipulate);
+        outer->first = oldstart;
     }
-        
+
     // stage 2
     vx_IrVar last_cond_assign = manipulate;
-    for (size_t i = condOff; i < conditional->ops_len; i ++) {
-        vx_IrOp *op = &conditional->ops[i];
-
+    for (vx_IrOp *op = cond_op; op; op = op->next) {
         // make sure that we assign in this op
         bool found = false;
         for (size_t j = 0; j < op->outs_len; j ++) {
@@ -83,10 +82,11 @@ static vx_IrVar megic(vx_IrBlock *outer,
 
         const vx_IrVar new = vx_IrBlock_new_var(outer, op);
         // we include the current index on purpose
-        vx_IrView rename = vx_IrView_of_all(conditional);
-        rename.start = i;
-        vx_IrView_rename_var(rename, conditional, last_cond_assign, new);
+        vx_IrOp *oldstart = conditional->first;
+        conditional->first = op;
+        vx_IrBlock_rename_var(conditional, last_cond_assign, new);
         last_cond_assign = new;
+        conditional->first = oldstart;
     }
 
     // stage 3
@@ -96,7 +96,6 @@ static vx_IrVar megic(vx_IrBlock *outer,
     //  last_cond_assign <=> the conditional var that we need to return in the then block
     //  manipulate       <=> the new target var
 
-    const vx_IrOp *orig_assign = &outer->ops[outerOff];
     vx_IrType *type = NULL;
     for (size_t i = 0; i < orig_assign->outs_len; i ++)
         if (orig_assign->outs[i].var == var)
@@ -107,7 +106,7 @@ static vx_IrVar megic(vx_IrBlock *outer,
 
     vx_IrBlock *els;
     if (pels == NULL) {
-        els = vx_IrBlock_init_heap(then->parent, then->parent_index); // lazyness
+        els = vx_IrBlock_init_heap(then->parent, then->parent_op); // lazyness
         vx_IrOp_add_param_s(ifOp, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = els });
     } else {
         els = pels->block;
@@ -135,36 +134,32 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
 {
     vx_OptIrVar rvar = VX_IRVAR_OPT_NONE;
 
-    for (size_t i = 0; i < block->ops_len; i ++) {
-        vx_IrOp *ifOp = &block->ops[i];
+    for (vx_IrOp *ifOp = block->first; ifOp; ifOp = ifOp->next) {
         if (ifOp->id != VX_IR_OP_IF)
             continue;
 
         // inside out:
         assert(ifOp->params_len >= 2);
         assert(ifOp->params_len <= 3);
-        for (size_t j = 0; j < ifOp->params_len; j ++) {
-            if (ifOp->params[j].val.type != VX_IR_VAL_BLOCK)
-                continue;
 
-            vx_IrBlock *conditional = ifOp->params[j].val.block;
+        FOR_PARAMS(ifOp, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
+            vx_IrBlock *conditional = param.block;
             vx_OptIrVar manip = vx_CIrBlock_mksa_states(conditional);
 
             // TODO: make work if we have a else block and assign there too!!!!
 
             // are we assigning any variable directly in that block that we also assign on the outside before the inst?
-            for (size_t k = 0; k < conditional->ops_len; k ++) {
-                const vx_IrOp *condAssignOp = &conditional->ops[k];
+            for (vx_IrOp *condAssignOp = conditional->first; condAssignOp; condAssignOp = condAssignOp->next) {
                 for (size_t l = 0; l < condAssignOp->outs_len; l ++) {
-                    const vx_IrVar var = condAssignOp->outs[l].var;
+                    vx_IrVar var = condAssignOp->outs[l].var;
 
-                    const vx_IrOp *alwaysAssignOp = vx_IrBlock_inside_out_vardecl_before(block, var, i);
+                    vx_IrOp *alwaysAssignOp = vx_IrBlock_vardecl_out_before(block, var, condAssignOp);
                     if (alwaysAssignOp == NULL)
                         continue;
-                    rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp->parent->ops - alwaysAssignOp, conditional, k, ifOp, var, manip));
+                    rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, ifOp, var, manip));
                 }
             }
-        }
+        });
     }
 
     return rvar;

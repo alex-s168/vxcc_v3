@@ -5,20 +5,123 @@
 #include <stdlib.h>
 
 
-vx_IrOp *vx_IrOp_next(vx_IrOp *op) {
-    if (op == NULL)
-        return NULL;
 
-    vx_IrBlock *parent = op->parent;
-    if (parent == NULL)
-        return NULL;
-    
-    size_t idx = op - parent->ops;
+vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
+    vx_IrOp *op = block->first;
+    while (op && op->next) {
+        op = op->next;
+    }
+    return op;
+}
 
-    if (idx + 1 >= parent->ops_len)
-        return NULL;
+vx_RegRefList vx_RegRefList_fixed(size_t count) {
+    vx_RegRefList list;
+    list.count = count;
+    list.items = fastalloc(sizeof(vx_RegRef) * count);
+    return list;
+}
 
-    return &parent->ops[idx + 1];
+bool vx_RegRefList_contains(vx_RegRefList list, vx_RegRef reg) {
+    for (size_t i = 0; i < list.count; i ++)
+        if (list.items[i] == reg)
+            return true;
+    return false;
+}
+
+vx_RegRefList vx_RegRefList_intersect(vx_RegRefList a, vx_RegRefList b) {
+    vx_RegRefList res = vx_RegRefList_fixed(a.count);
+    res.count = 0;
+
+    for (size_t i = 0; i < a.count; i ++) {
+        vx_RegRef reg = a.items[i];
+        if (vx_RegRefList_contains(b, reg)) {
+            res.items[res.count ++] = reg;
+        }
+    }
+
+    return res;
+}
+
+vx_RegRefList vx_RegRefList_union(vx_RegRefList a, vx_RegRefList b) {
+    vx_RegRefList res = vx_RegRefList_fixed(a.count + b.count);
+
+    for (size_t i = 0; i < a.count; i ++)
+        res.items[i] = a.items[i];
+
+    for (size_t i = 0; i < b.count; i ++)
+        res.items[i + a.count] = b.items[i];
+
+    return res;
+}
+
+vx_RegRefList vx_RegRefList_remove(vx_RegRefList a, vx_RegRefList rem) {
+    vx_RegRefList res = vx_RegRefList_fixed(a.count);
+    res.count = 0;
+
+    for (size_t i = 0; i < a.count; i ++) {
+        vx_RegRef ref = a.items[i];
+        if (!vx_RegRefList_contains(rem, ref)) {
+            res.items[res.count ++] = ref;
+        }
+    }
+
+    return res;
+}
+
+bool vx_RegAllocConstraint_matches(vx_RegAllocConstraint constraint, vx_RegRef reg) {
+    switch (constraint.kind) {
+    case VX_SEL_ANY:
+        return true;
+
+    case VX_SEL_NONE:
+        return false;
+
+    case VX_SEL_ONE_OF:
+        return vx_RegRefList_contains(constraint.value, reg);
+
+    case VX_SEL_NONE_OF:
+        return !vx_RegRefList_contains(constraint.value, reg);
+    }
+}
+
+static vx_RegAllocConstraint merge__(vx_RegAllocConstraint a, vx_RegAllocConstraint b) {
+    if (a.kind == VX_SEL_NONE || b.kind == VX_SEL_NONE)
+        return a;
+
+    if (a.kind == VX_SEL_ANY)
+        return b;
+
+    if (b.kind == VX_SEL_ANY)
+        return a;
+
+    if (a.kind == VX_SEL_ONE_OF && b.kind == VX_SEL_ONE_OF) {
+        a.value = vx_RegRefList_intersect(a.value, b.value);
+        return a;
+    }
+
+    if (a.kind == VX_SEL_NONE_OF && b.kind == VX_SEL_NONE_OF) {
+        a.value = vx_RegRefList_union(a.value, b.value);
+        return a;
+    }
+
+    if (a.kind == VX_SEL_NONE_OF) {
+        vx_RegAllocConstraint temp = a;
+        a = b;
+        b = temp;
+    }
+
+    assert(a.kind == VX_SEL_ONE_OF);
+    assert(b.kind == VX_SEL_NONE_OF);
+
+    a.value = vx_RegRefList_remove(a.value, b.value);
+    return a;
+}
+
+vx_RegAllocConstraint vx_RegAllocConstraint_merge(vx_RegAllocConstraint a, vx_RegAllocConstraint b) {
+    vx_RegAllocConstraint res = merge__(a, b);
+    res.or_mem = a.or_mem && b.or_mem;
+    res.or_stack = a.or_stack && b.or_stack;
+    return res;
 }
 
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
@@ -26,49 +129,59 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
 
     // TODO: WHY THE FUCK IS THIS EVEN REQUIRED????
 
+    memset(root->as_root.labels, 0, sizeof(*root->as_root.labels) * root->as_root.labels_len);
     memset(root->as_root.vars, 0, sizeof(*root->as_root.vars) * root->as_root.vars_len);
 
-    size_t total = 0; 
-    for (size_t i = 0; i < root->ops_len; i ++) {
-        vx_IrOp *op = &root->ops[i];
+    size_t tot_var = 0;
+    size_t tot_label = 0;
 
+    for (vx_IrOp *op = root->first; op; op = op->next) {
         for (size_t j = 0; j < op->outs_len; j ++) {
             vx_IrTypedVar out = op->outs[j];
-            if (root->as_root.vars[out.var].decl_parent == NULL) {
-                vx_IrBlock_root_set_var_decl(root, out.var, op);
+            vx_IrOp **decl = &root->as_root.vars[out.var].decl;
+            if (*decl == NULL) {
+                *decl = op;
                 root->as_root.vars[out.var].ll_type = out.type;
-                total ++;
+                tot_var ++;
+            }
+        }
+
+        if (op->id == VX_LIR_OP_LABEL) {
+            size_t id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+            vx_IrOp **decl = &root->as_root.labels[id].decl;
+            if (*decl == NULL) {
+                *decl = op;
+                tot_label ++;
             }
         }
     }
+
+    printf("recoverd %zu variables and %zu labels\n", tot_var, tot_label);
 }
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
     vx_IrBlock *parent = op ? op->parent : NULL;
     if (parent) {
-        fprintf(stderr, "WARN: in op idx %zu: %s %s\n", parent->ops - op, optMsg0 ? optMsg0 : "", optMsg1 ? optMsg1 : "");
+        fprintf(stderr, "WARN: %s %s\n", optMsg0 ? optMsg0 : "", optMsg1 ? optMsg1 : "");
     } else {
         fprintf(stderr, "WARN: trying to warn() for non existant op!\n");
     }
 }
 
-bool vx_IrView_deep_traverse(vx_IrView top, bool (*callback)(vx_IrOp *op, void *data), void *data) {
-    for (size_t i = top.start; i < top.end; i ++) {
-        vx_IrOp *op = &top.block->ops[i];
-
+bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data) {
+    for (vx_IrOp *op = block->first; op; op = op->next) {
         for (size_t j = 0; j < op->params_len; j ++)
             if (op->params[j].val.type == VX_IR_VAL_BLOCK)
-                if (vx_IrView_deep_traverse(vx_IrView_of_all(op->params[j].val.block), callback, data))
+                if (vx_IrBlock_deep_traverse(op->params[j].val.block, callback, data))
                     return true;
 
-        if (callback(op, data)) {
+        if (callback(op, data))
             return true;
-        }
     }
     return false;
 }
 
-const vx_IrBlock *vx_IrBlock_root(const vx_IrBlock *block) {
+vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block) {
     while (block != NULL && !block->is_root) {
         block = block->parent;
     }
@@ -100,7 +213,7 @@ vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
     assert(root != NULL);
     root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
     vx_IrVar new = root->as_root.vars_len ++;
-    vx_IrBlock_root_set_var_decl(root, new, decl);
+    root->as_root.vars[new].decl = decl;
     return new;
 }
 
@@ -111,11 +224,11 @@ size_t vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl) {
     assert(root != NULL);
     root->as_root.labels = realloc(root->as_root.labels, (root->as_root.labels_len + 1) * sizeof(*root->as_root.labels));
     size_t new = root->as_root.labels_len ++;
-    vx_IrBlock_root_set_label_decl(root, new, decl);
+    root->as_root.vars[new].decl = decl;
     return new;
 }
 
-size_t vx_IrBlock_insert_label_op(vx_IrBlock *block) {
+size_t vx_IrBlock_append_label_op(vx_IrBlock *block) {
     vx_IrOp *label_decl = vx_IrBlock_add_op_building(block);
     vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
     size_t label_id = vx_IrBlock_new_label(block, label_decl);
@@ -126,7 +239,6 @@ size_t vx_IrBlock_insert_label_op(vx_IrBlock *block) {
 /** false for nop and label   true for everything else */
 bool vx_IrOpType_has_effect(vx_IrOpType type) {
     switch (type) {
-    case VX_IR_OP_NOP:
     case VX_LIR_OP_LABEL:
         return false;
 

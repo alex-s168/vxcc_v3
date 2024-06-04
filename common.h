@@ -5,15 +5,6 @@
 #include <stdio.h>
 
 typedef struct {
-    size_t *ids;
-    size_t  len;
-} vx_OpPath;
-
-vx_OpPath vx_OpPath_copy_add(vx_OpPath path, size_t id);
-
-typedef struct {
-    vx_OpPath path;
-
     const char *error;
     const char *additional;
 } vx_Error;
