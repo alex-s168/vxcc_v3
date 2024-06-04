@@ -32,8 +32,10 @@ void vx_opt_ll_condtailcall(vx_IrBlock *block) {
 
         vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
         vx_IrOp_remove_param(op, VX_IR_NAME_COND); // don't want it to free that
+        vx_IrOp *nxt = op->next;
         vx_IrOp_destroy(op);
         vx_IrOp_init(op, VX_IR_OP_CONDTAILCALL, block);
+        op->next = nxt;
         vx_IrOp_add_param_s(op, VX_IR_NAME_COND, cond);
 
         vx_IrOp_steal_param(op, tailcall, VX_IR_NAME_ADDR);
