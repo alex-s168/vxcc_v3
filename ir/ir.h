@@ -461,6 +461,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op);
 size_t vx_IrOp_inline_cost(vx_IrOp *op);
 void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
 bool vx_IrOp_is_tail(vx_IrOp *op);
+bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after);
 
 struct IrStaticIncrement {
     bool detected;

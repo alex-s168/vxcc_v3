@@ -2,6 +2,14 @@
 
 #include "ir.h"
 
+
+bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after) {
+    for (; op; op = op->next)
+        if (op == after)
+            return true;
+    return false;
+}
+
 bool vx_IrBlock_vardecl_is_in_ins(vx_IrBlock *block, vx_IrVar var) {
     vx_IrBlock *root = vx_IrBlock_root(block);
     for (size_t k = 0; k < root->ins_len; k ++) {

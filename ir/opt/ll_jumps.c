@@ -2,6 +2,7 @@
 
 #include "../opt.h"
 
+
 // we go trough all ops between the jump and the label
 // if all of them have no effect (labels, nops), we can remove the jump instruction
 static void part1(vx_IrBlock *block) {
@@ -17,8 +18,7 @@ static void part1(vx_IrBlock *block) {
         if (decl->parent != op->parent)
             continue;
 
-        // TODO: SHOULD NOT WORK
-        if (decl < op) // can't optimize if label decl before this decl
+        if (vx_IrOp_after(decl, op)) // can't optimize if label decl before this decl
             continue;
         
         bool can_opt = true;
