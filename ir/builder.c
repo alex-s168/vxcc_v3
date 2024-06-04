@@ -367,7 +367,8 @@ void vx_IrOp_remove_successor(vx_IrOp *op) {
     if (op && op->next) {
         vx_IrOp *newnext = op->next->next;
         vx_IrOp *old = op->next;
-        
+        (void) old;
+
         // WE DON'T DO THAT BECAUSE WE CALL REMOVE WHILE ITERATING IN THE PASSES
         // old->next = NULL;
         
