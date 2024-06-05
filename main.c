@@ -158,9 +158,7 @@ void eq(int a, int b, int c, int d) {
     return block;
 }
 
-static int cir_test(void) {
-    vx_IrBlock *block = build_test_bool();
-
+static int cir_test(vx_IrBlock *block) {
     if (vx_cir_verify(block) != 0)
         return 1;
 
@@ -223,13 +221,11 @@ int main(void) {
     ty_bool->base.align = 2; // depends on arch
     ty_bool->base.size = 1;
 
-    printf("C-IR test:\n");
-    if (cir_test() != 0)
-        return 1;
+    printf("==== BOOL TEST ====\n");
+    cir_test(build_test_bool());
 
-    //printf("\nSSA-IR test:\n");
-    //if (ir_test() != 0)
-    //    return 1;
+    printf("==== CMOV TEST ====\n");
+    cir_test(build_test_cmov());
 
     return 0;
 }

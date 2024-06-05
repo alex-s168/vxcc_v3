@@ -139,8 +139,6 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
             continue;
 
         // inside out:
-        assert(ifOp->params_len >= 2);
-        assert(ifOp->params_len <= 3);
 
         FOR_PARAMS(ifOp, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
             vx_IrBlock *conditional = param.block;

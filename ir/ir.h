@@ -426,8 +426,11 @@ struct vx_IrOp_s {
 #define FOR_PARAMS(op,want,paramn,fn) { \
     vx_IrName __names[] = want; \
     for (size_t __it = 0; __it < sizeof(__names) / sizeof(vx_IrName); __it ++) { \
-        vx_IrValue paramn = *vx_IrOp_param(op, __names[__it]); \
-        fn; \
+        vx_IrValue *__param = vx_IrOp_param(op, __names[__it]); \
+        if (__param) {\
+            vx_IrValue paramn = *__param; \
+            fn; \
+        }\
     } \
 }
 
