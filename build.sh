@@ -19,7 +19,9 @@ elif [[ $1 == "info" ]]; then
   $CC --version
 else
   echo "compile Debug"
-  $CC -g -ggdb -O0 $CFLAGS $FILES -o vxcc
+  clang build.c -o build.exe
+  ./build.exe lib.a 
+  ./build.exe x86.a 
 fi
 
 # shellcheck enable=SC2086

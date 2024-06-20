@@ -1,0 +1,3 @@
+[submodule "build_c"]
+	path = build_c
+	url = https://github.com/alex-s168/build.c.git
