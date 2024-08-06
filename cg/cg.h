@@ -4,6 +4,11 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#ifndef VX_BASE_TYPES
+#define VX_BASE_TYPES
+typedef size_t vx_IrVar;
+#endif
+
 typedef struct vx_OpInfo_X86CG_s * vx_OpInfo_X86CG;
 
 typedef enum {
@@ -15,7 +20,7 @@ typedef struct {
     vx_OpInfoKind kind;
     union {
         vx_OpInfo_X86CG x86;
-    } value;
+} value;
 } vx_OpInfo;
 
 typedef struct {
@@ -54,5 +59,19 @@ static void * vx_OpInfo_lookup__impl(vx_OpInfoList list, vx_OpInfoKind kind) {
 
 // example usage:  vx_OpInfo_lookup(list, X86CG)
 #define vx_OpInfo_lookup(list, kind) ((vx_OpInfo_##kind *) vx_OpInfo_lookup__impl(list, VX_OPINFO_##kind))
+
+typedef size_t vx_CgReg;
+#define VX_CGREG_NONE ((vx_CgReg) 0)
+
+typedef struct {
+    vx_CgReg (*allocRegFor)(struct vx_IrBlock_s *root, vx_IrVar var);
+    vx_CgReg (*allocArgReg)(struct vx_IrBlock_s *root, size_t id);
+    vx_CgReg (*allocRetReg)(struct vx_IrBlock_s *root, size_t id);
+    void     (*freeRe)(vx_CgReg);
+
+    union {
+        struct vx_X86CgState * x86;
+    };
+} vx_CgState;
 
 #endif

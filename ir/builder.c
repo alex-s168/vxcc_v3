@@ -11,7 +11,8 @@ void vx_IrBlock_init(vx_IrBlock *block,
     block->parent = parent;
     block->parent_op = parent_op;
 
-    block->is_root = false;
+    block->is_root = (parent == NULL);
+    memset(&block->as_root, 0, sizeof(block->as_root));
 
     block->ins = NULL;
     block->ins_len = 0;
@@ -22,6 +23,8 @@ void vx_IrBlock_init(vx_IrBlock *block,
     block->outs_len = 0;
 
     block->should_free = false;
+
+    block->name = "___anon";
 }
 
 vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent, vx_IrOp *parent_op)
@@ -198,6 +201,7 @@ void vx_IrBlock_destroy(vx_IrBlock *block)
     free(block->outs);
     if (block->is_root)
         free(block->as_root.vars);
+
     if (block->should_free)
         free(block);
 }

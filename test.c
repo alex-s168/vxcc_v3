@@ -1,8 +1,9 @@
+#include <stdio.h>
 #include "ir/ir.h"
 #include "ir/cir.h"
 #include "ir/llir.h"
 #include "ir/opt.h"
-#include "cg/x86/x86.h"
+#include "cg/x86_stupid/cg.h"
 
 static vx_IrType *ty_int;
 static vx_IrType *ty_bool;
@@ -64,11 +65,11 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
     return els;
 }
 
-static void gen_call_op(vx_IrBlock *dest, long long addr) {
+static void gen_call_op(vx_IrBlock *dest, vx_IrBlock* block) {
     vx_IrOp op;
     vx_IrOp_init(&op, VX_IR_OP_CALL, dest);
 
-    vx_IrOp_add_param_s(&op, VX_IR_NAME_ADDR, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = addr});
+    vx_IrOp_add_param_s(&op, VX_IR_NAME_ADDR, (vx_IrValue) {.type = VX_IR_VAL_BLOCKREF,.block = block});
 
     vx_IrBlock_add_op(dest, &op);
 }
@@ -114,6 +115,9 @@ static vx_IrBlock * build_test_cmov(void) {
 
 static vx_IrBlock * build_test_bool(void) {
 /*
+void call();
+void call2();
+
 void eq(int a, int b, int c, int d) {
     if (a == b && c == d) {
         call();
@@ -122,6 +126,9 @@ void eq(int a, int b, int c, int d) {
     }
 }
 */
+    vx_IrBlock *call = vx_IrBlock_init_heap(NULL, 0);
+    vx_IrBlock *call2 = vx_IrBlock_init_heap(NULL, 0);
+
     vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
     vx_IrVar a = 0, b = 1, c = 2, d = 3, temp0 = 4, temp1 = 5, temp2 = 6;
 
@@ -144,8 +151,8 @@ void eq(int a, int b, int c, int d) {
         vx_IrBlock_add_out(cond, temp2);
     }
 
-    gen_call_op(then, 1);
-    gen_call_op(els, 0);
+    gen_call_op(then, call);
+    gen_call_op(els, call2);
 
     vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = cond});
     vx_IrOp_add_param_s(&iff, VX_IR_NAME_COND_THEN, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = then});
@@ -187,10 +194,12 @@ static int cir_test(vx_IrBlock *block) {
     printf("After SSA IR lower:\n");
     vx_IrBlock_dump(block, stdout, 0);
 
+    /*
     vx_x86cg_prepare(block);
 
     printf("After CG prepare:\n");
     vx_IrBlock_dump(block, stdout, 0);
+    */
 
     vx_IrBlock_llir_fix_decl(block);
     opt_ll(block);
@@ -202,6 +211,9 @@ static int cir_test(vx_IrBlock *block) {
 
     printf("After LL IR lower prepare:\n");
     vx_IrBlock_dump(block, stdout, 0);
+
+    printf("Generated code:\n");
+    vx_cg_x86stupid_gen(block, stdout);
 
     vx_IrBlock_destroy(block);
 

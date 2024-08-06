@@ -38,4 +38,11 @@ void vx_IrBlock_lifetimes(vx_IrBlock *block) {
 
         block->as_root.vars[var].ll_lifetime = lt;
     }
+
+    for (vx_IrOp *op = block->first; op->next != NULL; op = op->next) {
+        if (op->id == VX_IR_OP_PLACE) {
+            vx_IrVar var = vx_IrOp_param(op, VX_IR_NAME_VAR)->var;
+            block->as_root.vars[var].ever_placed = true;
+        }
+    }
 }

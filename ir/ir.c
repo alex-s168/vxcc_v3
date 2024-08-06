@@ -1,4 +1,5 @@
 #include "ir.h"
+#include "llir.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -14,114 +15,25 @@ vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
     return op;
 }
 
-vx_RegRefList vx_RegRefList_fixed(size_t count) {
-    vx_RegRefList list;
-    list.count = count;
-    list.items = fastalloc(sizeof(vx_RegRef) * count);
-    return list;
-}
+void vx_IrBlock_llir_compact(vx_IrBlock *root) {
+    assert(root->is_root);
 
-bool vx_RegRefList_contains(vx_RegRefList list, vx_RegRef reg) {
-    for (size_t i = 0; i < list.count; i ++)
-        if (list.items[i] == reg)
-            return true;
-    return false;
-}
-
-vx_RegRefList vx_RegRefList_intersect(vx_RegRefList a, vx_RegRefList b) {
-    vx_RegRefList res = vx_RegRefList_fixed(a.count);
-    res.count = 0;
-
-    for (size_t i = 0; i < a.count; i ++) {
-        vx_RegRef reg = a.items[i];
-        if (vx_RegRefList_contains(b, reg)) {
-            res.items[res.count ++] = reg;
+    for (vx_IrVar idx = 0; idx < root->as_root.vars_len; idx ++) {
+        if (root->as_root.vars[idx].ll_type == NULL) {
+            if (idx + 1 >= root->as_root.vars_len) break;
+            for (vx_IrVar after = idx + 1; after < root->as_root.vars_len; after ++) {
+                assert(root != NULL && root->is_root);
+                vx_IrBlock_rename_var(root, after, after - 1);
+            }
         }
     }
 
-    return res;
-}
-
-vx_RegRefList vx_RegRefList_union(vx_RegRefList a, vx_RegRefList b) {
-    vx_RegRefList res = vx_RegRefList_fixed(a.count + b.count);
-
-    for (size_t i = 0; i < a.count; i ++)
-        res.items[i] = a.items[i];
-
-    for (size_t i = 0; i < b.count; i ++)
-        res.items[i + a.count] = b.items[i];
-
-    return res;
-}
-
-vx_RegRefList vx_RegRefList_remove(vx_RegRefList a, vx_RegRefList rem) {
-    vx_RegRefList res = vx_RegRefList_fixed(a.count);
-    res.count = 0;
-
-    for (size_t i = 0; i < a.count; i ++) {
-        vx_RegRef ref = a.items[i];
-        if (!vx_RegRefList_contains(rem, ref)) {
-            res.items[res.count ++] = ref;
+    for (vx_IrVar var = 0; var < root->as_root.vars_len; var ++) {
+        if (root->as_root.vars[var].ll_type == NULL) {
+            root->as_root.vars_len = var;
+            break;
         }
     }
-
-    return res;
-}
-
-bool vx_RegAllocConstraint_matches(vx_RegAllocConstraint constraint, vx_RegRef reg) {
-    switch (constraint.kind) {
-    case VX_SEL_ANY:
-        return true;
-
-    case VX_SEL_NONE:
-        return false;
-
-    case VX_SEL_ONE_OF:
-        return vx_RegRefList_contains(constraint.value, reg);
-
-    case VX_SEL_NONE_OF:
-        return !vx_RegRefList_contains(constraint.value, reg);
-    }
-}
-
-static vx_RegAllocConstraint merge__(vx_RegAllocConstraint a, vx_RegAllocConstraint b) {
-    if (a.kind == VX_SEL_NONE || b.kind == VX_SEL_NONE)
-        return a;
-
-    if (a.kind == VX_SEL_ANY)
-        return b;
-
-    if (b.kind == VX_SEL_ANY)
-        return a;
-
-    if (a.kind == VX_SEL_ONE_OF && b.kind == VX_SEL_ONE_OF) {
-        a.value = vx_RegRefList_intersect(a.value, b.value);
-        return a;
-    }
-
-    if (a.kind == VX_SEL_NONE_OF && b.kind == VX_SEL_NONE_OF) {
-        a.value = vx_RegRefList_union(a.value, b.value);
-        return a;
-    }
-
-    if (a.kind == VX_SEL_NONE_OF) {
-        vx_RegAllocConstraint temp = a;
-        a = b;
-        b = temp;
-    }
-
-    assert(a.kind == VX_SEL_ONE_OF);
-    assert(b.kind == VX_SEL_NONE_OF);
-
-    a.value = vx_RegRefList_remove(a.value, b.value);
-    return a;
-}
-
-vx_RegAllocConstraint vx_RegAllocConstraint_merge(vx_RegAllocConstraint a, vx_RegAllocConstraint b) {
-    vx_RegAllocConstraint res = merge__(a, b);
-    res.or_mem = a.or_mem && b.or_mem;
-    res.or_stack = a.or_stack && b.or_stack;
-    return res;
 }
 
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
@@ -132,31 +44,32 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
     memset(root->as_root.labels, 0, sizeof(*root->as_root.labels) * root->as_root.labels_len);
     memset(root->as_root.vars, 0, sizeof(*root->as_root.vars) * root->as_root.vars_len);
 
-    size_t tot_var = 0;
-    size_t tot_label = 0;
+    for (size_t i = 0; i < root->ins_len; i ++) {
+        vx_IrVar v = root->ins[i].var;
+        assert(v < root->as_root.vars_len);
+        root->as_root.vars[v].ll_type = root->ins[i].type;
+    }
 
     for (vx_IrOp *op = root->first; op; op = op->next) {
         for (size_t j = 0; j < op->outs_len; j ++) {
             vx_IrTypedVar out = op->outs[j];
+            assert(out.var < root->as_root.vars_len);
             vx_IrOp **decl = &root->as_root.vars[out.var].decl;
             if (*decl == NULL) {
                 *decl = op;
                 root->as_root.vars[out.var].ll_type = out.type;
-                tot_var ++;
             }
         }
 
         if (op->id == VX_LIR_OP_LABEL) {
             size_t id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+            assert(id < root->as_root.labels_len);
             vx_IrOp **decl = &root->as_root.labels[id].decl;
             if (*decl == NULL) {
                 *decl = op;
-                tot_label ++;
             }
         }
     }
-
-    printf("recoverd %zu variables and %zu labels\n", tot_var, tot_label);
 }
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
@@ -182,7 +95,10 @@ bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, v
 }
 
 vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block) {
-    while (block != NULL && !block->is_root) {
+    while (true) {
+        if (block == NULL) break;
+        if (block->is_root) break;
+        if (block->parent == NULL) break; // forgot to mark is_root
         block = block->parent;
     }
     return block;
@@ -247,3 +163,21 @@ bool vx_IrOpType_has_effect(vx_IrOpType type) {
     }
 }
 
+vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
+    // TODO: multiple rets
+    vx_IrType *ret = block->outs_len == 1 ? vx_IrBlock_typeof_var(block, block->outs[0])
+                                          : NULL;
+
+    vx_IrType **args = malloc(sizeof(vx_IrType*) * block->ins_len);
+    for (size_t i = 0; i < block->ins_len; i ++) {
+        args[i] = block->ins[i].type;
+    }
+
+    vx_IrType *type = malloc(sizeof(vx_IrType));
+    type->kind = VX_IR_TYPE_FUNC;
+    type->func.nullableReturnType = ret;
+    type->func.args_len = block->ins_len;
+    type->func.args = args;
+
+    return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
+}

@@ -175,6 +175,16 @@ bool vx_IrBlock_is_volatile(vx_IrBlock *block)
 }
 
 vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
+    if (block->as_root.vars[var].ll_type) {
+        return block->as_root.vars[var].ll_type;
+    }
+
+    for (size_t i = 0; i < block->ins_len; i ++) {
+        if (block->ins[i].var == var) {
+            return block->ins[i].type;
+        }
+    }
+
     vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
     if (decl == NULL)
         goto warn;

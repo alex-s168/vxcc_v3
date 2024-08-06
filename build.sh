@@ -3,7 +3,7 @@ set -e
 : ${CFLAGS:="-Wall -Wextra -Wno-unused -Wpedantic -Werror -std=c11"}
 : ${CC:="clang"}
 
-FILES="main.c ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86/*.c"
+FILES="test.c ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86/*.c cg/x86_stupid/*.c"
 
 # shellcheck disable=SC2086
 
@@ -22,6 +22,7 @@ else
   clang build.c -o build.exe
   ./build.exe lib.a 
   ./build.exe x86.a 
+  ./build.exe tests
 fi
 
 # shellcheck enable=SC2086

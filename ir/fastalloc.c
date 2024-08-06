@@ -28,6 +28,22 @@ void * fastalloc(size_t bytes) {
     return alloc;
 }
 
+void * fastrealloc(void * old, size_t oldBytes, size_t newBytes) {
+    if (newBytes <= oldBytes) {
+        return old;
+    }
+
+    size_t diff = newBytes - oldBytes;
+    if (((char*)old) + oldBytes == chunk && diff <= chunk_left) {
+        (void) fastalloc(diff);
+        return old;
+    }
+
+    void * new = fastalloc(newBytes);
+    memcpy(new, old, oldBytes);
+    return new;
+}
+
 void fastfreeall(void) {
     for (size_t i = 0; i < chunkslen; i ++)
         free(chunks[i]);

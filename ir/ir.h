@@ -7,54 +7,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TOOD: conditional tailcall & use in ssa->ll lowering
 
-
-/** alloc things that are not meant to be freed or reallocated before end of compilation */
-void * fastalloc(size_t bytes);
-
-void fastfreeall(void);
-
-
+#ifndef VX_BASE_TYPES
+#define VX_BASE_TYPES
+typedef size_t vx_IrVar;
+#endif
 
 #include "../common.h"
 #include "../cg/cg.h"
 
-typedef enum {
-    VX_SEL_ONE_OF,
-    VX_SEL_NONE_OF,
-    VX_SEL_ANY,
-    VX_SEL_NONE,
-} vx_SelKind;
-
-typedef size_t vx_RegRef;
-
-typedef struct {
-    vx_RegRef *items;
-    size_t     count;
-} vx_RegRefList;
-
-/** uses fastalloc!! */
-vx_RegRefList vx_RegRefList_fixed(size_t count);
-bool vx_RegRefList_contains(vx_RegRefList list, vx_RegRef reg);
-vx_RegRefList vx_RegRefList_intersect(vx_RegRefList a, vx_RegRefList b);
-vx_RegRefList vx_RegRefList_union(vx_RegRefList a, vx_RegRefList b);
-vx_RegRefList vx_RegRefList_remove(vx_RegRefList a, vx_RegRefList rem);
-
-typedef struct {
-    bool or_stack;
-    bool or_mem;
-    vx_SelKind kind;
-    vx_RegRefList value;
-} vx_RegAllocConstraint;
-
-bool vx_RegAllocConstraint_matches(vx_RegAllocConstraint constraint, vx_RegRef reg);
-vx_RegAllocConstraint vx_RegAllocConstraint_merge(vx_RegAllocConstraint a, vx_RegAllocConstraint b);
+/** alloc things that are not meant to be freed or reallocated before end of compilation */
+void * fastalloc(size_t bytes);
+void * fastrealloc(void * old, size_t oldBytes, size_t newBytes);
+void   fastfreeall(void);
+static char * faststrdup(const char * str) {
+    size_t len = strlen(str) + 1;
+    len *= sizeof(char);
+    char * ret = (char*) fastalloc(len);
+    memcpy(ret, str, len);
+    return ret;
+}
 
 struct vx_IrOp_s;
 typedef struct vx_IrOp_s vx_IrOp;
-
-typedef size_t vx_IrVar;
 
 typedef struct {
     vx_IrVar var;
@@ -90,6 +65,13 @@ typedef struct {
     size_t pad;
 } vx_IrTypeBase;
 
+typedef struct {
+    vx_IrType **args;
+    size_t      args_len;
+
+    vx_IrType  *nullableReturnType;
+} vx_IrTypeFunc;
+
 struct vx_IrType_s {
     const char *debugName;
 
@@ -100,18 +82,22 @@ struct vx_IrType_s {
 
         // present in: cir, ssa
         VX_IR_TYPE_KIND_BASE,
+        VX_IR_TYPE_FUNC,
     } kind;
 
     union {
         vx_IrTypeBase       base;
         vx_IrTypeCIRStruct  cir_struct;
         vx_IrTypeCIRUnion   cir_union;
+        vx_IrTypeFunc       func;
     };
 };
 
 static vx_IrType* vx_IrType_heap(void) {
     return (vx_IrType*) memset(malloc(sizeof(vx_IrType)), 0, sizeof(vx_IrType));
 }
+
+#define PTRSIZE (8)
 
 // TODO: remove cir checks and make sure fn called after cir type expand & MAKE TYPE EXPAND AWARE OF MEMBER ALIGN FOR UNIONS
 static size_t vx_IrType_size(vx_IrType *ty) {
@@ -134,6 +120,28 @@ static size_t vx_IrType_size(vx_IrType *ty) {
             total += vx_IrType_size(ty->cir_struct.members[i]);
         }
         return total;
+
+    case VX_IR_TYPE_FUNC:
+        return PTRSIZE;
+    }
+}
+
+static void vx_IrType_free(vx_IrType *ty) {
+    switch (ty->kind) {
+    case VX_IR_TYPE_KIND_BASE:
+        return;
+
+    case VX_IR_TYPE_KIND_CIR_UNION:
+        free(ty->cir_union.members);
+        return;
+
+    case VX_IR_TYPE_KIND_CIR_STRUCT:
+        free(ty->cir_struct.members);
+        return;
+
+    case VX_IR_TYPE_FUNC:
+        free(ty->func.args);
+        return;
     }
 }
 
@@ -165,8 +173,9 @@ struct vx_IrBlock_s {
 
             lifetime  ll_lifetime;
             vx_IrType *ll_type;
-
-            vx_RegAllocConstraint cg_regconstraint;
+            bool ever_placed;
+            /** 0 is none! */
+            vx_CgReg  reg; 
         } *vars;
         size_t vars_len;
 
@@ -185,6 +194,8 @@ struct vx_IrBlock_s {
     size_t    outs_len;
 
     bool should_free;
+
+    const char *name;
 };
 
 vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block);
@@ -209,6 +220,7 @@ typedef struct {
         VX_IR_VAL_IMM_FLT,
         VX_IR_VAL_VAR,
         VX_IR_VAL_UNINIT,
+        VX_IR_VAL_BLOCKREF,
 
         // not storable
         VX_IR_VAL_BLOCK,
@@ -322,6 +334,7 @@ static vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
 }
 void vx_IrNamedValue_destroy(vx_IrNamedValue v);
 
+// TODO: negate
 typedef enum {
     VX_IR_OP_IMM = 0,        // "val"
     VX_IR_OP_FLATTEN_PLEASE, // "block"
@@ -359,8 +372,8 @@ typedef enum {
 
     // boolean
     VX_IR_OP_NOT, // "val"
-    VX_IR_OP_AND, // "val"
-    VX_IR_OP_OR,  // "val"
+    VX_IR_OP_AND, // "a", "b"
+    VX_IR_OP_OR,  // "a", "b"
 
     // bitwise boolean
     VX_IR_OP_BITWISE_NOT, // "val"
@@ -369,7 +382,7 @@ typedef enum {
     
     // misc
     VX_IR_OP_SHL, // "a", "b"
-    VX_IR_OP_SHR, // "a", "b"
+    VX_IR_OP_SHR, // "a", "b"  // TODO: ASHR
 
     // basic loop
     VX_IR_OP_FOR,      // "start": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
@@ -395,6 +408,8 @@ typedef enum {
     VX_IR_OP_CALL,          // "addr": int / fnref
     VX_IR_OP_TAILCALL,      // "addr": int / fnref
     VX_IR_OP_CONDTAILCALL,  // "addr": int / fnref, "cond": bool
+
+    VX_IR_OP_VSCALE,        // "len": int, "elsize": int, "fn": (vscale)->Rets   -> Rets 
 
     VX_IR_OP____END,
 } vx_IrOpType;
@@ -472,5 +487,37 @@ struct IrStaticIncrement {
     long long by;
 };
 struct IrStaticIncrement vx_IrOp_detect_static_increment(vx_IrOp *op);
+
+typedef struct {
+    vx_IrType *ptr;
+    bool shouldFree;
+} vx_IrTypeRef;
+
+static void vx_IrTypeRef_drop(vx_IrTypeRef ref) {
+    if (ref.shouldFree) {
+        vx_IrType_free(ref.ptr);
+    }
+}
+
+vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block);
+
+// null if depends on context or has no type 
+static vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
+    switch (value.type) {
+        case VX_IR_VAL_IMM_INT:
+        case VX_IR_VAL_IMM_FLT:
+        case VX_IR_VAL_UNINIT:
+        case VX_IR_VAL_TYPE:
+        case VX_IR_VAL_ID:
+        case VX_IR_VAL_BLOCK:
+            return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
+
+        case VX_IR_VAL_BLOCKREF:
+            return vx_IrBlock_type(value.block);
+
+        case VX_IR_VAL_VAR:
+            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeof_var(root, value.var), .shouldFree = false };
+    }
+}
 
 #endif //IR_H

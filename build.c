@@ -59,9 +59,13 @@ struct CompileData target_x86_files[] = {
     DIR("build"),
 
     DIR("build/cg"),
+
     DIR("build/cg/x86"),
     SP(CT_C, "cg/x86/prep.c"),
     SP(CT_C, "cg/x86/constraints.c"),
+
+    DIR("build/cg/x86_stupid"),
+    SP(CT_C, "cg/x86_stupid/cg.c"),
 };
 
 enum CompileResult target_x86() {

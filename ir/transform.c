@@ -14,6 +14,7 @@ void vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
             block->outs[j] = new;
 
     vx_IrBlock *root = vx_IrBlock_root(block);
+    assert(root->is_root);
 
     root->as_root.vars[old].decl = NULL;
 

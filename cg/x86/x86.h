@@ -14,3 +14,7 @@ void vx_x86cg_regconstraints(vx_IrBlock * block);
 static struct vx_OpInfo_X86CG_s* vx_x86cg_make_opinfo(void) {
     return (struct vx_OpInfo_X86CG_s*) fastalloc(sizeof(struct vx_OpInfo_X86CG_s));
 }
+
+struct X86CgState {
+
+};
