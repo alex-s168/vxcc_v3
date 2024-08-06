@@ -1,5 +1,7 @@
 #include "ir.h"
 
+OPT_PASS void vx_opt_ll_binary(vx_IrBlock *block);
+
 void vx_IrBlock_llir_lower(vx_IrBlock *block);
 
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root);
@@ -17,4 +19,5 @@ static void llir_prep_lower(vx_IrBlock *block) {
     vx_IrBlock_llir_compact(block);
     vx_IrBlock_lifetimes(block);
     vx_IrBlock_ll_share_slots(block);
+    vx_opt_ll_binary(block);
 }

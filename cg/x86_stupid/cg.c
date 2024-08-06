@@ -452,18 +452,16 @@ static void emiti_binary(Location* a, Location* b, Location* o, const char * bin
 
     if (a != o) {
         if (b == o) {
-            Location* scratch = start_scratch_reg(a->bytesWidth, out);
+            Location* scratch = start_scratch_reg(size, out);
             emiti_move(a, scratch, false, out);
             emiti_binary(scratch, b, scratch, binary, out);
             emiti_move(scratch, o, false, out);
             end_scratch_reg(scratch, out);
-            return;
         } else {
             emiti_move(a, o, false, out);
             emiti_binary(o, b, o, binary, out);
-            return;
         }
-        assert(false);
+        return;
     }
 
     fprintf(out, "%s ", binary);
@@ -581,6 +579,23 @@ static void emit_condmove(vx_IrOp* op, const char *cc, FILE* file) {
 
     emiti_move(as_loc(out->bytesWidth, velse), out, false, file);
     emiti_cmove(as_loc(out->bytesWidth, vthen), out, cc, file);
+}
+
+static size_t var_used_after_and_before_overwrite(vx_IrOp* after, vx_IrVar var) {
+    size_t i = 0;
+    for (vx_IrOp *op = after->next; op; op = op->next) {
+        for (size_t o = 0; o < op->outs_len; o ++)
+            if (op->outs[o].var == var)
+                break;
+
+        if (vx_IrOp_var_used(op, var))
+            i ++;
+    }
+    return i;
+}
+
+static bool ops_after_and_before_usage_or_overwrite(vx_IrOp* after, vx_IrVar var) {
+    return after->next && !vx_IrOp_var_used(after->next, var);
 }
 
 static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
@@ -714,7 +729,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 default: assert(false); break;
                 }
 
-                if (varData[ov].heat > 2) {
+                if (!(op->next && vx_IrOp_var_used(op->next, ov) && (op->next->id == VX_IR_OP_CMOV || op->next->id == VX_IR_OP_CONDTAILCALL || op->next->id == VX_LIR_COND))) {
                     emiti_storecond(o, cc, file);
                 }
 
@@ -999,7 +1014,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                 break;
             }
         }
-        printf("var %zu: type %p , loc %s , size %zu\n", i, varData[i].type, str, loc ? loc->bytesWidth : 0);
+        printf("var %zu: type %p , loc %s , size %zu , heat %zu\n", i, varData[i].type, str, loc ? loc->bytesWidth : 0, varData[i].heat);
     }
 
     if (anyPlaced)
@@ -1024,7 +1039,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
 static Location* start_scratch_reg(size_t size, FILE* out) {
     assert(RegLut[SCRATCH_REG]->stored == NULL); // TODO 
-    Location* loc = gen_reg_var(8, SCRATCH_REG);
+    Location* loc = gen_reg_var(size, SCRATCH_REG);
     RegLut[SCRATCH_REG]->stored = loc;
     return loc;
 }

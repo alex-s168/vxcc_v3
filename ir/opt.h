@@ -22,10 +22,10 @@ OPT_PASS void vx_opt_reduce_loops(vx_IrBlock *block);
 OPT_PASS void vx_opt_cmov(vx_IrBlock *block);
 OPT_PASS void vx_opt_tailcall(vx_IrBlock *block);
 OPT_PASS void vx_opt_vars(vx_IrBlock *block);
+OPT_PASS void vx_opt_ll_jumps(vx_IrBlock *block);
 
 OPT_PASS void vx_opt_ll_dce(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_condtailcall(vx_IrBlock *block);
-OPT_PASS void vx_opt_ll_jumps(vx_IrBlock *block);
 
 void opt(vx_IrBlock *block);
 void opt_ll(vx_IrBlock *block);
