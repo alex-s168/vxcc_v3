@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 #ifndef VX_BASE_TYPES
@@ -101,6 +102,8 @@ static vx_IrType* vx_IrType_heap(void) {
 
 // TODO: remove cir checks and make sure fn called after cir type expand & MAKE TYPE EXPAND AWARE OF MEMBER ALIGN FOR UNIONS
 static size_t vx_IrType_size(vx_IrType *ty) {
+    assert(ty != NULL);
+
     size_t total = 0; 
 
     switch (ty->kind) {
