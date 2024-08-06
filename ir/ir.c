@@ -27,13 +27,6 @@ void vx_IrBlock_llir_compact(vx_IrBlock *root) {
             }
         }
     }
-
-    for (vx_IrVar var = 0; var < root->as_root.vars_len; var ++) {
-        if (root->as_root.vars[var].ll_type == NULL) {
-            root->as_root.vars_len = var;
-            break;
-        }
-    }
 }
 
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {

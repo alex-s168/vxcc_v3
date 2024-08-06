@@ -246,37 +246,10 @@ static void end_as_dest_reg(Location* as_reg, Location* old, FILE* out);
 static Location* start_as_primitive(Location* other, FILE* out);
 static void end_as_primitive(Location* as_prim, Location* old, FILE* out);
 
+static Location* start_as_size(size_t size, Location* loc, FILE* out);
+static void end_as_size(Location* as_size, Location* old, FILE* out);
+
 static void emiti_move(Location* src, Location* dest, bool sign_ext, FILE* out);
-
-static void emiti_load(Location* src, Location* dest, FILE* out) {
-    assert(src->bytesWidth == dest->bytesWidth);
-    Location* dest_as_reg = start_as_dest_reg(dest, out);
-
-    assert(src->type == LOC_MEM);
-
-    fputs("mov ", out);
-    emit(dest_as_reg, out);
-    fputs(", ", out);
-    emit(src, out);
-    fputc('\n', out);
-
-    end_as_dest_reg(dest_as_reg, dest, out);
-}
-
-static void emiti_store(Location* src, Location* dest, FILE* out) {
-    assert(src->bytesWidth == dest->bytesWidth);
-    Location* src_as_prim = start_as_primitive(src, out);
-
-    assert(dest->type == LOC_MEM);
-
-    fputs("mov ", out);
-    emit(dest, out);
-    fputs(", ", out);
-    emit(src_as_prim, out);
-    fputc('\n', out);
-
-    end_as_primitive(src_as_prim, src, out);
-}
 
 static void emiti_lea(Location* src, Location* dest, FILE* out) {
     Location* dest_as_reg = start_as_dest_reg(dest, out);
@@ -350,7 +323,7 @@ static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) 
     if (dest->type == LOC_MEM) {
         if (src->type == LOC_MEM) {
             Location* tmp = start_scratch_reg(src->bytesWidth, out);
-            emiti_load(src, tmp, out);
+            emiti_move(src, tmp, sign_ext, out);
             emiti_move(tmp, dest, sign_ext, out);
             end_scratch_reg(tmp, out);
             return;
@@ -369,7 +342,10 @@ static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) 
         if (sign_ext) {
             prefix = "movsx ";
         } else {
-            if (!(dest->bytesWidth == 8 && src->bytesWidth == 4)) {
+            if (dest->bytesWidth == 8 && src->bytesWidth == 4) {
+                dest = loc_opt_copy(dest);
+                dest->bytesWidth = 4;
+            } else {
                 prefix = "movzx ";
             }
         }
@@ -419,6 +395,13 @@ static void emiti_cmp0(Location* val, FILE* out) {
 }
 
 static void emiti_cmp(Location* a, Location* b, FILE* out) {
+    if (b->bytesWidth != a->bytesWidth) {
+        Location* as_size = start_as_size(a->bytesWidth, b, out);
+        emiti_cmp(a, as_size, out);
+        end_as_size(as_size, b, out);
+        return;
+    }
+
     if (b->type == LOC_IMM && b->v.imm.bits == 0) {
         emiti_cmp0(a, out);
         return;
@@ -444,10 +427,26 @@ static void emiti_cmp(Location* a, Location* b, FILE* out) {
 }
 
 static void emiti_binary(Location* a, Location* b, Location* o, const char * binary, FILE* out) {
+    size_t size = o->bytesWidth;
+
     if (a->type == LOC_MEM && b->type == LOC_MEM) {
         Location* reg_b = start_as_primitive(b, out);
         emiti_binary(a, reg_b, o, binary, out);
         end_as_primitive(reg_b, b, out);
+        return;
+    }
+
+    if (a->bytesWidth != size) {
+        Location* as_size = start_as_size(size, a, out);
+        emiti_binary(as_size, b, o, binary, out);
+        end_as_size(as_size, a, out);
+        return;
+    }
+
+    if (b->bytesWidth != size) {
+        Location* as_size = start_as_size(size, b, out);
+        emiti_binary(a, as_size, o, binary, out);
+        end_as_size(as_size, b, out);
         return;
     }
 
@@ -543,8 +542,17 @@ static void emit_call_arg_load(vx_IrOp* callOp, FILE* file) {
     assert(callOp->args_len <= 6);
 
     vx_IrValue fn = *vx_IrOp_param(callOp, VX_IR_NAME_ADDR);
-    assert(fn.type == VX_IR_VAL_VAR);
-    vx_IrTypeFunc fnType = varData[fn.var].type->func;
+    
+    vx_IrTypeFunc fnType;
+    if (fn.type == VX_IR_VAL_VAR) {
+        fnType = varData[fn.var].type->func;
+    }
+    else if (fn.type == VX_IR_VAL_BLOCKREF) {
+        fnType = vx_IrBlock_type(fn.block).ptr->func;
+    }
+    else {
+        assert(false);
+    }
 
     char regs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
 
@@ -806,6 +814,8 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
 }
 
 void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
+    fprintf(out, "%s:\n", block->name);
+
     assert(block->is_root);
 
     bool anyPlaced = false;
@@ -824,7 +834,9 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     availableRegisters[0] = REG_R10.id;
     availableRegisters[1] = REG_R11.id;
 
+
     size_t anyArgsCount = block->ins_len;
+    size_t anyCalledArgsCount = 0;
     // max arg len 
     for (vx_IrOp* op = block->first; op != NULL; op = op->next) {
         if (op->id == VX_IR_OP_CALL || op->id == VX_IR_OP_TAILCALL || op->id == VX_IR_OP_CONDTAILCALL) {
@@ -835,13 +847,15 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
             vx_IrTypeFunc fn = ty.ptr->func;
 
-            if (fn.args_len > anyArgsCount) {
-                anyArgsCount = fn.args_len;
+            if (fn.args_len > anyCalledArgsCount) {
+                anyCalledArgsCount = fn.args_len;
             }
 
             vx_IrTypeRef_drop(ty);
         }
     }
+    if (anyCalledArgsCount)
+        anyArgsCount = anyCalledArgsCount;
 
     if (anyArgsCount < 6) {
         size_t extraAv = 6 - anyArgsCount;
@@ -892,8 +906,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     /* ======================== VAR ALLOC ===================== */ 
     {
-        printf("%zu\n", block->as_root.vars_len);
-
         signed long long highestHeat = 0;
         for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
             size_t heat = varData[var].heat;
@@ -906,6 +918,10 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         size_t varsHotFirstLen = 0;
 
         char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
+        for (size_t i = anyCalledArgsCount; i < block->ins_len; i ++) {
+            vx_IrVar var = block->ins[i].var;
+            varsSorted[var] = true;
+        }
         for (; highestHeat >= 0; highestHeat --) {
             for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
                 if (varsSorted[var]) continue;
@@ -918,12 +934,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         }
         free(varsSorted);
 
-        assert(varsHotFirstLen == block->as_root.vars_len);
-
-        printf("vars sorted by heat:\n");
-        for (size_t i = 0; i < varsHotFirstLen; i ++)
-            printf("- %zu (type %p)\n", varsHotFirst[i], varData[varsHotFirst[i]].type);
-
         size_t varId = 0;
         for (size_t i = 0; i < availableRegistersCount; i ++) {
             if (varId >= varsHotFirstLen) break;
@@ -931,6 +941,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             for (; varId < varsHotFirstLen; varId ++) {
                 vx_IrVar var = varsHotFirst[varId];
                 
+                if (varData[var].type == NULL) continue;
+
                 size_t size = vx_IrType_size(varData[var].type);
                 if (size > 8) continue;
                 
@@ -945,6 +957,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         size_t stackOff = 0;
         for (; varId < varsHotFirstLen; varId ++) {
             vx_IrVar var = varsHotFirst[varId];
+            if (varData[var].type == NULL) continue;
             size_t size = vx_IrType_size(varData[var].type);
             varData[var].location = gen_stack_var(size, stackOff);
             stackOff += size;
@@ -954,6 +967,40 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         free(varsHotFirst);
     }
 
+    char argRegs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
+
+    for (size_t i = 0; i < anyCalledArgsCount; i++) {
+        Location* dest = varData[block->ins[i].var].location;
+        Location* src = gen_reg_var(src->bytesWidth, argRegs[i]);
+        emiti_move(src, dest, false, out);
+    }
+
+    for (size_t i = anyCalledArgsCount; i < block->ins_len; i ++) {
+        vx_IrVar var = block->ins[i].var;
+        vx_IrType* type = block->ins[i].type;
+        varData[var].location = gen_reg_var(vx_IrType_size(type), argRegs[i]);
+    }
+
+    for (vx_IrVar i = 0; i < block->as_root.vars_len; i ++) {
+        Location* loc = varData[i].location;
+        const char * str = "(null)";
+        if (loc != NULL) {
+            switch (loc->type) {
+            case LOC_REG:
+                str = "reg";
+                break;
+
+            case LOC_MEM:
+                str = "mem";
+                break;
+            
+            default:
+                str = "???";
+                break;
+            }
+        }
+        printf("var %zu: type %p , loc %s , size %zu\n", i, varData[i].type, str, loc ? loc->bytesWidth : 0);
+    }
 
     if (anyPlaced)
         emiti_enter(out);
@@ -1000,7 +1047,7 @@ static Location* start_as_dest_reg(Location* other, FILE* out) {
 
 static void end_as_dest_reg(Location* as_reg, Location* old, FILE* out) {
     if (old->type == LOC_MEM) {
-        emiti_store(as_reg, old, out);
+        emiti_move(as_reg, old, false, out);
         end_scratch_reg(as_reg, out);
     }
 }
@@ -1016,7 +1063,7 @@ static Location* start_as_primitive(Location* other, FILE* out) {
 
     if (other->type == LOC_MEM) {
         Location* s = start_scratch_reg(other->bytesWidth, out);
-        emiti_load(other, s, out);
+        emiti_move(other, s, false, out);
         return s;
     }
 
@@ -1026,5 +1073,27 @@ static Location* start_as_primitive(Location* other, FILE* out) {
 static void end_as_primitive(Location* as_prim, Location* old, FILE* out) {
     if (old->type == LOC_EA || old->type == LOC_MEM) {
         end_scratch_reg(as_prim, out);
+    }
+}
+
+static Location* start_as_size(size_t size, Location* loc, FILE* out) {
+    if (loc->bytesWidth == size) {
+        return loc;
+    }
+
+    if (loc->type == LOC_REG || loc->type == LOC_IMM || loc->type == LOC_EA) {
+        Location* copy = loc_opt_copy(loc);
+        copy->bytesWidth = size;
+        return copy;
+    }
+
+    Location* prim = start_as_primitive(loc, out);
+
+    return prim;
+}
+
+static void end_as_size(Location* as_size, Location* old, FILE* out) {
+    if (as_size->type == LOC_REG && old->type != LOC_REG) {
+        end_as_primitive(as_size, old, out);
     }
 }

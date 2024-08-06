@@ -127,9 +127,14 @@ void eq(int a, int b, int c, int d) {
 }
 */
     vx_IrBlock *call = vx_IrBlock_init_heap(NULL, 0);
+    call->name = "call";
+
     vx_IrBlock *call2 = vx_IrBlock_init_heap(NULL, 0);
+    call2->name = "call2";
 
     vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
+    block->name = "eq";
+
     vx_IrVar a = 0, b = 1, c = 2, d = 3, temp0 = 4, temp1 = 5, temp2 = 6;
 
     vx_IrBlock_add_in(block, a, ty_int);
