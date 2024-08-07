@@ -108,6 +108,7 @@ static vx_IrBlock * build_test_cmov(void) {
         vx_IrBlock_add_op(block, &op);
     }
 
+    vx_IrBlock_add_out(block, 1); 
     vx_IrBlock_make_root(block, 2);
 
     return block;
