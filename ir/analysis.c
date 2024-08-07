@@ -32,19 +32,20 @@ bool vx_IrBlock_vardecl_is_in_ins(vx_IrBlock *block, vx_IrVar var) {
 //     before
 //
 vx_IrOp *vx_IrBlock_vardecl_out_before(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before) {
-    for (vx_IrOp *op = before->parent->first; op; op = op->next) {
+    if (before == NULL) {
+        before = vx_IrBlock_tail(block);
+    }
+
+    for (vx_IrOp* op = vx_IrOp_predecessor(before); op; op = vx_IrOp_predecessor(op)) {
         for (size_t i = 0; i < op->outs_len; i ++)
             if (op->outs[i].var == var)
                 return op;
-
-        if (op == before) {
-            if (before->parent->parent_op)
-                return vx_IrBlock_vardecl_out_before(block, var, before->parent->parent_op);
-
-            return NULL;
-        }
     }
-    return NULL;
+
+    if (block->parent == NULL)
+        return NULL;
+
+    return vx_IrBlock_vardecl_out_before(block->parent, var, block->parent_op);
 }
 
 bool vx_IrOp_ends_flow(vx_IrOp *op) {
@@ -174,9 +175,9 @@ bool vx_IrBlock_is_volatile(vx_IrBlock *block)
     return false;
 }
 
-vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
-    if (block->as_root.vars[var].ll_type) {
-        return block->as_root.vars[var].ll_type;
+static vx_IrType* typeofvar(vx_IrBlock* block, vx_IrVar var) {
+    if (!block) {
+        return NULL;
     }
 
     for (size_t i = 0; i < block->ins_len; i ++) {
@@ -185,17 +186,29 @@ vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
         }
     }
 
-    vx_IrOp *decl = vx_IrBlock_root(block)->as_root.vars[var].decl;
-    if (decl == NULL)
-        goto warn;
+    for (vx_IrOp* op = block->first; op; op = op->next) {
+        for (size_t i = 0; i < op->outs_len; i ++)
+            if (op->outs[i].var == var)
+                return op->outs[i].type;
+    
+        for (size_t i = 0; i < op->params_len; i ++) {
+            if (op->params[i].val.type == VX_IR_VAL_BLOCK) {
+                vx_IrType* ty = typeofvar(op->params[i].val.block, var);
+                if (ty) return ty;
+            }
+        }
+    }
 
-    for (size_t i = 0; i < decl->outs_len; i ++)
-        if (decl->outs[i].var == var)
-            return decl->outs[i].type;
-
-warn:
-    fprintf(stderr, "VARIABLE %%%zu DECL ERROR (typeof_var)\n", var);
     return NULL;
+}
+
+vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
+    vx_IrBlock* root = vx_IrBlock_root(block);
+    if (root && root->is_root && root->as_root.vars[var].ll_type) {
+        return block->as_root.vars[var].ll_type;
+    }
+
+    return typeofvar(root, var);
 }
 
 static size_t cost_lut[VX_IR_OP____END] = {

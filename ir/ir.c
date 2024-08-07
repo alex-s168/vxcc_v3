@@ -30,6 +30,7 @@ void vx_IrBlock_llir_compact(vx_IrBlock *root) {
     }
 }
 
+/*
 typedef struct {
     vx_IrVar var;
     vx_IrOp* decl;
@@ -45,9 +46,25 @@ bool vx_CIrBlock_fix_iter(vx_IrOp* op, void* param) {
         }
     }
     return false;
+}*/
+
+void vx_CIrBlock_fix(vx_IrBlock* block) {
+    vx_IrBlock* root = vx_IrBlock_root(block);
+
+    for (size_t i = 0; i < block->ins_len; i ++)
+        vx_IrBlock_putVar(root, block->ins[i].var, NULL);
+
+    for (vx_IrOp* op = block->first; op; op = op->next) {
+        for (size_t i = 0; i < op->outs_len; i ++)
+            vx_IrBlock_putVar(root, op->outs[i].var, op);
+
+        for (size_t i = 0; i < op->params_len; i ++)
+            if (op->params[i].val.type == VX_IR_VAL_BLOCK)
+                vx_CIrBlock_fix(op->params[i].val.block);
+    }
 }
 
-void vx_CIrBlock_fix(vx_IrBlock *root) {
+/*void vx_CIrBlock_fix(vx_IrBlock *root) {
     assert(root->is_root);
 
     for (vx_IrVar var = 0; var < root->as_root.vars_len; var ++) {
@@ -59,7 +76,7 @@ void vx_CIrBlock_fix(vx_IrBlock *root) {
 
         root->as_root.vars[var].decl = state.decl;
     }
-}
+}*/
 
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
     assert(root->is_root);

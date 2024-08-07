@@ -57,7 +57,6 @@ static vx_IrVar megic(vx_IrBlock *outer,
 {
     // stage 1
     const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
-    printf("var: %zu\nmanipulate: %zu\n", var, manipulate);
     {
         vx_IrOp *oldstart = outer->first;
         outer->first = orig_assign->next;
@@ -152,7 +151,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
                 for (size_t l = 0; l < condAssignOp->outs_len; l ++) {
                     vx_IrVar var = condAssignOp->outs[l].var;
 
-                    vx_IrOp *alwaysAssignOp = vx_IrBlock_vardecl_out_before(block, var, condAssignOp);
+                    vx_IrOp *alwaysAssignOp = vx_IrBlock_vardecl_out_before(block, var, ifOp);
                     if (alwaysAssignOp == NULL)
                         continue;
                     rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, ifOp, var, manip));

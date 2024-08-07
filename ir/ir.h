@@ -287,6 +287,7 @@ void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
 size_t vx_IrBlock_append_label_op(vx_IrBlock *block);
+void vx_IrBlock_putVar(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl);
 
 static bool vx_IrBlock_empty(vx_IrBlock *block) {
     if (!block)

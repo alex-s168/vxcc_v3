@@ -108,7 +108,7 @@ static vx_IrBlock * build_test_cmov(void) {
         vx_IrBlock_add_op(block, &op);
     }
 
-    vx_IrBlock_make_root(block, 1);
+    vx_IrBlock_make_root(block, 2);
 
     return block;
 }
@@ -177,9 +177,9 @@ static int cir_test(vx_IrBlock *block) {
     if (vx_cir_verify(block) != 0)
         return 1;
 
-    vx_CIrBlock_mksa_states(block);
-    // vx_CIrBlock_mksa_final(block);
     vx_CIrBlock_fix(block); // TODO: why...
+    vx_CIrBlock_mksa_states(block);
+    vx_CIrBlock_mksa_final(block);
 
     printf("After C IR lower:\n");
     vx_IrBlock_dump(block, stdout, 0);
@@ -227,6 +227,8 @@ static int cir_test(vx_IrBlock *block) {
 }
 
 int main(void) {
+    vx_g_optconfig.if_eval = false;
+
     ty_int = vx_IrType_heap();
     ty_int->debugName = "i32";
     ty_int->kind = VX_IR_TYPE_KIND_BASE;

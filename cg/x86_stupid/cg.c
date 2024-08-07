@@ -671,6 +671,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
         case VX_IR_OP_SHR: // "a", "b"
             {
                 Location* o = varData[op->outs[0].var].location;
+                assert(o);
                 Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
                 Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
 
@@ -698,6 +699,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
         case VX_IR_OP_BITWISE_NOT: // "val"
             {
                 Location* o = varData[op->outs[0].var].location;
+                assert(o);
                 Location* v = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
                 emiti_unary(v, o, "not", file);
             } break;
@@ -712,6 +714,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
             {
                 vx_IrVar ov = op->outs[0].var;
                 Location* o = varData[ov].location;
+                assert(o);
                 Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
                 Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
 
@@ -913,6 +916,12 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         }
         for (size_t i = 0; i < op->args_len; i ++) {
             vx_IrValue val = op->args[i];
+            if (val.type == VX_IR_VAL_VAR) {
+                varData[val.var].heat ++;
+            }
+        }
+        for (size_t i = 0; i < op->params_len; i ++) {
+            vx_IrValue val = op->params[i].val;
             if (val.type == VX_IR_VAL_VAR) {
                 varData[val.var].heat ++;
             }

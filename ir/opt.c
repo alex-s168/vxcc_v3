@@ -26,6 +26,8 @@ static void opt_pre(vx_IrBlock *block) {
 }
 
 void opt(vx_IrBlock *block) {
+    assert(block != NULL);
+
     for (vx_IrOp *op = block->first; op; op = op->next)
          for (size_t i = 0; i < op->params_len; i ++)
              if (op->params[i].val.type == VX_IR_VAL_BLOCK)
@@ -37,20 +39,13 @@ void opt(vx_IrBlock *block) {
         vx_opt_reduce_if(block);
     }
     vx_opt_cmov(block);
-    opt_pre(block);
-    if (vx_g_optconfig.loop_simplify) {
-        vx_opt_reduce_loops(block);
-        vx_opt_loop_simplify(block);
-    }
+    //opt_pre(block);
+    //if (vx_g_optconfig.loop_simplify) {
+    //    vx_opt_reduce_loops(block);
+    //    vx_opt_loop_simplify(block);
+    //}
 
-    vx_opt_tailcall(block);
-
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (op->id == VX_IR_OP_FLATTEN_PLEASE) {
-            vx_IrBlock *body = vx_IrOp_param(op, VX_IR_NAME_BLOCK)->block;
-            opt(body);
-        }
-    }
+    //vx_opt_tailcall(block);
 }
 
 void opt_ll(vx_IrBlock *block) {

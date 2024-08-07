@@ -19,6 +19,7 @@ jobs:
         shell: bash
       - name: Try compile
         run: |
+          git submodule update --init
           chmod +x build.sh
           ./build.sh
         shell: bash

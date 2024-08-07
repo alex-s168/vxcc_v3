@@ -103,6 +103,10 @@ static void root_block_put_var(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
     root->as_root.vars[var].decl = decl;
 }
 
+void vx_IrBlock_putVar(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
+    root_block_put_var(root, var, decl);
+}
+
 static void root_block_put_label(vx_IrBlock *root, size_t label, vx_IrOp *decl) {
     assert(root->is_root);
     if (label >= root->as_root.labels_len) {
