@@ -898,11 +898,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         availableRegistersCount += extraAv;
     }
 
-    printf("avail regs:\n");
-    for (size_t i = 0; i < availableRegistersCount; i ++) {
-        printf("- %s\n", RegLut[availableRegisters[i]]->name[3]);
-    }
-
     varData = calloc(block->as_root.vars_len, sizeof(VarData));
     for (size_t i = 0; i < block->ins_len; i ++) {
         varData[block->ins[i].var].type = block->ins[i].type;
@@ -971,7 +966,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                 
                 if (block->as_root.vars[var].ever_placed) continue; 
 
-                varData[var].location = gen_reg_var(widthToWidthWidth[size], availableRegisters[i]);
+                size = widthToWidthWidth[size];
+                varData[var].location = gen_reg_var(size, availableRegisters[i]);
                 break;
             }
             varId ++;
@@ -1002,27 +998,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         vx_IrVar var = block->ins[i].var;
         vx_IrType* type = block->ins[i].type;
         varData[var].location = gen_reg_var(vx_IrType_size(type), argRegs[i]);
-    }
-
-    for (vx_IrVar i = 0; i < block->as_root.vars_len; i ++) {
-        Location* loc = varData[i].location;
-        const char * str = "(null)";
-        if (loc != NULL) {
-            switch (loc->type) {
-            case LOC_REG:
-                str = "reg";
-                break;
-
-            case LOC_MEM:
-                str = "mem";
-                break;
-            
-            default:
-                str = "???";
-                break;
-            }
-        }
-        printf("var %zu: type %p , loc %s , size %zu , heat %zu\n", i, varData[i].type, str, loc ? loc->bytesWidth : 0, varData[i].heat);
     }
 
     if (anyPlaced)

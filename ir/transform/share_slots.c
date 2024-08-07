@@ -7,9 +7,8 @@
 
 // block needs to be 100% flat, decl of vars must be known, decl won't be known after this fn anymore
 
-// TODO: figure out why it doesn't apply for overlapping*? lifetimes
-
 void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
+    // TODO: is this even required
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         if (block->as_root.vars[var].decl == NULL)
             continue;
@@ -35,35 +34,32 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         lifetime *lt = &block->as_root.vars[var].ll_lifetime;
-
-        if (lt->first == NULL) {
+        if (lt->first == NULL)
             continue;
-        }
         
         vx_IrType *type = block->as_root.vars[var].ll_type;
         assert(type != NULL);
         size_t typeSize = vx_IrType_size(type);
 
-        for (vx_IrVar var2 = 0; var < block->as_root.vars_len; var ++) {
+        for (vx_IrVar var2 = 0; var2 < block->as_root.vars_len; var2 ++) {
             if (var == var2)
                 continue;
 
-            lifetime *lt2 = &block->as_root.vars[var].ll_lifetime;
+            lifetime *lt2 = &block->as_root.vars[var2].ll_lifetime;
             if (lt2->first == NULL)
                 continue; 
 
-            vx_IrType *type2 = block->as_root.vars[var].ll_type;
+            vx_IrType *type2 = block->as_root.vars[var2].ll_type;
             assert(type2 != NULL);
             size_t type2Size = vx_IrType_size(type2);
 
             if (typeSize != type2Size) { // dont use vx_IrType_compatible() here
-                printf("skipping (type size %zu vs %zu)\n", typeSize, type2Size);
                 continue;
             }
 
             lifetime cmp_low = *lt;
             lifetime cmp_high = *lt2;
-            if (cmp_low.first > cmp_high.first) {
+            if (vx_IrOp_after(cmp_low.first, cmp_high.first)) {
                 cmp_low = *lt2;
                 cmp_high = *lt;
             }
