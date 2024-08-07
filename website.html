@@ -61,80 +61,94 @@ pre, td h3 {
     ^ %1
   };
   i32 %1 = imm val=%0;
-return</pre></td>
+return %1</pre></td>
 <td><h3>After C IR lower</h3><pre>BLOCK
-  i32 %5 = imm val=1;
-  i32 %11 = if then=(){
-    ^ %5
+  i32 %7 = imm val=1;
+  i32 %13 = if then=(){
+    ^ %7
   } else=(){
-    i32 %6 = imm val=2;
-    i32 %9 = if then=(){
-      ^ %6
-    } else=(){
-      i32 %7 = imm val=2;
-      ^ %7
-    } cond=(){
-      i32 %8 = imm val=1;
+    i32 %8 = imm val=2;
+    i32 %11 = if then=(){
       ^ %8
-    };
-    ^ %9
-  } cond=(){
-    i32 %10 = imm val=1;
-    ^ %10
-  };
-  i32 %12 = imm val=%11;
-return</pre></td>
-    <td><h3>After SSA IR opt</h3><pre>BLOCK
-  i32 %5 = imm val=1;
-  i32 %11 = . block=(){
-    i32 %16 = . block=(){
-      ^ %5
-    };
-    i32 %17 = . block=(){
-      i32 %6 = imm val=2;
-      i32 %9 = . block=(){
-        i32 %13 = . block=(){
-          ^ %6
-        };
-        i32 %14 = . block=(){
-          i32 %7 = imm val=2;
-          ^ %7
-        };
-        i32 %15 = cmov cond=(){
-          i32 %8 = imm val=1;
-          ^ %8
-        } then=%13 else=%14;
-        ^ %15
-      };
+    } else=(){
+      i32 %9 = imm val=2;
       ^ %9
-    };
-    i32 %18 = cmov cond=(){
+    } cond=(){
       i32 %10 = imm val=1;
       ^ %10
-    } then=%16 else=%17;
-    ^ %18
+    };
+    ^ %11
+  } cond=(){
+    i32 %12 = imm val=1;
+    ^ %12
   };
-  i32 %12 = imm val=%11;
-return</pre></td>
+  i32 %14 = imm val=%13;
+return %14</pre></td>
+    <td><h3>After SSA IR opt</h3><pre>BLOCK
+  i32 %7 = imm val=1;
+  i32 %13 = . block=(){
+    i32 %18 = . block=(){
+      ^ %7
+    };
+    i32 %19 = . block=(){
+      i32 %8 = imm val=2;
+      i32 %11 = . block=(){
+        i32 %15 = . block=(){
+          ^ %8
+        };
+        i32 %16 = . block=(){
+          i32 %9 = imm val=2;
+          ^ %9
+        };
+        i32 %17 = cmov cond=(){
+          i32 %10 = imm val=1;
+          ^ %10
+        } then=%15 else=%16;
+        ^ %17
+      };
+      ^ %11
+    };
+    i32 %20 = cmov cond=(){
+      i32 %12 = imm val=1;
+      ^ %12
+    } then=%18 else=%19;
+    ^ %20
+  };
+return %13</pre></td>
             </tr>
             <tr>
                 <td><h3>After SSA IR lower</h3><pre>BLOCK
-  i32 %5 = imm val=1;
-  i32 %16 = imm val=%5;
-  i32 %6 = imm val=2;
-  i32 %13 = imm val=%6;
-  i32 %7 = imm val=2;
-  i32 %14 = imm val=%7;
-  i32 %8 = imm val=1;
-  i32 %17 = cmov cond=%8 then=%13 else=%14;
+  i32 %7 = imm val=1;
+  i32 %18 = imm val=%7;
+  i32 %8 = imm val=2;
+  i32 %15 = imm val=%8;
+  i32 %16 = imm val=2;
   i32 %10 = imm val=1;
-  i32 %11 = cmov cond=%10 then=%16 else=%17;
-  i32 %12 = imm val=%11;
-return</pre></td>
+  i32 %19 = cmov cond=%10 then=%15 else=%16;
+  i32 %12 = imm val=1;
+  i32 %13 = cmov cond=%12 then=%18 else=%19;
+return %13</pre></td>
                     <td><h3>After LL IR opt</h3><pre>BLOCK
-  i32 %17 = cmov cond=1 then=2 else=2;
-  i32 %11 = cmov cond=1 then=1 else=%17;
-return</pre></td>
+  i32 %19 = cmov cond=1 then=2 else=2;
+  i32 %13 = cmov cond=1 then=1 else=%19;
+return %13</pre></td>
+                <td><h3>After LL IR lower prepare</h3><pre>BLOCK
+  i32 %9 = cmov cond=1 then=2 else=2;
+  i32 %6 = cmov cond=1 then=1 else=%9;
+return %6</pre></td>
+            </tr>
+            <tr>
+                <td><h3>CG variable placement</h3><pre>%9 - r10d
+%6 - r11d</pre></td>
+                <td><h3>CG</h3><pre>mov al, 1
+test al, al
+mov r10d, 2
+cmovz r10d, 2
+mov al, 1
+test al, al
+mov r11d, r10d
+cmovz r11d, 1
+ret</pre></td>
             </tr>
         </table>
 

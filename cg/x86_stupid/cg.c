@@ -1037,6 +1037,12 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         op = new;
     }
 
+    if (block->outs_len > 0) {
+        Location* src = varData[block->outs[0]].location;
+        Location* dest = gen_reg_var(src->bytesWidth, REG_RAX.id);
+        emiti_move(src, dest, false, out);
+    }
+
     if (anyPlaced)
         emiti_leave(out);
     fputs("ret\n", out);

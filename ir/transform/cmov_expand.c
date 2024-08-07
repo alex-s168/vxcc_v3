@@ -6,7 +6,6 @@ void vx_IrBlock_ll_cmov_expand(vx_IrBlock *block) {
             continue;
 
         vx_IrTypedVar out = op->outs[0];
-        vx_IrValue vthen = *vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
         vx_IrValue velse = *vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
 
         vx_IrOp* pred = vx_IrOp_predecessor(op);
