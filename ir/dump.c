@@ -90,6 +90,11 @@ const char *vx_IrName_str[] = {
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
     switch (value.type) {
+        case VX_IR_VAL_BLOCKREF: {
+            fprintf(out, "#%s", value.block->name);
+        }
+        break;
+
         case VX_IR_VAL_ID: {
             fprintf(out, "$%zu", value.id);
         }
@@ -160,10 +165,6 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
     }
 }
 
-static const char * opinfo_names[] = {
-    [VX_OPINFO_X86CG] = "x86cg",
-};
-
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
     for (size_t j = 0; j < indent; j ++)
         fputs("  ", out);
@@ -193,12 +194,6 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
         const vx_IrNamedValue param = op->params[j];
         fprintf(out, "%s=", vx_IrName_str[param.name]);
         vx_IrValue_dump(param.val, out, indent);
-    }
-
-    for (size_t i = 0; i < op->info.count; i ++) {
-        vx_OpInfo info = op->info.items[i];
-        (void) info;
-        fprintf(out, "\ninfo %s = ...", opinfo_names[i]);
     }
 
     fputs(";\n", out);

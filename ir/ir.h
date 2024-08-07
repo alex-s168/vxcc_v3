@@ -9,14 +9,9 @@
 #include <assert.h>
 #include <stdio.h>
 
-
-#ifndef VX_BASE_TYPES
-#define VX_BASE_TYPES
-typedef size_t vx_IrVar;
-#endif
-
 #include "../common.h"
-#include "../cg/cg.h"
+
+typedef size_t vx_IrVar;
 
 /** alloc things that are not meant to be freed or reallocated before end of compilation */
 void * fastalloc(size_t bytes);
@@ -110,53 +105,8 @@ static vx_IrType* vx_IrType_heap(void) {
 
 #define PTRSIZE (8)
 
-// TODO: remove cir checks and make sure fn called after cir type expand & MAKE TYPE EXPAND AWARE OF MEMBER ALIGN FOR UNIONS
-static size_t vx_IrType_size(vx_IrType *ty) {
-    assert(ty != NULL);
-
-    size_t total = 0; 
-
-    switch (ty->kind) {
-    case VX_IR_TYPE_KIND_BASE:
-        return ty->base.size;
-
-    case VX_IR_TYPE_KIND_CIR_UNION:
-        for (size_t i = 0; i < ty->cir_union.members_len; i ++) {
-            size_t val = vx_IrType_size(ty->cir_union.members[i]);
-            if (val > total)
-                total = val;
-        }
-        return total;
-
-    case VX_IR_TYPE_KIND_CIR_STRUCT:
-        for (size_t i = 0; i < ty->cir_struct.members_len; i ++) {
-            total += vx_IrType_size(ty->cir_struct.members[i]);
-        }
-        return total;
-
-    case VX_IR_TYPE_FUNC:
-        return PTRSIZE;
-    }
-}
-
-static void vx_IrType_free(vx_IrType *ty) {
-    switch (ty->kind) {
-    case VX_IR_TYPE_KIND_BASE:
-        return;
-
-    case VX_IR_TYPE_KIND_CIR_UNION:
-        free(ty->cir_union.members);
-        return;
-
-    case VX_IR_TYPE_KIND_CIR_STRUCT:
-        free(ty->cir_struct.members);
-        return;
-
-    case VX_IR_TYPE_FUNC:
-        free(ty->func.args);
-        return;
-    }
-}
+size_t vx_IrType_size(vx_IrType *ty);
+void vx_IrType_free(vx_IrType *ty);
 
 static bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
     return a == b; // TODO (not used right now)
@@ -187,8 +137,6 @@ struct vx_IrBlock_s {
             lifetime  ll_lifetime;
             vx_IrType *ll_type;
             bool ever_placed;
-            /** 0 is none! */
-            vx_CgReg  reg; 
         } *vars;
         size_t vars_len;
 
@@ -446,8 +394,6 @@ struct vx_IrOp_s {
 
     vx_IrBlock  * parent;
     vx_IrOpType   id;
-
-    vx_OpInfoList info;
 };
 
 #define MKARR(...) { __VA_ARGS__ }
@@ -516,22 +462,6 @@ static void vx_IrTypeRef_drop(vx_IrTypeRef ref) {
 vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block);
 
 // null if depends on context or has no type 
-static vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
-    switch (value.type) {
-        case VX_IR_VAL_IMM_INT:
-        case VX_IR_VAL_IMM_FLT:
-        case VX_IR_VAL_UNINIT:
-        case VX_IR_VAL_TYPE:
-        case VX_IR_VAL_ID:
-        case VX_IR_VAL_BLOCK:
-            return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
-
-        case VX_IR_VAL_BLOCKREF:
-            return vx_IrBlock_type(value.block);
-
-        case VX_IR_VAL_VAR:
-            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeof_var(root, value.var), .shouldFree = false };
-    }
-}
+vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value);
 
 #endif //IR_H

@@ -43,7 +43,6 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/transform/normalize.c"),
     SP(CT_C, "ir/transform/share_slots.c"),
     SP(CT_C, "ir/transform/ssair_llir_lower.c"),
-    SP(CT_C, "ir/transform/regalloc.c"),
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),
@@ -62,10 +61,6 @@ struct CompileData target_x86_files[] = {
     DIR("build"),
 
     DIR("build/cg"),
-
-    DIR("build/cg/x86"),
-    SP(CT_C, "cg/x86/prep.c"),
-    SP(CT_C, "cg/x86/constraints.c"),
 
     DIR("build/cg/x86_stupid"),
     SP(CT_C, "cg/x86_stupid/cg.c"),

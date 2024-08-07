@@ -244,8 +244,6 @@ void vx_IrOp_init(vx_IrOp *op,
 
     op->args = NULL;
     op->args_len = 0;
-
-    op->info = vx_OpInfoList_create();
 }
 
 void vx_IrOp_add_out(vx_IrOp *op,
@@ -296,7 +294,6 @@ void vx_IrOp_destroy(vx_IrOp *op)
     vx_IrOp_remove_params(op);
     free(op->outs);
     free(op->args);
-    vx_OpInfoList_destroy(&op->info);
 }
 
 void vx_IrOp_remove_params(vx_IrOp *op)

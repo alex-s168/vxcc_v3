@@ -30,6 +30,72 @@ void vx_IrBlock_llir_compact(vx_IrBlock *root) {
     }
 }
 
+// TODO: remove cir checks and make sure fn called after cir type expand & MAKE TYPE EXPAND AWARE OF MEMBER ALIGN FOR UNIONS
+size_t vx_IrType_size(vx_IrType *ty) {
+    assert(ty != NULL);
+
+    size_t total = 0; 
+
+    switch (ty->kind) {
+    case VX_IR_TYPE_KIND_BASE:
+        return ty->base.size;
+
+    case VX_IR_TYPE_KIND_CIR_UNION:
+        for (size_t i = 0; i < ty->cir_union.members_len; i ++) {
+            size_t val = vx_IrType_size(ty->cir_union.members[i]);
+            if (val > total)
+                total = val;
+        }
+        return total;
+
+    case VX_IR_TYPE_KIND_CIR_STRUCT:
+        for (size_t i = 0; i < ty->cir_struct.members_len; i ++) {
+            total += vx_IrType_size(ty->cir_struct.members[i]);
+        }
+        return total;
+
+    case VX_IR_TYPE_FUNC:
+        return PTRSIZE;
+    }
+}
+
+void vx_IrType_free(vx_IrType *ty) {
+    switch (ty->kind) {
+    case VX_IR_TYPE_KIND_BASE:
+        return;
+
+    case VX_IR_TYPE_KIND_CIR_UNION:
+        free(ty->cir_union.members);
+        return;
+
+    case VX_IR_TYPE_KIND_CIR_STRUCT:
+        free(ty->cir_struct.members);
+        return;
+
+    case VX_IR_TYPE_FUNC:
+        free(ty->func.args);
+        return;
+    }
+}
+
+vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
+    switch (value.type) {
+        case VX_IR_VAL_IMM_INT:
+        case VX_IR_VAL_IMM_FLT:
+        case VX_IR_VAL_UNINIT:
+        case VX_IR_VAL_TYPE:
+        case VX_IR_VAL_ID:
+        case VX_IR_VAL_BLOCK:
+            return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
+
+        case VX_IR_VAL_BLOCKREF:
+            return vx_IrBlock_type(value.block);
+
+        case VX_IR_VAL_VAR:
+            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeof_var(root, value.var), .shouldFree = false };
+    }
+}
+
 /*
 typedef struct {
     vx_IrVar var;
