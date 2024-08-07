@@ -55,7 +55,6 @@ void vx_opt_cmov(vx_IrBlock *block)
             continue;
 
         size_t total_cost = vx_IrBlock_inline_cost(then) + vx_IrBlock_inline_cost(els);
-        printf("cmov inline cost %zu\n", total_cost);
         if (total_cost > vx_g_optconfig.max_total_cmov_inline_cost)
             continue;
 

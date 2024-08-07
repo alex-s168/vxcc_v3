@@ -35,23 +35,3 @@ void vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
     }
 }
 
-struct vx_IrView_substitute_var__data {
-    vx_IrBlock *block;
-    vx_IrVar old;
-    vx_IrValue new;
-};
-
-static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
-    struct vx_IrView_substitute_var__data *data = dataIn;
-
-    for (size_t i = 0; i < op->params_len; i ++)
-        if (op->params[i].val.type == VX_IR_VAL_VAR && op->params[i].val.var == data->old)
-            op->params[i].val = data->new;
-
-    return false;
-}
-
-void vx_IrBlock_substitute_var(vx_IrBlock *block, vx_IrVar old, vx_IrValue new) {
-    struct vx_IrView_substitute_var__data data = { .block = block, .old = old, .new = new };
-    vx_IrBlock_deep_traverse(block, vx_IrView_substitute_var__trav, &data);
-}

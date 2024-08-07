@@ -34,17 +34,17 @@ void opt(vx_IrBlock *block) {
                  opt(op->params[i].val.block);
 
     opt_pre(block);
-    vx_opt_join_compute(block);
+    //vx_opt_join_compute(block);
     if (vx_g_optconfig.if_eval) {
         vx_opt_reduce_if(block);
     }
     vx_opt_cmov(block);
+    // TODO: uncomment
     //opt_pre(block);
     //if (vx_g_optconfig.loop_simplify) {
     //    vx_opt_reduce_loops(block);
     //    vx_opt_loop_simplify(block);
     //}
-
     //vx_opt_tailcall(block);
 }
 

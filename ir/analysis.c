@@ -62,9 +62,6 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
 }
 
 bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
-    for (size_t j = 0; j < op->outs_len; j++)
-        if (op->outs[j].var == var)
-            return true;
     for (size_t j = 0; j < op->params_len; j++) {
         if (op->params[j].val.type == VX_IR_VAL_BLOCK) {
             if (vx_IrBlock_var_used(op->params[j].val.block, var)) {
@@ -81,6 +78,8 @@ bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
 
 bool vx_IrBlock_var_used(vx_IrBlock *block, vx_IrVar var)
 {
+    if (block == NULL) return false;
+
     for (size_t i = 0; i < block->outs_len; i++)
         if (block->outs[i] == var)
             return true;
