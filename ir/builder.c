@@ -342,7 +342,7 @@ void vx_IrOp_remove_param_at(vx_IrOp *op,
 void vx_IrOp_remove_param(vx_IrOp *op, vx_IrName param) {
     for (size_t i = 0; i < op->params_len; i ++) {
         if (op->params[i].name == param) {
-            vx_IrOp_remove_state_at(op, i);
+            vx_IrOp_remove_param_at(op, i);
             break;
         }
     }

@@ -574,10 +574,9 @@ static void emit_call_ret_store(vx_IrOp* callOp, FILE* file) {
 
 static void emit_condmove(vx_IrOp* op, const char *cc, FILE* file) {
     vx_IrValue vthen = *vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
-    vx_IrValue velse = *vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
+    assert(vx_IrOp_param(op, VX_IR_NAME_COND_ELSE) == NULL);
     Location* out = varData[op->outs[0].var].location;
 
-    emiti_move(as_loc(out->bytesWidth, velse), out, false, file);
     emiti_cmove(as_loc(out->bytesWidth, vthen), out, cc, file);
 }
 

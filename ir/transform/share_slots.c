@@ -36,10 +36,13 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         lifetime *lt = &block->as_root.vars[var].ll_lifetime;
 
-        if (lt->first == NULL)
+        if (lt->first == NULL) {
             continue;
+        }
         
         vx_IrType *type = block->as_root.vars[var].ll_type;
+        assert(type != NULL);
+        size_t typeSize = vx_IrType_size(type);
 
         for (vx_IrVar var2 = 0; var < block->as_root.vars_len; var ++) {
             if (var == var2)
@@ -50,9 +53,13 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
                 continue; 
 
             vx_IrType *type2 = block->as_root.vars[var].ll_type;
+            assert(type2 != NULL);
+            size_t type2Size = vx_IrType_size(type2);
 
-            if (vx_IrType_size(type) == vx_IrType_size(type2)) // dont use vx_IrType_compatible() here
+            if (typeSize != type2Size) { // dont use vx_IrType_compatible() here
+                printf("skipping (type size %zu vs %zu)\n", typeSize, type2Size);
                 continue;
+            }
 
             lifetime cmp_low = *lt;
             lifetime cmp_high = *lt2;
@@ -61,8 +68,9 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
                 cmp_high = *lt;
             }
 
-            if (cmp_low.last > cmp_high.first)
+            if (vx_IrOp_after(cmp_low.last, cmp_high.first)) {
                 continue;
+            }
 
             // it's okay if end0 = start1 
 
