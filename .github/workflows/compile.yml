@@ -12,8 +12,9 @@ jobs:
           chmod +x build.sh
           ./build.sh info
         shell: bash
-      - name: Analyze
+      - name: Try compile
         run: |
+          git submodule update --init
           chmod +x build.sh
-          ./build.sh analyze
+          ./build.sh
         shell: bash
