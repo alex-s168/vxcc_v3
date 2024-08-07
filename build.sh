@@ -3,7 +3,7 @@ set -e
 : ${CFLAGS:="-Wall -Wextra -Wno-unused -Wpedantic -Werror -std=c11"}
 : ${CC:="clang"}
 
-FILES="test.c ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86/*.c cg/x86_stupid/*.c"
+FILES="test.c ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c"
 
 # shellcheck disable=SC2086
 
