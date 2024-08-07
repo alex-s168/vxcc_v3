@@ -1,4 +1,4 @@
-name: Analyze code
+name: Static Analyze
 
 on: [push]
 
