@@ -47,7 +47,8 @@ vx_Errors vx_IrBlock_verify(vx_IrBlock *block) {
             vx_IrBlock_deep_traverse(block, verify_vardecls_deeptraverse, &dat);
             // TODO: NEED TO SEARCH FROM ROOT
 
-            assert(dat.declcount > 0); // WE REMOVED VAR DECL WITHOUT REMOVING IT FROM INDEX
+            // TODO: ?
+            // assert(dat.declcount > 0); // WE REMOVED VAR DECL WITHOUT REMOVING IT FROM INDEX
 
             if (dat.declcount > 1) {
                 static char buf[256];

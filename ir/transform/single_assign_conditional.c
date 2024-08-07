@@ -48,15 +48,16 @@
  * @param manipIn 
  */
 static vx_IrVar megic(vx_IrBlock *outer,
-                      vx_IrOp *orig_assign,
+                      vx_IrOp    *orig_assign,
                       vx_IrBlock *conditional,
-                      vx_IrOp *cond_op,
-                      vx_IrOp *ifOp,
-                      const vx_IrVar var,
+                      vx_IrOp    *cond_op,
+                      vx_IrOp    *ifOp,
+                      const vx_IrVar    var,
                       const vx_OptIrVar manipIn)
 {
     // stage 1
     const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
+    printf("var: %zu\nmanipulate: %zu\n", var, manipulate);
     {
         vx_IrOp *oldstart = outer->first;
         outer->first = orig_assign->next;

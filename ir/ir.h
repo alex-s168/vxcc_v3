@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 
 #ifndef VX_BASE_TYPES
@@ -39,6 +40,15 @@ typedef struct {
 
 #define VX_IRVAR_OPT_NONE (vx_OptIrVar) {.present = false,.var = 0}
 #define VX_IRVAR_OPT_SOME(v) (vx_OptIrVar) {.present = true,.var = v}
+
+static const char * vx_OptIrVar_debug(vx_OptIrVar var) {
+    if (var.present) {
+        static char c[8];
+        sprintf(c, "%zu", var.var);
+        return c;
+    }
+    return "none";
+}
 
 typedef struct vx_IrType_s vx_IrType;
 

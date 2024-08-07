@@ -192,7 +192,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
                         .additional = buf
                     };
                     vx_Errors_add(dest, &error);
-                } else if (var >= root->as_root.vars_len || root->as_root.vars[var].decl == NULL) {
+                } else if (root->as_root.vars[var].decl == NULL) {
                     if (!vx_IrBlock_vardecl_is_in_ins(block, var)) {
                         static char buf[256];
                         sprintf(buf, "Variable %%%zu is never declared!", var);

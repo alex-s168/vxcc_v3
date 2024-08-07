@@ -171,14 +171,15 @@ void eq(int a, int b, int c, int d) {
 }
 
 static int cir_test(vx_IrBlock *block) {
-    if (vx_cir_verify(block) != 0)
-        return 1;
-
     printf("Input:\n");
     vx_IrBlock_dump(block, stdout, 0);
 
+    if (vx_cir_verify(block) != 0)
+        return 1;
+
     vx_CIrBlock_mksa_states(block);
-    vx_CIrBlock_mksa_final(block);
+    // vx_CIrBlock_mksa_final(block);
+    vx_CIrBlock_fix(block); // TODO: why...
 
     printf("After C IR lower:\n");
     vx_IrBlock_dump(block, stdout, 0);

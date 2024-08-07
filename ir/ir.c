@@ -1,4 +1,5 @@
 #include "ir.h"
+#include "cir.h"
 #include "llir.h"
 
 #include <assert.h>
@@ -26,6 +27,37 @@ void vx_IrBlock_llir_compact(vx_IrBlock *root) {
                 vx_IrBlock_rename_var(root, after, after - 1);
             }
         }
+    }
+}
+
+typedef struct {
+    vx_IrVar var;
+    vx_IrOp* decl;
+} vx_CIrBlock_fix_state;
+
+bool vx_CIrBlock_fix_iter(vx_IrOp* op, void* param) {
+    vx_CIrBlock_fix_state* state = param;
+
+    for (size_t i = 0; i < op->outs_len; i ++) {
+        if (op->outs[i].var == state->var) {
+            state->decl = op;
+            return true;
+        }
+    }
+    return false;
+}
+
+void vx_CIrBlock_fix(vx_IrBlock *root) {
+    assert(root->is_root);
+
+    for (vx_IrVar var = 0; var < root->as_root.vars_len; var ++) {
+        vx_CIrBlock_fix_state state;
+        state.var = var;
+        state.decl = NULL;
+
+        vx_IrBlock_deep_traverse(root, vx_CIrBlock_fix_iter, &state);
+
+        root->as_root.vars[var].decl = state.decl;
     }
 }
 
