@@ -69,6 +69,7 @@ typedef struct {
     size_t size;
     size_t align;
     size_t pad;
+    bool   isfloat;
 } vx_IrTypeBase;
 
 typedef struct {
