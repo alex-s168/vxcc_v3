@@ -1,1 +1,1 @@
-http://vxcc.dev/
+http://vxcc.vxcc.dev/

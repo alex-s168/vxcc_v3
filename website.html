@@ -133,26 +133,62 @@ return %13</pre></td>
   i32 %13 = cmov cond=1 then=1 else=%19;
 return %13</pre></td>
                 <td><h3>After LL IR lower prepare</h3><pre>BLOCK
-  i32 %9 = cmov cond=1 then=2 else=2;
-  i32 %6 = cmov cond=1 then=1 else=%9;
-return %6</pre></td>
+  i32 %13 = imm val=2;
+  i32 %13 = cmov cond=1 then=2;
+  i32 %13 = imm val=%13;
+  i32 %13 = cmov cond=1 then=1;
+return %13</pre></td>
             </tr>
             <tr>
-                <td><h3>CG variable placement</h3><pre>%9 - r10d
-%6 - r11d</pre></td>
-                <td><h3>CG</h3><pre>mov al, 1
+                <td><h3>CG variable placement</h3><pre>%13 - r10d</pre></td>
+                <td><h3>CG</h3><pre>mov r10d, 2
+mov al, 1
 test al, al
-mov r10d, 2
 cmovz r10d, 2
 mov al, 1
 test al, al
-mov r11d, r10d
-cmovz r11d, 1
+cmovz r10d, 1
+mov eax, r10d
 ret</pre></td>
             </tr>
         </table>
 
         <p>The compiler can optimize the if away completly, but I disabled that optimization to show off other parts of the compiler</p>
+
+    <h3>Other Examples</h3>
+    <hr />
+    <table>
+        <tr>
+            <td>
+                <pre>BLOCK i32 %0, i32 %1, i32 %2, i32 %3
+  if cond=(){
+    i8 %4 = eq a=%0 b=%1;
+    i8 %5 = eq a=%2 b=%3;
+    i8 %6 = and a=%4 b=%5;
+    ^ %6
+  } then=(){
+    call addr=#call;
+  } else=(){
+    call addr=#call2;
+  };
+return</pre>
+            </td>
+            <td>
+                <pre>cmp edi, esi
+sete r10b
+cmp edx, ecx
+sete r10b
+and r10b, r10b
+test r10b, r10b
+jz call
+jmp call2
+.l0:
+.l1:
+ret</pre>
+                <p>(It doesn't remove the ret currently; in the future the return will be a LLIR instruction which can be optimized away.)</p>
+            </td>
+        </tr>
+    </table>
 
 	<h3>Implemented Passes</h3>
 	<hr />
@@ -335,20 +371,36 @@ return</pre>
                 <p>This pass might get extended in the future when a target gets added
                 that supports conditional calls. Most targets however, only support conditional tail calls.</p>
             </td>
+            <td>
+                <h3>CMOV lowering</h3>
+                <p>Converts CMOVs with then-else to CMOVs with only a then and insert a move infront of it</p>
+            </td>
+        </tr>
+        <tr>
 			<td>
 				<h3>Lifetime Combination</h3>
 				<p>Merge variables with non-overlapping* lifetimes and the same type</p>
 				<p>This is a preparation step for register &amp; stack allocation</p>
 				<p>*it is okay if lifetime A ends at the same OP where lifetime B start</p>
 			</td>
+            <td>
+                <h3>Binary Operand Switching</h3>
+                <p>For applicable binary operations: Switch both operands so that the output var is the same as the var of the operator A (if possible)</p>
+                <p>This is useful for architectures like x86 where O = O + B</p>
+            </td>
+            <td>
+                <h3>Code Generation</h3>
+                <p>Different for every architecture!</p>
+                <p>1. allocate variables into registers and stack by sorting them by heat and consider argument registers</p>
+                <p>2. emit almost 1:1 code for every instruction</p>
+                <p>Current supported architecutres: x86 (with SystemV AMD64 calling convention)</p>
+            </td>
 		</tr>
 	</table>
 
         <h3>Current Status</h3>
         <hr />
         <p>Loop lowering: missing</p>
-        <p>Register and Stack allocator: missing</p>
-        <p>Codegen: missing</p>
     </body>
 </html>
 
