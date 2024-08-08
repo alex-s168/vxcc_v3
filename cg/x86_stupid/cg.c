@@ -1257,6 +1257,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         VarData vd = varData[block->outs[0]];
         Location* src = vd.location;
         
+        assert(vd.type != NULL);
+
         char reg = REG_RAX.id;
         if (vd.type->kind == VX_IR_TYPE_KIND_BASE && vd.type->base.isfloat)
             reg = REG_XMM0.id;
@@ -1269,11 +1271,13 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         VarData vd = varData[block->outs[1]];
         Location* src = vd.location;
         
+        assert(vd.type != NULL);
+
         char reg = REG_RDX.id;
         if (vd.type->kind == VX_IR_TYPE_KIND_BASE && vd.type->base.isfloat)
             reg = REG_XMM1.id;
 
-        Location* dest = gen_reg_var(src->bytesWidth, REG_RDX.id);
+        Location* dest = gen_reg_var(src->bytesWidth, reg);
         emiti_move(src, dest, false, out);
     }
 
