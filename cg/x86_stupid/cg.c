@@ -933,7 +933,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
                 Location* loc = as_loc(1, cond);
                 emiti_cmp0(loc, file);
-                emiti_jump_cond(as_loc(8, id), "z", file);
+                emiti_jump_cond(as_loc(8, id), "nz", file);
             } break;
 
         case VX_IR_OP_CONDTAILCALL:  // "addr": int / fnref, "cond": bool
@@ -943,7 +943,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 Location* loc = as_loc(1, cond);
                 emiti_cmp0(loc, file);
                 emit_call_arg_load(op, file);
-                emiti_jump_cond(as_loc(8, addr), "z", file);
+                emiti_jump_cond(as_loc(8, addr), "nz", file);
             } break;
 
         case VX_IR_OP_CMOV:          // "cond": ()->bool, "then": value, "else": value
@@ -951,7 +951,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
                 Location* loc = as_loc(1, cond);
                 emiti_cmp0(loc, file);
-                emit_condmove(op, "z", file);
+                emit_condmove(op, "nz", file);
             } break;
 
         case VX_LIR_OP_LABEL:        // "id"
