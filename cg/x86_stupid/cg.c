@@ -415,6 +415,10 @@ static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) 
         }
     }
 
+    if (src->type == LOC_REG && dest->type == LOC_REG && src->v.reg.id == dest->v.reg.id) {
+        return;
+    }
+
     if (src->bytesWidth > dest->bytesWidth) {
         Location* new = loc_opt_copy(src);
         new->bytesWidth = dest->bytesWidth;
@@ -711,7 +715,6 @@ static void emiti_flt_to_int(Location* src, Location* dest, FILE* file) {
     end_as_dest_reg(dest_v, dest, file);
 }
 
-
 static void emiti_int_to_flt(Location* src, Location* dest, FILE* file) {
     Location* dest_v = start_as_dest_reg(dest, file);
     Location* src_v = start_as_size(dest->bytesWidth, src, file);
@@ -733,6 +736,25 @@ static void emiti_int_to_flt(Location* src, Location* dest, FILE* file) {
 
     end_as_size(src_v, src, file);
     end_as_dest_reg(dest_v, dest, file);
+}
+
+static void emiti_bittest(Location* val, Location* idx, FILE* file) {
+    if (val->bytesWidth == 1) {
+        Location* valv = start_as_size(2, val, file);
+        emiti_bittest(valv, idx, file);
+        end_as_size(valv, val, file);
+        return;
+    }
+
+    Location* idxv = start_as_primitive(idx, file);
+
+    fputs("bt ", file);
+    emit(val, file);
+    fputs(", ", file);
+    emit(idx, file);
+    fputc('\n', file);
+
+    end_as_primitive(idxv, idx, file);
 }
 
 static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file) {
@@ -871,29 +893,42 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
         case VX_IR_OP_SLTE: // "a", "b"
         case VX_IR_OP_EQ:  // "a", "b"
         case VX_IR_OP_NEQ: // "a", "b"
+        case VX_IR_OP_BITEXTRACT: // "idx", "val"
             {
                 vx_IrVar ov = op->outs[0].var;
                 Location* o = varData[ov].location;
                 assert(o);
-                Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
-                Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
-
-                emiti_cmp(a, b, file);
 
                 const char *cc;
-                switch (op->id) {
-                case VX_IR_OP_UGT: cc = "a"; break;
-                case VX_IR_OP_ULT: cc = "b"; break;
-                case VX_IR_OP_UGTE: cc = "ae"; break;
-                case VX_IR_OP_ULTE: cc = "be"; break;
-                case VX_IR_OP_SGT: cc = "g"; break;
-                case VX_IR_OP_SLT: cc = "l"; break;
-                case VX_IR_OP_SGTE: cc = "ge"; break;
-                case VX_IR_OP_SLTE: cc = "le"; break;
-                case VX_IR_OP_EQ: cc = "e"; break;
-                case VX_IR_OP_NEQ: cc = "ne"; break;
 
-                default: assert(false); break;
+                if (op->id == VX_IR_OP_BITEXTRACT) {
+                    Location* idx = as_loc(1, *vx_IrOp_param(op, VX_IR_NAME_IDX));
+                    Location* val = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
+
+                    emiti_bittest(val, idx, file);
+
+                    cc = "nz";
+                }
+                else {
+                    Location* a = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+                    Location* b = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+
+                    emiti_cmp(a, b, file);
+
+                    switch (op->id) {
+                    case VX_IR_OP_UGT: cc = "a"; break;
+                    case VX_IR_OP_ULT: cc = "b"; break;
+                    case VX_IR_OP_UGTE: cc = "ae"; break;
+                    case VX_IR_OP_ULTE: cc = "be"; break;
+                    case VX_IR_OP_SGT: cc = "g"; break;
+                    case VX_IR_OP_SLT: cc = "l"; break;
+                    case VX_IR_OP_SGTE: cc = "ge"; break;
+                    case VX_IR_OP_SLTE: cc = "le"; break;
+                    case VX_IR_OP_EQ: cc = "e"; break;
+                    case VX_IR_OP_NEQ: cc = "ne"; break;
+
+                    default: assert(false); break;
+                    }
                 }
 
                 if (!(op->next && vx_IrOp_var_used(op->next, ov) && (op->next->id == VX_IR_OP_CMOV || op->next->id == VX_IR_OP_CONDTAILCALL || op->next->id == VX_LIR_COND))) {
@@ -1004,6 +1039,20 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     assert(block->is_root);
 
+    bool is_leaf = vx_IrBlock_ll_isleaf(block);
+    bool use_rax = is_leaf &&
+                   block->outs_len > 0 &&
+                   !block->as_root.vars[block->outs[0]].ever_placed;
+    vx_IrType* use_rax_type = NULL;
+    if (use_rax) {
+        use_rax_type = vx_IrBlock_typeof_var(block, block->outs[0]);
+        assert(use_rax_type);
+        if (vx_IrType_size(use_rax_type) > 8) {
+            use_rax = false;
+            use_rax_type = NULL;
+        }
+    }
+
     bool anyPlaced = false;
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         if (block->as_root.vars[var].ever_placed) {
@@ -1016,10 +1065,15 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     // calle cleanup : RBX, R12, R13, R14, R15
 
     size_t availableRegistersCount = 2;
+    if (is_leaf && !use_rax) {
+        availableRegistersCount = 3;
+    }
     char * availableRegisters = fastalloc(availableRegistersCount);
     availableRegisters[0] = REG_R10.id;
     availableRegisters[1] = REG_R11.id;
-
+    if (is_leaf && !use_rax) {
+        availableRegisters[2] = REG_RAX.id;
+    }
 
     size_t anyIntArgsCount = block->ins_len;
     size_t anyCalledIntArgsCount = 0;
@@ -1121,6 +1175,9 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         size_t varsHotFirstLen = 0;
 
         char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
+        if (use_rax) {
+            varsSorted[block->outs[0]] = true;
+        }
         for (size_t i = anyCalledIntArgsCount; i < block->ins_len; i ++) {
             vx_IrVar var = block->ins[i].var;
             varsSorted[var] = true;
@@ -1139,6 +1196,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
         size_t varId = 0;
         for (size_t i = 0; i < availableRegistersCount; i ++) {
+            char reg = availableRegisters[i];
+
             if (varId >= varsHotFirstLen) break;
 
             for (; varId < varsHotFirstLen; varId ++) {
@@ -1153,10 +1212,16 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                 if (block->as_root.vars[var].ever_placed) continue; 
 
                 size = widthToWidthWidth(size);
-                varData[var].location = gen_reg_var(size, availableRegisters[i]);
+                varData[var].location = gen_reg_var(size, reg);
                 break;
             }
             varId ++;
+        }
+
+        if (use_rax) {
+            size_t size = vx_IrType_size(use_rax_type);
+            size = widthToWidthWidth(size);
+            varData[block->outs[0]].location = gen_reg_var(size, REG_RAX.id);
         }
 
         char intArgRegs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
@@ -1373,19 +1438,20 @@ static Location* start_as_size(size_t size, Location* loc, FILE* out) {
         return loc;
     }
 
-    if (loc->type == LOC_REG || loc->type == LOC_IMM || loc->type == LOC_EA) {
+    if ((loc->type == LOC_REG && loc->bytesWidth > size) || loc->type == LOC_IMM || loc->type == LOC_EA) {
         Location* copy = loc_opt_copy(loc);
         copy->bytesWidth = size;
         return copy;
     }
 
-    Location* prim = start_as_primitive(loc, out);
+    Location* prim = start_scratch_reg(size, out);
+    emiti_move(prim, loc, false, out);
 
     return prim;
 }
 
 static void end_as_size(Location* as_size, Location* old, FILE* out) {
     if (as_size->type == LOC_REG && old->type != LOC_REG) {
-        end_as_primitive(as_size, old, out);
+        end_scratch_reg(as_size, out);
     }
 }

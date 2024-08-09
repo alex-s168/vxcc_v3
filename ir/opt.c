@@ -22,6 +22,7 @@ static void opt_pre(vx_IrBlock *block) {
         vx_opt_inline_vars(block);
     }
 
+    vx_opt_simple_patterns(block);
     vx_opt_comparisions(block);
 }
 

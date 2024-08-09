@@ -129,6 +129,13 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_FOR:
         case VX_IR_OP_LOAD:
         case VX_IR_OP_CMOV:
+        case VX_IR_OP_BITMASK:
+        case VX_IR_OP_BITEXTRACT:
+        case VX_IR_OP_BITPOPCNT: 
+        case VX_IR_OP_BITTZCNT:
+        case VX_IR_OP_BITLZCNT:
+        case VX_IR_OP_EA:
+        case VX_IR_OP_NEG:
             return false;
 
         case VX_IR_OP_BREAK:
@@ -154,6 +161,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_WHILE:
         case VX_IR_OP_FOREACH:
         case VX_IR_OP_FOREACH_UNTIL:
+        case VX_IR_OP_VSCALE:
             for (size_t i = 0; i < op->params_len; i ++)
                 if (op->params[i].val.type == VX_IR_VAL_BLOCK)
                     if (vx_IrBlock_is_volatile(op->params[i].val.block))
@@ -269,6 +277,14 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_CALL] = 1,
     [VX_IR_OP_TAILCALL] = 1,
     [VX_IR_OP_CONDTAILCALL] = 1,
+    [VX_IR_OP_VSCALE] = 0,
+    [VX_IR_OP_BITMASK] = 1,
+    [VX_IR_OP_BITEXTRACT] = 1,
+    [VX_IR_OP_BITPOPCNT] = 1, 
+    [VX_IR_OP_BITTZCNT] = 1,
+    [VX_IR_OP_BITLZCNT] = 1,
+    [VX_IR_OP_EA] = 1,
+    [VX_IR_OP_NEG] = 1,
 };
 
 size_t vx_IrOp_inline_cost(vx_IrOp *op) {
@@ -304,5 +320,21 @@ static bool is_tail__rec(vx_IrBlock *block, vx_IrOp *op) {
 
 bool vx_IrOp_is_tail(vx_IrOp *op) {
     return is_tail__rec(op->parent, op);
+}
+
+bool vx_IrBlock_ll_isleaf(vx_IrBlock* block) {
+    for (vx_IrOp* op = block->first; op; op = op->next) {
+        switch (op->id) {
+            case VX_IR_OP_CALL:
+            case VX_IR_OP_CONDTAILCALL:
+            case VX_IR_OP_TAILCALL:
+                return false;
+
+            default:
+                break;
+        }
+    }
+
+    return true;
 }
 

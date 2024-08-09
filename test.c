@@ -171,6 +171,35 @@ void eq(int a, int b, int c, int d) {
     return block;
 }
 
+static vx_IrBlock* build_test_bit(void) {
+    vx_IrBlock* block = vx_IrBlock_init_heap(NULL, NULL);
+
+    vx_IrVar a = 0, b = 1, o = 2, mask = 3;
+
+    vx_IrBlock_add_in(block, a, ty_int);
+    vx_IrBlock_add_in(block, b, ty_int);
+    vx_IrBlock_add_out(block, o);
+
+    {
+        vx_IrOp* shift = vx_IrBlock_add_op_building(block);
+        vx_IrOp_init(shift, VX_IR_OP_SHL, block);
+        vx_IrOp_add_param_s(shift, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 1});
+        vx_IrOp_add_param_s(shift, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = b});
+        vx_IrOp_add_out(shift, mask, ty_bool);
+    }
+
+    {
+        vx_IrOp* and = vx_IrBlock_add_op_building(block);
+        vx_IrOp_init(and, VX_IR_OP_AND, block);
+        vx_IrOp_add_param_s(and, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = a});
+        vx_IrOp_add_param_s(and, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = mask});
+        vx_IrOp_add_out(and, o, ty_bool);
+    }
+
+    vx_IrBlock_make_root(block, 4);
+    return block;
+}
+
 static int cir_test(vx_IrBlock *block) {
     printf("Input:\n");
     vx_IrBlock_dump(block, stdout, 0);
@@ -200,13 +229,6 @@ static int cir_test(vx_IrBlock *block) {
 
     printf("After SSA IR lower:\n");
     vx_IrBlock_dump(block, stdout, 0);
-
-    /*
-    vx_x86cg_prepare(block);
-
-    printf("After CG prepare:\n");
-    vx_IrBlock_dump(block, stdout, 0);
-    */
 
     vx_IrBlock_llir_fix_decl(block);
     opt_ll(block);
@@ -247,6 +269,9 @@ int main(void) {
 
     printf("==== CMOV TEST ====\n");
     cir_test(build_test_cmov());
+
+    printf("===== BIT TEST ====\n");
+    cir_test(build_test_bit());
 
     return 0;
 }
