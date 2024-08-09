@@ -23,7 +23,7 @@ void vx_opt_loop_simplify(vx_IrBlock *block)
         }
 
         // if it is a less than, we can do a repeat
-        if (cond->first && cond->first->id == VX_IR_OP_LT) {
+        if (cond->first && (cond->first->id == VX_IR_OP_ULT || cond->first->id == VX_IR_OP_SLT)) {
             const vx_IrValue *a = vx_IrOp_param(cond->first, VX_IR_NAME_OPERAND_A);
             // require it to be the counter
             if (a->type != VX_IR_VAL_VAR)

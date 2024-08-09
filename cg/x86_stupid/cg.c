@@ -636,17 +636,12 @@ static void emit_call_arg_load(vx_IrOp* callOp, FILE* file) {
     assert(callOp->args_len <= 6);
 
     vx_IrValue fn = *vx_IrOp_param(callOp, VX_IR_NAME_ADDR);
-    
-    vx_IrTypeFunc fnType;
-    if (fn.type == VX_IR_VAL_VAR) {
-        fnType = varData[fn.var].type->func;
-    }
-    else if (fn.type == VX_IR_VAL_BLOCKREF) {
-        fnType = vx_IrBlock_type(fn.block).ptr->func;
-    }
-    else {
-        assert(false);
-    }
+
+    vx_IrTypeRef type = vx_IrValue_type(callOp->parent, fn);
+    assert(type.ptr);
+    assert(type.ptr->kind == VX_IR_TYPE_FUNC);
+    vx_IrTypeFunc fnType = type.ptr->func;
+    vx_IrTypeRef_drop(type);
 
     char regs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
 
@@ -740,7 +735,7 @@ static void emiti_int_to_flt(Location* src, Location* dest, FILE* file) {
     end_as_dest_reg(dest_v, dest, file);
 }
 
-static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
+static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file) {
     switch (op->id) {
         case VX_IR_OP_FROMFLT: // "val" 
             {
@@ -792,13 +787,15 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
             {
                 vx_IrValue addrV = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 vx_IrValue valV = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
-                // TODO: stop imm inliner from inlining val and make it move in var if in var in input
-                assert(valV.type == VX_IR_VAL_VAR);
+                vx_IrTypeRef type = vx_IrValue_type(block, valV);
+                assert(type.ptr);
 
-                Location* addr = as_loc(8, addrV);
-                Location* val = varData[valV.var].location;
+                Location* addr = as_loc(PTRSIZE, addrV);
+                Location* val = as_loc(vx_IrType_size(type.ptr), valV);
                 Location* mem = gen_mem_var(val->bytesWidth, addr);
                 emiti_move(val, mem, false, file);
+
+                vx_IrTypeRef_drop(type);
             } break;
 
         case VX_IR_OP_PLACE:           // "var"
@@ -820,7 +817,8 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
         case VX_IR_OP_SUB: // "a", "b"
         case VX_IR_OP_MOD: // "a", "b"
         case VX_IR_OP_MUL: // "a", "b"
-        case VX_IR_OP_DIV: // "a", "b"
+        case VX_IR_OP_UDIV: // "a", "b"
+        case VX_IR_OP_SDIV: // "a", "b"
         case VX_IR_OP_AND: // "a", "b"
         case VX_IR_OP_BITWISE_AND: // "a", "b"
         case VX_IR_OP_OR:  // "a", "b"
@@ -838,8 +836,9 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 case VX_IR_OP_ADD: bin = "add"; break;
                 case VX_IR_OP_SUB: bin = "sub"; break;
                 case VX_IR_OP_MOD: bin = "mod"; break;
-                case VX_IR_OP_MUL: bin = "mul"; break; // TODO: imul?
-                case VX_IR_OP_DIV: bin = "div"; break; // TODO: idiv?
+                case VX_IR_OP_MUL: bin = "imul"; break;
+                case VX_IR_OP_UDIV: bin = "div"; break;
+                case VX_IR_OP_SDIV: bin = "idiv"; break;
                 case VX_IR_OP_AND: 
                 case VX_IR_OP_BITWISE_AND: bin = "and"; break;
                 case VX_IR_OP_OR:
@@ -862,11 +861,14 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 emiti_unary(v, o, "not", file);
             } break;
 
-        // TODO signed variants 
-        case VX_IR_OP_GT:  // "a", "b"
-        case VX_IR_OP_GTE: // "a", "b"
-        case VX_IR_OP_LT:  // "a", "b"
-        case VX_IR_OP_LTE: // "a", "b"
+        case VX_IR_OP_UGT:  // "a", "b"
+        case VX_IR_OP_UGTE: // "a", "b"
+        case VX_IR_OP_ULT:  // "a", "b"
+        case VX_IR_OP_ULTE: // "a", "b"
+        case VX_IR_OP_SGT:  // "a", "b"
+        case VX_IR_OP_SGTE: // "a", "b"
+        case VX_IR_OP_SLT:  // "a", "b"
+        case VX_IR_OP_SLTE: // "a", "b"
         case VX_IR_OP_EQ:  // "a", "b"
         case VX_IR_OP_NEQ: // "a", "b"
             {
@@ -880,10 +882,14 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
 
                 const char *cc;
                 switch (op->id) {
-                case VX_IR_OP_GT: cc = "a"; break;
-                case VX_IR_OP_LT: cc = "b"; break;
-                case VX_IR_OP_GTE: cc = "ae"; break;
-                case VX_IR_OP_LTE: cc = "le"; break;
+                case VX_IR_OP_UGT: cc = "a"; break;
+                case VX_IR_OP_ULT: cc = "b"; break;
+                case VX_IR_OP_UGTE: cc = "ae"; break;
+                case VX_IR_OP_ULTE: cc = "be"; break;
+                case VX_IR_OP_SGT: cc = "g"; break;
+                case VX_IR_OP_SLT: cc = "l"; break;
+                case VX_IR_OP_SGTE: cc = "ge"; break;
+                case VX_IR_OP_SLTE: cc = "le"; break;
                 case VX_IR_OP_EQ: cc = "e"; break;
                 case VX_IR_OP_NEQ: cc = "ne"; break;
 
@@ -974,7 +980,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 emit_call_ret_store(op, file);
             } break;
 
-        case VX_IR_OP_TAILCALL:      // "addr": int / fnre  // TODO: stop inliner from inline addr because need fn type 
+        case VX_IR_OP_TAILCALL:      // "addr": int / fnref
             {
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 emit_call_arg_load(op, file);
@@ -1248,7 +1254,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     vx_IrOp* prev = NULL;
 
     while (op != NULL) {
-        vx_IrOp* new = emiti(prev, op, out);
+        vx_IrOp* new = emiti(block, prev, op, out);
         prev = op;
         op = new;
     }

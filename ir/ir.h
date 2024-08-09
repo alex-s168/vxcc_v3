@@ -190,6 +190,8 @@ typedef struct {
         VX_IR_VAL_ID,
     } type;
 
+    vx_IrType* no_read_rt_type;
+
     union {
         long long imm_int;
         double imm_flt;
@@ -318,17 +320,22 @@ typedef enum {
     VX_IR_OP_PLACE,           // "var"
     
     // arithm
-    VX_IR_OP_ADD, // "a", "b"
-    VX_IR_OP_SUB, // "a", "b"
-    VX_IR_OP_MUL, // "a", "b"
-    VX_IR_OP_DIV, // "a", "b"
-    VX_IR_OP_MOD, // "a", "b"
+    VX_IR_OP_ADD,  // "a", "b"
+    VX_IR_OP_SUB,  // "a", "b"
+    VX_IR_OP_MUL,  // "a", "b"
+    VX_IR_OP_UDIV, // "a", "b"
+    VX_IR_OP_SDIV, // "a", "b"
+    VX_IR_OP_MOD,  // "a", "b"
 
     // compare
-    VX_IR_OP_GT,  // "a", "b"
-    VX_IR_OP_GTE, // "a", "b"
-    VX_IR_OP_LT,  // "a", "b"
-    VX_IR_OP_LTE, // "a", "b"
+    VX_IR_OP_UGT,  // "a", "b"
+    VX_IR_OP_UGTE, // "a", "b"
+    VX_IR_OP_ULT,  // "a", "b"
+    VX_IR_OP_ULTE, // "a", "b"
+    VX_IR_OP_SGT,  // "a", "b"
+    VX_IR_OP_SGTE, // "a", "b"
+    VX_IR_OP_SLT,  // "a", "b"
+    VX_IR_OP_SLTE, // "a", "b"
     VX_IR_OP_EQ,  // "a", "b"
     VX_IR_OP_NEQ, // "a", "b"
 
@@ -463,5 +470,17 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block);
 
 // null if depends on context or has no type 
 vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value);
+
+static vx_IrTypeRef vx_ptrtype(vx_IrBlock* root) {
+    vx_IrType* type = vx_IrType_heap();
+    type->kind = VX_IR_TYPE_KIND_BASE;
+    type->debugName = "ptr";
+    type->base.pad = 0;
+    type->base.size = PTRSIZE;
+    type->base.align = 0;
+    type->base.isfloat = false;
+    type->base.sizeless = false;
+    return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
+}
 
 #endif //IR_H

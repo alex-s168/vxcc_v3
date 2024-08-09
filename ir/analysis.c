@@ -105,12 +105,17 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_ADD:
         case VX_IR_OP_SUB:
         case VX_IR_OP_MUL:
-        case VX_IR_OP_DIV:
+        case VX_IR_OP_UDIV:
+        case VX_IR_OP_SDIV:
         case VX_IR_OP_MOD:
-        case VX_IR_OP_GT:
-        case VX_IR_OP_GTE:
-        case VX_IR_OP_LT:
-        case VX_IR_OP_LTE:
+        case VX_IR_OP_UGT:
+        case VX_IR_OP_UGTE:
+        case VX_IR_OP_ULT:
+        case VX_IR_OP_ULTE:
+        case VX_IR_OP_SGT:
+        case VX_IR_OP_SGTE:
+        case VX_IR_OP_SLT:
+        case VX_IR_OP_SLTE:
         case VX_IR_OP_EQ:
         case VX_IR_OP_NEQ:
         case VX_IR_OP_NOT:
@@ -218,7 +223,7 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_SIGNEXT] = 1,
     [VX_IR_OP_TOFLT] = 1,
     [VX_IR_OP_FROMFLT] = 1,
-    [VX_IR_OP_BITCAST] = 1,
+    [VX_IR_OP_BITCAST] = 0,
     [VX_IR_OP_LOAD] = 1,
     [VX_IR_OP_LOAD_VOLATILE] = 1,
     [VX_IR_OP_STORE] = 1,
@@ -227,12 +232,17 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_ADD] = 1,
     [VX_IR_OP_SUB] = 1,
     [VX_IR_OP_MUL] = 1,
-    [VX_IR_OP_DIV] = 1,
+    [VX_IR_OP_UDIV] = 1,
+    [VX_IR_OP_SDIV] = 1,
     [VX_IR_OP_MOD] = 1,
-    [VX_IR_OP_GT] = 1,
-    [VX_IR_OP_GTE] = 1,
-    [VX_IR_OP_LT] = 1,
-    [VX_IR_OP_LTE] = 1,
+    [VX_IR_OP_UGT] = 1,
+    [VX_IR_OP_UGTE] = 1,
+    [VX_IR_OP_ULT] = 1,
+    [VX_IR_OP_ULTE] = 1,
+    [VX_IR_OP_SGT] = 1,
+    [VX_IR_OP_SGTE] = 1,
+    [VX_IR_OP_SLT] = 1,
+    [VX_IR_OP_SLTE] = 1,
     [VX_IR_OP_EQ] = 1,
     [VX_IR_OP_NEQ] = 1,
     [VX_IR_OP_NOT] = 1,
