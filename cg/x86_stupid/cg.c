@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <assert.h>
 
+// TODO: use lea for mul sometimes 
+// TODO: mul / div by power of 2
+
 struct Location;
 
 typedef struct {
@@ -284,7 +287,7 @@ static Location* gen_stack_var(size_t varSize, size_t stackOffset) {
     Location* off = gen_imm_var(8, varSize + stackOffset);
     
     Location* ea = fastalloc(sizeof(Location));
-    *ea = LocEA(8, reg, off, NEGATIVE, 1);
+    *ea = LocEA(varSize, reg, off, NEGATIVE, 1);
 
     return gen_mem_var(varSize, ea);
 }
@@ -392,13 +395,42 @@ static void emiti_zero(Location* dest, FILE* out) {
     fputs(", 0\n", out);
 }
 
+static bool equal(Location* a, Location* b) {
+    if (a == NULL || b == NULL)
+        return false;
+
+    if (a == b)
+        return true;
+
+    if (a->type != b->type)
+        return false;
+
+    if (a->type == LOC_REG && a->v.reg.id == b->v.reg.id)
+        return true;
+
+    if (a->type == LOC_MEM && equal(a->v.mem.address, b->v.mem.address))
+        return true;
+
+    if (a->type == LOC_IMM && a->v.imm.bits == b->v.imm.bits)
+        return true;
+
+    if (a->type == LOC_EA &&
+            equal(a->v.ea.base, b->v.ea.base) &&
+            equal(a->v.ea.offset, b->v.ea.offset) && 
+            a->v.ea.offsetMul == b->v.ea.offsetMul &&
+            a->v.ea.offsetSign == b->v.ea.offsetSign)
+        return true;
+
+    return false;
+}
+
 static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) {
     if (src->type == LOC_IMM && src->v.imm.bits == 0) {
         emiti_zero(dest, out);
         return;
     }
 
-    if (src == dest) return;
+    if (equal(src, dest)) return;
 
     if (src->type == LOC_EA) {
         emiti_lea(src, dest, out);
@@ -413,10 +445,6 @@ static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) 
             end_scratch_reg(tmp, out);
             return;
         }
-    }
-
-    if (src->type == LOC_REG && dest->type == LOC_REG && src->v.reg.id == dest->v.reg.id) {
-        return;
     }
 
     if (src->bytesWidth > dest->bytesWidth) {
@@ -837,6 +865,28 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
         case VX_IR_OP_ADD: // "a", "b"
         case VX_IR_OP_SUB: // "a", "b"
+            {
+                Location* o = varData[op->outs[0].var].location;
+                assert(o);
+                Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+                Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+
+                if (!equal(o, a) && a->type == LOC_REG) {
+                    int sign = op->id == VX_IR_OP_ADD ? 1 : -1;
+
+                    Location* ea = fastalloc(sizeof(Location));
+
+                    Location* as = start_as_size(PTRSIZE, a, file);
+                    Location* bs = start_as_size(PTRSIZE, b, file);
+                    *ea = LocEA(o->bytesWidth, a, b, sign, 1);
+                    emiti_move(ea, o, false, file);
+                    end_as_size(bs, b, file);
+                    end_as_size(as, a, file);
+
+                    break;
+                }
+            } // no break 
+        
         case VX_IR_OP_MOD: // "a", "b"
         case VX_IR_OP_MUL: // "a", "b"
         case VX_IR_OP_UDIV: // "a", "b"
@@ -1438,7 +1488,7 @@ static Location* start_as_size(size_t size, Location* loc, FILE* out) {
         return loc;
     }
 
-    if ((loc->type == LOC_REG && loc->bytesWidth > size) || loc->type == LOC_IMM || loc->type == LOC_EA) {
+    if ((loc->type == LOC_REG && loc->bytesWidth > size) || loc->type == LOC_MEM || loc->type == LOC_IMM || loc->type == LOC_EA) {
         Location* copy = loc_opt_copy(loc);
         copy->bytesWidth = size;
         return copy;
@@ -1451,7 +1501,9 @@ static Location* start_as_size(size_t size, Location* loc, FILE* out) {
 }
 
 static void end_as_size(Location* as_size, Location* old, FILE* out) {
-    if (as_size->type == LOC_REG && old->type != LOC_REG) {
-        end_scratch_reg(as_size, out);
-    }
+    if (old->bytesWidth == as_size->bytesWidth) return;
+    if ((old ->type == LOC_REG && old->bytesWidth > as_size->bytesWidth) || old->type == LOC_MEM || old->type == LOC_IMM || old->type == LOC_EA) return;
+
+    assert(as_size->type == LOC_REG);
+    end_scratch_reg(as_size, out);
 }
