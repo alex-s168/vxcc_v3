@@ -83,8 +83,12 @@ vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
         case VX_IR_VAL_IMM_INT:
         case VX_IR_VAL_IMM_FLT:
         case VX_IR_VAL_UNINIT:
-        case VX_IR_VAL_TYPE:
+            return (vx_IrTypeRef) { .ptr = value.no_read_rt_type, .shouldFree = false };
+
         case VX_IR_VAL_ID:
+            return vx_ptrtype(root);
+
+        case VX_IR_VAL_TYPE:
         case VX_IR_VAL_BLOCK:
             return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
 

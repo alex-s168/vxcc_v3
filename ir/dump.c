@@ -20,13 +20,19 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_IR_OP_ADD] = "add",
     [VX_IR_OP_SUB] = "sub",
     [VX_IR_OP_MUL] = "mul",
-    [VX_IR_OP_DIV] = "div",
+    [VX_IR_OP_UDIV] = "udiv",
+    [VX_IR_OP_SDIV] = "sdiv",
     [VX_IR_OP_MOD] = "mod",
+    [VX_IR_OP_NEG] = "neg",
 
-    [VX_IR_OP_GT] = "gt",
-    [VX_IR_OP_GTE] = "gte",
-    [VX_IR_OP_LT] = "lt",
-    [VX_IR_OP_LTE] = "lte",
+    [VX_IR_OP_UGT] = "ugt",
+    [VX_IR_OP_UGTE] = "ugte",
+    [VX_IR_OP_ULT] = "ult",
+    [VX_IR_OP_ULTE] = "ulte",
+    [VX_IR_OP_SGT] = "sgt",
+    [VX_IR_OP_SGTE] = "sgte",
+    [VX_IR_OP_SLT] = "slt",
+    [VX_IR_OP_SLTE] = "slte",
     [VX_IR_OP_EQ] = "eq",
     [VX_IR_OP_NEQ] = "neq",
 
@@ -62,6 +68,14 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_IR_OP_CALL] = "call",
     [VX_IR_OP_TAILCALL] = "tail-call",
     [VX_IR_OP_CONDTAILCALL] = "cond-tail-call",
+
+    [VX_IR_OP_BITMASK] = "bit-mask",
+    [VX_IR_OP_BITEXTRACT] = "bit-extract",
+    [VX_IR_OP_BITPOPCNT] = "bit-popcnt", 
+    [VX_IR_OP_BITTZCNT] = "bit-tzcnt",
+    [VX_IR_OP_BITLZCNT] = "bit-lzcnt",
+    [VX_IR_OP_EA] = "ea",
+    [VX_IR_OP_VSCALE] = "vscale",
 };
 
 const char *vx_IrName_str[] = {
@@ -84,6 +98,8 @@ const char *vx_IrName_str[] = {
 
     [VX_IR_NAME_ALTERNATIVE_A] = "a",
     [VX_IR_NAME_ALTERNATIVE_B] = "b",
+
+    [VX_IR_NAME_IDX] = "idx",
 
     [VX_IR_NAME_ID] = "id",
 };

@@ -190,6 +190,8 @@ typedef struct {
         VX_IR_VAL_ID,
     } type;
 
+    vx_IrType* no_read_rt_type;
+
     union {
         long long imm_int;
         double imm_flt;
@@ -278,6 +280,8 @@ typedef enum {
     VX_IR_NAME_ALTERNATIVE_A,
     VX_IR_NAME_ALTERNATIVE_B,
 
+    VX_IR_NAME_IDX,
+
     VX_IR_NAME_ID,
 } vx_IrName;
 
@@ -296,7 +300,6 @@ static vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
 }
 void vx_IrNamedValue_destroy(vx_IrNamedValue v);
 
-// TODO: negate
 typedef enum {
     VX_IR_OP_IMM = 0,        // "val"
     VX_IR_OP_FLATTEN_PLEASE, // "block"
@@ -318,17 +321,24 @@ typedef enum {
     VX_IR_OP_PLACE,           // "var"
     
     // arithm
-    VX_IR_OP_ADD, // "a", "b"
-    VX_IR_OP_SUB, // "a", "b"
-    VX_IR_OP_MUL, // "a", "b"
-    VX_IR_OP_DIV, // "a", "b"
-    VX_IR_OP_MOD, // "a", "b"
+    VX_IR_OP_ADD,  // "a", "b"
+    VX_IR_OP_SUB,  // "a", "b"
+    VX_IR_OP_MUL,  // "a", "b"
+    VX_IR_OP_UDIV, // "a", "b"
+    VX_IR_OP_SDIV, // "a", "b"
+    VX_IR_OP_MOD,  // "a", "b"
+    VX_IR_OP_NEG,  // "val"
+    VX_IR_OP_EA,   // "base", "offset", "idx", "elsize"       base + offset + elsize * idx
 
     // compare
-    VX_IR_OP_GT,  // "a", "b"
-    VX_IR_OP_GTE, // "a", "b"
-    VX_IR_OP_LT,  // "a", "b"
-    VX_IR_OP_LTE, // "a", "b"
+    VX_IR_OP_UGT,  // "a", "b"
+    VX_IR_OP_UGTE, // "a", "b"
+    VX_IR_OP_ULT,  // "a", "b"
+    VX_IR_OP_ULTE, // "a", "b"
+    VX_IR_OP_SGT,  // "a", "b"
+    VX_IR_OP_SGTE, // "a", "b"
+    VX_IR_OP_SLT,  // "a", "b"
+    VX_IR_OP_SLTE, // "a", "b"
     VX_IR_OP_EQ,  // "a", "b"
     VX_IR_OP_NEQ, // "a", "b"
 
@@ -341,7 +351,14 @@ typedef enum {
     VX_IR_OP_BITWISE_NOT, // "val"
     VX_IR_OP_BITWISE_AND, // "a", "b"
     VX_IR_OP_BITIWSE_OR,  // "a", "b"
-    
+
+    // bit 
+    VX_IR_OP_BITMASK, // "idx"             1 << idx 
+    VX_IR_OP_BITEXTRACT, // "idx", "val"   val & (1 << idx)
+    VX_IR_OP_BITPOPCNT, // "val" 
+    VX_IR_OP_BITTZCNT, // "val" 
+    VX_IR_OP_BITLZCNT, // "val"
+
     // misc
     VX_IR_OP_SHL, // "a", "b"
     VX_IR_OP_SHR, // "a", "b"  // TODO: ASHR
@@ -371,7 +388,7 @@ typedef enum {
     VX_IR_OP_TAILCALL,      // "addr": int / fnref
     VX_IR_OP_CONDTAILCALL,  // "addr": int / fnref, "cond": bool
 
-    VX_IR_OP_VSCALE,        // "len": int, "elsize": int, "fn": (vscale)->Rets   -> Rets 
+    VX_IR_OP_VSCALE,        // "len": int, "fn": (vscale)->Rets   -> Rets 
 
     VX_IR_OP____END,
 } vx_IrOpType;
@@ -463,5 +480,19 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block);
 
 // null if depends on context or has no type 
 vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value);
+
+static vx_IrTypeRef vx_ptrtype(vx_IrBlock* root) {
+    vx_IrType* type = vx_IrType_heap();
+    type->kind = VX_IR_TYPE_KIND_BASE;
+    type->debugName = "ptr";
+    type->base.pad = 0;
+    type->base.size = PTRSIZE;
+    type->base.align = 0;
+    type->base.isfloat = false;
+    type->base.sizeless = false;
+    return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
+}
+
+bool vx_IrBlock_ll_isleaf(vx_IrBlock* block);
 
 #endif //IR_H

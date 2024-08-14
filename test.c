@@ -171,6 +171,130 @@ void eq(int a, int b, int c, int d) {
     return block;
 }
 
+static vx_IrBlock* build_test_bit(void) {
+    vx_IrBlock* block = vx_IrBlock_init_heap(NULL, NULL);
+
+    vx_IrVar a = 0, b = 1, o = 2, mask = 3;
+
+    vx_IrBlock_add_in(block, a, ty_int);
+    vx_IrBlock_add_in(block, b, ty_int);
+    vx_IrBlock_add_out(block, o);
+
+    {
+        vx_IrOp* shift = vx_IrBlock_add_op_building(block);
+        vx_IrOp_init(shift, VX_IR_OP_SHL, block);
+        vx_IrOp_add_param_s(shift, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 1});
+        vx_IrOp_add_param_s(shift, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = b});
+        vx_IrOp_add_out(shift, mask, ty_bool);
+    }
+
+    {
+        vx_IrOp* and = vx_IrBlock_add_op_building(block);
+        vx_IrOp_init(and, VX_IR_OP_AND, block);
+        vx_IrOp_add_param_s(and, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = a});
+        vx_IrOp_add_param_s(and, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = mask});
+        vx_IrOp_add_out(and, o, ty_bool);
+    }
+
+    vx_IrBlock_make_root(block, 4);
+    return block;
+}
+
+static vx_IrBlock* build_test_sum(void) {
+    vx_IrBlock* block = vx_IrBlock_init_heap(NULL, NULL);
+    vx_IrTypeRef ty_ptr = vx_ptrtype(block);
+
+    vx_IrVar arr = 0, len = 1, idx = 2, l0 = 3, sum = 4, l1 = 5, l2 = 6, l3 = 7, l4 = 8;
+
+    vx_IrBlock_add_in(block, arr, ty_ptr.ptr);
+    vx_IrBlock_add_in(block, len, ty_int);
+
+    {
+        vx_IrOp* assign = vx_IrBlock_add_op_building(block);
+        vx_IrOp_init(assign, VX_IR_OP_IMM, block);
+        vx_IrOp_add_out(assign, sum, ty_int);
+        vx_IrOp_add_param_s(assign, VX_IR_NAME_VALUE, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 0});
+    }
+
+    vx_IrOp* loop = vx_IrBlock_add_op_building(block);
+    vx_IrOp_init(loop, VX_CIR_OP_CFOR, block);
+
+    {
+        vx_IrBlock* start = vx_IrBlock_init_heap(block, loop);
+
+        vx_IrOp* assign = vx_IrBlock_add_op_building(start);
+        vx_IrOp_init(assign, VX_IR_OP_IMM, start);
+        vx_IrOp_add_out(assign, idx, ty_int);
+        vx_IrOp_add_param_s(assign, VX_IR_NAME_VALUE, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 0});
+
+        vx_IrOp_add_param_s(loop, VX_IR_NAME_LOOP_START, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = start});
+    }
+
+    {
+        vx_IrBlock* cond = vx_IrBlock_init_heap(block, loop);
+
+        vx_IrOp* cmp = vx_IrBlock_add_op_building(cond);
+        vx_IrOp_init(cmp, VX_IR_OP_ULT, cond);
+        vx_IrOp_add_out(cmp, l0, ty_bool);
+        vx_IrOp_add_param_s(cmp, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = idx});
+        vx_IrOp_add_param_s(cmp, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = len});
+
+        vx_IrBlock_add_out(cond, l0);
+
+        vx_IrOp_add_param_s(loop, VX_IR_NAME_COND, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = cond});
+    }
+
+    {
+        vx_IrBlock* end = vx_IrBlock_init_heap(block, loop);
+
+        vx_IrOp* inc = vx_IrBlock_add_op_building(end);
+        vx_IrOp_init(inc, VX_IR_OP_ADD, end);
+        vx_IrOp_add_out(inc, idx, ty_int);
+        vx_IrOp_add_param_s(inc, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = idx});
+        vx_IrOp_add_param_s(inc, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 1});
+
+        vx_IrOp_add_param_s(loop, VX_IR_NAME_LOOP_ENDEX, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = end});
+    }
+
+    {
+        vx_IrBlock* body = vx_IrBlock_init_heap(block, loop);
+
+        vx_IrOp* cast = vx_IrBlock_add_op_building(body);
+        vx_IrOp_init(cast, VX_IR_OP_ZEROEXT, body);
+        vx_IrOp_add_out(cast, l4, ty_ptr.ptr);
+        vx_IrOp_add_param_s(cast, VX_IR_NAME_VALUE, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = idx});
+
+        vx_IrOp* mul = vx_IrBlock_add_op_building(body);
+        vx_IrOp_init(mul, VX_IR_OP_MUL, body);
+        vx_IrOp_add_out(mul, l1, ty_ptr.ptr);
+        vx_IrOp_add_param_s(mul, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = l4});
+        vx_IrOp_add_param_s(mul, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_IMM_INT,.imm_int = 4}); // TODO: sizeof op 
+
+        vx_IrOp* add = vx_IrBlock_add_op_building(body);
+        vx_IrOp_init(add, VX_IR_OP_ADD, body);
+        vx_IrOp_add_out(add, l2, ty_ptr.ptr);
+        vx_IrOp_add_param_s(add, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = arr});
+        vx_IrOp_add_param_s(add, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = l1});
+
+        vx_IrOp* load = vx_IrBlock_add_op_building(body);
+        vx_IrOp_init(load, VX_IR_OP_LOAD, body);
+        vx_IrOp_add_out(load, l3, ty_int);
+        vx_IrOp_add_param_s(load, VX_IR_NAME_ADDR, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = l2});
+
+        vx_IrOp* inc = vx_IrBlock_add_op_building(body);
+        vx_IrOp_init(inc, VX_IR_OP_ADD, body);
+        vx_IrOp_add_out(inc, sum, ty_int);
+        vx_IrOp_add_param_s(inc, VX_IR_NAME_OPERAND_A, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = sum});
+        vx_IrOp_add_param_s(inc, VX_IR_NAME_OPERAND_B, (vx_IrValue) {.type = VX_IR_VAL_VAR,.var = l3});
+
+        vx_IrOp_add_param_s(loop, VX_IR_NAME_LOOP_DO, (vx_IrValue) {.type = VX_IR_VAL_BLOCK,.block = body});
+    }
+
+    vx_IrBlock_add_out(block, sum);
+    vx_IrBlock_make_root(block, 9);
+    return block;
+}
+
 static int cir_test(vx_IrBlock *block) {
     printf("Input:\n");
     vx_IrBlock_dump(block, stdout, 0);
@@ -179,6 +303,7 @@ static int cir_test(vx_IrBlock *block) {
         return 1;
 
     vx_CIrBlock_fix(block); // TODO: why...
+    vx_CIrBlock_normalize(block);
     vx_CIrBlock_mksa_states(block);
     vx_CIrBlock_mksa_final(block);
 
@@ -200,13 +325,6 @@ static int cir_test(vx_IrBlock *block) {
 
     printf("After SSA IR lower:\n");
     vx_IrBlock_dump(block, stdout, 0);
-
-    /*
-    vx_x86cg_prepare(block);
-
-    printf("After CG prepare:\n");
-    vx_IrBlock_dump(block, stdout, 0);
-    */
 
     vx_IrBlock_llir_fix_decl(block);
     opt_ll(block);
@@ -247,6 +365,12 @@ int main(void) {
 
     printf("==== CMOV TEST ====\n");
     cir_test(build_test_cmov());
+
+    printf("===== BIT TEST ====\n");
+    cir_test(build_test_bit());
+
+    printf("===== SUM TEST ====\n");
+    cir_test(build_test_sum());
 
     return 0;
 }

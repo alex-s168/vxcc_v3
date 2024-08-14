@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <assert.h>
 
+// TODO: use lea for mul sometimes 
+// TODO: mul / div by power of 2
+
 struct Location;
 
 typedef struct {
@@ -284,7 +287,7 @@ static Location* gen_stack_var(size_t varSize, size_t stackOffset) {
     Location* off = gen_imm_var(8, varSize + stackOffset);
     
     Location* ea = fastalloc(sizeof(Location));
-    *ea = LocEA(8, reg, off, NEGATIVE, 1);
+    *ea = LocEA(varSize, reg, off, NEGATIVE, 1);
 
     return gen_mem_var(varSize, ea);
 }
@@ -392,13 +395,42 @@ static void emiti_zero(Location* dest, FILE* out) {
     fputs(", 0\n", out);
 }
 
+static bool equal(Location* a, Location* b) {
+    if (a == NULL || b == NULL)
+        return false;
+
+    if (a == b)
+        return true;
+
+    if (a->type != b->type)
+        return false;
+
+    if (a->type == LOC_REG && a->v.reg.id == b->v.reg.id)
+        return true;
+
+    if (a->type == LOC_MEM && equal(a->v.mem.address, b->v.mem.address))
+        return true;
+
+    if (a->type == LOC_IMM && a->v.imm.bits == b->v.imm.bits)
+        return true;
+
+    if (a->type == LOC_EA &&
+            equal(a->v.ea.base, b->v.ea.base) &&
+            equal(a->v.ea.offset, b->v.ea.offset) && 
+            a->v.ea.offsetMul == b->v.ea.offsetMul &&
+            a->v.ea.offsetSign == b->v.ea.offsetSign)
+        return true;
+
+    return false;
+}
+
 static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) {
     if (src->type == LOC_IMM && src->v.imm.bits == 0) {
         emiti_zero(dest, out);
         return;
     }
 
-    if (src == dest) return;
+    if (equal(src, dest)) return;
 
     if (src->type == LOC_EA) {
         emiti_lea(src, dest, out);
@@ -636,17 +668,12 @@ static void emit_call_arg_load(vx_IrOp* callOp, FILE* file) {
     assert(callOp->args_len <= 6);
 
     vx_IrValue fn = *vx_IrOp_param(callOp, VX_IR_NAME_ADDR);
-    
-    vx_IrTypeFunc fnType;
-    if (fn.type == VX_IR_VAL_VAR) {
-        fnType = varData[fn.var].type->func;
-    }
-    else if (fn.type == VX_IR_VAL_BLOCKREF) {
-        fnType = vx_IrBlock_type(fn.block).ptr->func;
-    }
-    else {
-        assert(false);
-    }
+
+    vx_IrTypeRef type = vx_IrValue_type(callOp->parent, fn);
+    assert(type.ptr);
+    assert(type.ptr->kind == VX_IR_TYPE_FUNC);
+    vx_IrTypeFunc fnType = type.ptr->func;
+    vx_IrTypeRef_drop(type);
 
     char regs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
 
@@ -716,7 +743,6 @@ static void emiti_flt_to_int(Location* src, Location* dest, FILE* file) {
     end_as_dest_reg(dest_v, dest, file);
 }
 
-
 static void emiti_int_to_flt(Location* src, Location* dest, FILE* file) {
     Location* dest_v = start_as_dest_reg(dest, file);
     Location* src_v = start_as_size(dest->bytesWidth, src, file);
@@ -740,7 +766,26 @@ static void emiti_int_to_flt(Location* src, Location* dest, FILE* file) {
     end_as_dest_reg(dest_v, dest, file);
 }
 
-static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
+static void emiti_bittest(Location* val, Location* idx, FILE* file) {
+    if (val->bytesWidth == 1) {
+        Location* valv = start_as_size(2, val, file);
+        emiti_bittest(valv, idx, file);
+        end_as_size(valv, val, file);
+        return;
+    }
+
+    Location* idxv = start_as_primitive(idx, file);
+
+    fputs("bt ", file);
+    emit(val, file);
+    fputs(", ", file);
+    emit(idx, file);
+    fputc('\n', file);
+
+    end_as_primitive(idxv, idx, file);
+}
+
+static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file) {
     switch (op->id) {
         case VX_IR_OP_FROMFLT: // "val" 
             {
@@ -792,13 +837,15 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
             {
                 vx_IrValue addrV = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 vx_IrValue valV = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
-                // TODO: stop imm inliner from inlining val and make it move in var if in var in input
-                assert(valV.type == VX_IR_VAL_VAR);
+                vx_IrTypeRef type = vx_IrValue_type(block, valV);
+                assert(type.ptr);
 
-                Location* addr = as_loc(8, addrV);
-                Location* val = varData[valV.var].location;
+                Location* addr = as_loc(PTRSIZE, addrV);
+                Location* val = as_loc(vx_IrType_size(type.ptr), valV);
                 Location* mem = gen_mem_var(val->bytesWidth, addr);
                 emiti_move(val, mem, false, file);
+
+                vx_IrTypeRef_drop(type);
             } break;
 
         case VX_IR_OP_PLACE:           // "var"
@@ -818,9 +865,32 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
 
         case VX_IR_OP_ADD: // "a", "b"
         case VX_IR_OP_SUB: // "a", "b"
+            {
+                Location* o = varData[op->outs[0].var].location;
+                assert(o);
+                Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+                Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+
+                if (!equal(o, a) && a->type == LOC_REG) {
+                    int sign = op->id == VX_IR_OP_ADD ? 1 : -1;
+
+                    Location* ea = fastalloc(sizeof(Location));
+
+                    Location* as = start_as_size(PTRSIZE, a, file);
+                    Location* bs = start_as_size(PTRSIZE, b, file);
+                    *ea = LocEA(o->bytesWidth, a, b, sign, 1);
+                    emiti_move(ea, o, false, file);
+                    end_as_size(bs, b, file);
+                    end_as_size(as, a, file);
+
+                    break;
+                }
+            } // no break 
+        
         case VX_IR_OP_MOD: // "a", "b"
         case VX_IR_OP_MUL: // "a", "b"
-        case VX_IR_OP_DIV: // "a", "b"
+        case VX_IR_OP_UDIV: // "a", "b"
+        case VX_IR_OP_SDIV: // "a", "b"
         case VX_IR_OP_AND: // "a", "b"
         case VX_IR_OP_BITWISE_AND: // "a", "b"
         case VX_IR_OP_OR:  // "a", "b"
@@ -838,8 +908,9 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 case VX_IR_OP_ADD: bin = "add"; break;
                 case VX_IR_OP_SUB: bin = "sub"; break;
                 case VX_IR_OP_MOD: bin = "mod"; break;
-                case VX_IR_OP_MUL: bin = "mul"; break; // TODO: imul?
-                case VX_IR_OP_DIV: bin = "div"; break; // TODO: idiv?
+                case VX_IR_OP_MUL: bin = "imul"; break;
+                case VX_IR_OP_UDIV: bin = "div"; break;
+                case VX_IR_OP_SDIV: bin = "idiv"; break;
                 case VX_IR_OP_AND: 
                 case VX_IR_OP_BITWISE_AND: bin = "and"; break;
                 case VX_IR_OP_OR:
@@ -862,32 +933,52 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 emiti_unary(v, o, "not", file);
             } break;
 
-        // TODO signed variants 
-        case VX_IR_OP_GT:  // "a", "b"
-        case VX_IR_OP_GTE: // "a", "b"
-        case VX_IR_OP_LT:  // "a", "b"
-        case VX_IR_OP_LTE: // "a", "b"
+        case VX_IR_OP_UGT:  // "a", "b"
+        case VX_IR_OP_UGTE: // "a", "b"
+        case VX_IR_OP_ULT:  // "a", "b"
+        case VX_IR_OP_ULTE: // "a", "b"
+        case VX_IR_OP_SGT:  // "a", "b"
+        case VX_IR_OP_SGTE: // "a", "b"
+        case VX_IR_OP_SLT:  // "a", "b"
+        case VX_IR_OP_SLTE: // "a", "b"
         case VX_IR_OP_EQ:  // "a", "b"
         case VX_IR_OP_NEQ: // "a", "b"
+        case VX_IR_OP_BITEXTRACT: // "idx", "val"
             {
                 vx_IrVar ov = op->outs[0].var;
                 Location* o = varData[ov].location;
                 assert(o);
-                Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
-                Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
-
-                emiti_cmp(a, b, file);
 
                 const char *cc;
-                switch (op->id) {
-                case VX_IR_OP_GT: cc = "a"; break;
-                case VX_IR_OP_LT: cc = "b"; break;
-                case VX_IR_OP_GTE: cc = "ae"; break;
-                case VX_IR_OP_LTE: cc = "le"; break;
-                case VX_IR_OP_EQ: cc = "e"; break;
-                case VX_IR_OP_NEQ: cc = "ne"; break;
 
-                default: assert(false); break;
+                if (op->id == VX_IR_OP_BITEXTRACT) {
+                    Location* idx = as_loc(1, *vx_IrOp_param(op, VX_IR_NAME_IDX));
+                    Location* val = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
+
+                    emiti_bittest(val, idx, file);
+
+                    cc = "nz";
+                }
+                else {
+                    Location* a = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+                    Location* b = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+
+                    emiti_cmp(a, b, file);
+
+                    switch (op->id) {
+                    case VX_IR_OP_UGT: cc = "a"; break;
+                    case VX_IR_OP_ULT: cc = "b"; break;
+                    case VX_IR_OP_UGTE: cc = "ae"; break;
+                    case VX_IR_OP_ULTE: cc = "be"; break;
+                    case VX_IR_OP_SGT: cc = "g"; break;
+                    case VX_IR_OP_SLT: cc = "l"; break;
+                    case VX_IR_OP_SGTE: cc = "ge"; break;
+                    case VX_IR_OP_SLTE: cc = "le"; break;
+                    case VX_IR_OP_EQ: cc = "e"; break;
+                    case VX_IR_OP_NEQ: cc = "ne"; break;
+
+                    default: assert(false); break;
+                    }
                 }
 
                 if (!(op->next && vx_IrOp_var_used(op->next, ov) && (op->next->id == VX_IR_OP_CMOV || op->next->id == VX_IR_OP_CONDTAILCALL || op->next->id == VX_LIR_COND))) {
@@ -974,7 +1065,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 emit_call_ret_store(op, file);
             } break;
 
-        case VX_IR_OP_TAILCALL:      // "addr": int / fnre  // TODO: stop inliner from inline addr because need fn type 
+        case VX_IR_OP_TAILCALL:      // "addr": int / fnref
             {
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 emit_call_arg_load(op, file);
@@ -998,6 +1089,20 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     assert(block->is_root);
 
+    bool is_leaf = vx_IrBlock_ll_isleaf(block);
+    bool use_rax = is_leaf &&
+                   block->outs_len > 0 &&
+                   !block->as_root.vars[block->outs[0]].ever_placed;
+    vx_IrType* use_rax_type = NULL;
+    if (use_rax) {
+        use_rax_type = vx_IrBlock_typeof_var(block, block->outs[0]);
+        assert(use_rax_type);
+        if (vx_IrType_size(use_rax_type) > 8) {
+            use_rax = false;
+            use_rax_type = NULL;
+        }
+    }
+
     bool anyPlaced = false;
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         if (block->as_root.vars[var].ever_placed) {
@@ -1010,10 +1115,15 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     // calle cleanup : RBX, R12, R13, R14, R15
 
     size_t availableRegistersCount = 2;
+    if (is_leaf && !use_rax) {
+        availableRegistersCount = 3;
+    }
     char * availableRegisters = fastalloc(availableRegistersCount);
     availableRegisters[0] = REG_R10.id;
     availableRegisters[1] = REG_R11.id;
-
+    if (is_leaf && !use_rax) {
+        availableRegisters[2] = REG_RAX.id;
+    }
 
     size_t anyIntArgsCount = block->ins_len;
     size_t anyCalledIntArgsCount = 0;
@@ -1115,6 +1225,9 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         size_t varsHotFirstLen = 0;
 
         char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
+        if (use_rax) {
+            varsSorted[block->outs[0]] = true;
+        }
         for (size_t i = anyCalledIntArgsCount; i < block->ins_len; i ++) {
             vx_IrVar var = block->ins[i].var;
             varsSorted[var] = true;
@@ -1133,6 +1246,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
         size_t varId = 0;
         for (size_t i = 0; i < availableRegistersCount; i ++) {
+            char reg = availableRegisters[i];
+
             if (varId >= varsHotFirstLen) break;
 
             for (; varId < varsHotFirstLen; varId ++) {
@@ -1147,10 +1262,16 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                 if (block->as_root.vars[var].ever_placed) continue; 
 
                 size = widthToWidthWidth(size);
-                varData[var].location = gen_reg_var(size, availableRegisters[i]);
+                varData[var].location = gen_reg_var(size, reg);
                 break;
             }
             varId ++;
+        }
+
+        if (use_rax) {
+            size_t size = vx_IrType_size(use_rax_type);
+            size = widthToWidthWidth(size);
+            varData[block->outs[0]].location = gen_reg_var(size, REG_RAX.id);
         }
 
         char intArgRegs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
@@ -1248,7 +1369,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     vx_IrOp* prev = NULL;
 
     while (op != NULL) {
-        vx_IrOp* new = emiti(prev, op, out);
+        vx_IrOp* new = emiti(block, prev, op, out);
         prev = op;
         op = new;
     }
@@ -1367,19 +1488,22 @@ static Location* start_as_size(size_t size, Location* loc, FILE* out) {
         return loc;
     }
 
-    if (loc->type == LOC_REG || loc->type == LOC_IMM || loc->type == LOC_EA) {
+    if ((loc->type == LOC_REG && loc->bytesWidth > size) || loc->type == LOC_MEM || loc->type == LOC_IMM || loc->type == LOC_EA) {
         Location* copy = loc_opt_copy(loc);
         copy->bytesWidth = size;
         return copy;
     }
 
-    Location* prim = start_as_primitive(loc, out);
+    Location* prim = start_scratch_reg(size, out);
+    emiti_move(prim, loc, false, out);
 
     return prim;
 }
 
 static void end_as_size(Location* as_size, Location* old, FILE* out) {
-    if (as_size->type == LOC_REG && old->type != LOC_REG) {
-        end_as_primitive(as_size, old, out);
-    }
+    if (old->bytesWidth == as_size->bytesWidth) return;
+    if ((old ->type == LOC_REG && old->bytesWidth > as_size->bytesWidth) || old->type == LOC_MEM || old->type == LOC_IMM || old->type == LOC_EA) return;
+
+    assert(as_size->type == LOC_REG);
+    end_scratch_reg(as_size, out);
 }

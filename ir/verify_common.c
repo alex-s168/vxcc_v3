@@ -171,6 +171,15 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             }
         } break;
 
+        case VX_IR_OP_CALL:
+        case VX_IR_OP_CONDTAILCALL: {
+            vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
+            vx_IrTypeRef ty = vx_IrValue_type((vx_IrBlock*) root, addr);
+            assert(ty.ptr);
+            assert(ty.ptr->kind == VX_IR_TYPE_FUNC);
+            vx_IrTypeRef_drop(ty);
+        } break;
+
         default:
             break;
         }

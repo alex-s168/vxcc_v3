@@ -105,12 +105,17 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_ADD:
         case VX_IR_OP_SUB:
         case VX_IR_OP_MUL:
-        case VX_IR_OP_DIV:
+        case VX_IR_OP_UDIV:
+        case VX_IR_OP_SDIV:
         case VX_IR_OP_MOD:
-        case VX_IR_OP_GT:
-        case VX_IR_OP_GTE:
-        case VX_IR_OP_LT:
-        case VX_IR_OP_LTE:
+        case VX_IR_OP_UGT:
+        case VX_IR_OP_UGTE:
+        case VX_IR_OP_ULT:
+        case VX_IR_OP_ULTE:
+        case VX_IR_OP_SGT:
+        case VX_IR_OP_SGTE:
+        case VX_IR_OP_SLT:
+        case VX_IR_OP_SLTE:
         case VX_IR_OP_EQ:
         case VX_IR_OP_NEQ:
         case VX_IR_OP_NOT:
@@ -124,6 +129,13 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_FOR:
         case VX_IR_OP_LOAD:
         case VX_IR_OP_CMOV:
+        case VX_IR_OP_BITMASK:
+        case VX_IR_OP_BITEXTRACT:
+        case VX_IR_OP_BITPOPCNT: 
+        case VX_IR_OP_BITTZCNT:
+        case VX_IR_OP_BITLZCNT:
+        case VX_IR_OP_EA:
+        case VX_IR_OP_NEG:
             return false;
 
         case VX_IR_OP_BREAK:
@@ -149,6 +161,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_WHILE:
         case VX_IR_OP_FOREACH:
         case VX_IR_OP_FOREACH_UNTIL:
+        case VX_IR_OP_VSCALE:
             for (size_t i = 0; i < op->params_len; i ++)
                 if (op->params[i].val.type == VX_IR_VAL_BLOCK)
                     if (vx_IrBlock_is_volatile(op->params[i].val.block))
@@ -218,7 +231,7 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_SIGNEXT] = 1,
     [VX_IR_OP_TOFLT] = 1,
     [VX_IR_OP_FROMFLT] = 1,
-    [VX_IR_OP_BITCAST] = 1,
+    [VX_IR_OP_BITCAST] = 0,
     [VX_IR_OP_LOAD] = 1,
     [VX_IR_OP_LOAD_VOLATILE] = 1,
     [VX_IR_OP_STORE] = 1,
@@ -227,12 +240,17 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_ADD] = 1,
     [VX_IR_OP_SUB] = 1,
     [VX_IR_OP_MUL] = 1,
-    [VX_IR_OP_DIV] = 1,
+    [VX_IR_OP_UDIV] = 1,
+    [VX_IR_OP_SDIV] = 1,
     [VX_IR_OP_MOD] = 1,
-    [VX_IR_OP_GT] = 1,
-    [VX_IR_OP_GTE] = 1,
-    [VX_IR_OP_LT] = 1,
-    [VX_IR_OP_LTE] = 1,
+    [VX_IR_OP_UGT] = 1,
+    [VX_IR_OP_UGTE] = 1,
+    [VX_IR_OP_ULT] = 1,
+    [VX_IR_OP_ULTE] = 1,
+    [VX_IR_OP_SGT] = 1,
+    [VX_IR_OP_SGTE] = 1,
+    [VX_IR_OP_SLT] = 1,
+    [VX_IR_OP_SLTE] = 1,
     [VX_IR_OP_EQ] = 1,
     [VX_IR_OP_NEQ] = 1,
     [VX_IR_OP_NOT] = 1,
@@ -259,6 +277,14 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_CALL] = 1,
     [VX_IR_OP_TAILCALL] = 1,
     [VX_IR_OP_CONDTAILCALL] = 1,
+    [VX_IR_OP_VSCALE] = 0,
+    [VX_IR_OP_BITMASK] = 1,
+    [VX_IR_OP_BITEXTRACT] = 1,
+    [VX_IR_OP_BITPOPCNT] = 1, 
+    [VX_IR_OP_BITTZCNT] = 1,
+    [VX_IR_OP_BITLZCNT] = 1,
+    [VX_IR_OP_EA] = 1,
+    [VX_IR_OP_NEG] = 1,
 };
 
 size_t vx_IrOp_inline_cost(vx_IrOp *op) {
@@ -294,5 +320,21 @@ static bool is_tail__rec(vx_IrBlock *block, vx_IrOp *op) {
 
 bool vx_IrOp_is_tail(vx_IrOp *op) {
     return is_tail__rec(op->parent, op);
+}
+
+bool vx_IrBlock_ll_isleaf(vx_IrBlock* block) {
+    for (vx_IrOp* op = block->first; op; op = op->next) {
+        switch (op->id) {
+            case VX_IR_OP_CALL:
+            case VX_IR_OP_CONDTAILCALL:
+            case VX_IR_OP_TAILCALL:
+                return false;
+
+            default:
+                break;
+        }
+    }
+
+    return true;
 }
 
