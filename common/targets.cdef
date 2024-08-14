@@ -1,0 +1,145 @@
+table vx_Target_ETCA (
+    id      str ;
+    name    str ;
+    infer ? str ;
+    cpuid ? byte byte ;
+    feat  ? byte ;
+) {
+    entry vwi             id "VWI" 
+                          name "Variable Width Instruction Standard"
+                          ;
+
+# features
+
+    entry vonNeumann      id "VON"
+                          name "Von Neumann"
+                          feat 0
+                          ;
+
+    entry unaligned       id "UMA"
+                          name "Unaligned Memory Access"
+                          feat 1
+                          ;
+
+    entry cacheCoherency  id "CC"
+                          name "Cache Coherency"
+                          feat 2 
+                          ;
+
+    entry mmai            id "MMAI"
+                          name "Multiple Memory Access Instructions"
+                          feat 3 
+                          ;
+
+# extensions
+
+    entry fullImmediate   id "FI"
+                          name "Full Immediate"
+                          infer "VWI"
+                          cpuid 0:0
+                          ;
+
+    entry stack           id "SAF"
+                          name "Stack & Functions"
+                          cpuid 0:1 
+                          ; 
+
+    entry Interrupts      id "INT"
+                          name "Interrupts"
+                          infer "SAF,VON"
+                          cpuid 0:2 
+                          ;
+
+    entry byte            id "BYTE"
+                          name "8 Bit Operations + Registers"
+                          cpuid 0:3
+                          ;
+
+    entry condExec        id "COND"
+                          name "Conditional Execution"
+                          infer "VWI"
+                          cpuid 0:4
+                          ;
+
+    entry expandedReg     id "REX"
+                          name "Expanded Registers"
+                          infer "VWI"
+                          cpuid 0:5
+                          ;
+
+    entry cacheInstrs     id "CI"
+                          name "Cache Instructions"
+                          cpuid 0:6
+                          ;
+
+    entry arbitrarySP     id "ASP"
+                          name "Arbitrary Stack Pointer"
+                          infer "SAF"
+                          cpuid 0:7
+                          ;
+
+    entry memoryOperands2 id "MO2"
+                          name "Memory Operands 2"
+                          infer "VWI"
+                          cpuid 0:13
+                          ;
+
+    entry dword           id "DW"
+                          name "32 Bit Operations + Registers"
+                          cpuid 0:14
+                          ;
+
+    entry qword           id "QW"
+                          name "64 Bit Operations + Registers"
+                          cpuid 0:15
+                          ;
+
+    entry address32       id "DWAS"
+                          name "32 Bit Address Space"
+                          infer "DW"
+                          cpuid 0:16 
+                          ; 
+
+    entry address64       id "QWAS"
+                          name "64 Bit Address Space"
+                          infer "QW"
+                          cpuid 0:32 
+                          ;
+
+    entry exOpcodes       id "EXOP"
+                          name "Extended Opcodes"
+                          infer "VWI"
+                          cpuid 1:0
+                          ;
+
+    entry memoryOperands1 id "MO1"
+                          name "Memory Operands 1"
+                          infer "VWI"
+                          cpuid 1:1 
+                          ;
+
+    entry privilegedMode  id "PM"
+                          name "Privileged Mode"
+                          infer "INT" 
+                          cpuid 1:2 
+                          ;
+
+    entry mulDiv          id "MD"
+                          name "Multiply Divide"
+                          infer "EXOP" 
+                          cpuid 1:3 
+                          ;
+
+    entry bm1             id "BM1"
+                          name "Bit Manipulation 1" 
+                          infer "EXOP"
+                          cpuid 1:4 
+                          ;
+
+    entry bm2             id "BM2"
+                          name "Bit Manipulation 2" 
+                          infer "EXOP" 
+                          cpuid 1:5 
+                          ;
+
+}

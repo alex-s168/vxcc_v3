@@ -19,7 +19,7 @@ elif [[ $1 == "info" ]]; then
   $CC --version
 else
   echo "compile Debug"
-  clang build.c -lpthread -o build.exe
+  clang build.c -lpthread -DVERBOSE=1 -o build.exe
   ./build.exe lib.a 
   ./build.exe x86.a 
   ./build.exe tests

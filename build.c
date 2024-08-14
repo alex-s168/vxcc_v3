@@ -47,6 +47,7 @@ struct CompileData target_lib_files[] = {
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),
+    SP(CT_CDEF, "common/targets.cdef"),
 };
 
 enum CompileResult target_lib() {

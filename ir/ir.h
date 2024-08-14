@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "../common.h"
+#include "../common/common.h"
 
 typedef size_t vx_IrVar;
 

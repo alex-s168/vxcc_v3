@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common.h"
+#include "../common/common.h"
 
 void vx_Errors_free(const vx_Errors errors) {
     free(errors.items);
