@@ -203,9 +203,10 @@ void vx_IrBlock_destroy(vx_IrBlock *block)
     for (vx_IrOp *op = block->first; op; op = op->next)
         vx_IrOp_destroy(op);
     free(block->outs);
-    if (block->is_root)
+    if (block->is_root) {
         free(block->as_root.vars);
-
+	free(block->as_root.labels);
+    }
     if (block->should_free)
         free(block);
 }
@@ -363,6 +364,7 @@ void vx_IrOp_steal_states(vx_IrOp *dest,
 {
     free(dest->args);
     dest->args = malloc(sizeof(vx_IrValue) * src->args_len);
+    assert(dest->args);
     for (size_t i = 0; i < src->args_len; i ++)
         dest->args[i] = src->args[i];
     dest->args_len = src->args_len;

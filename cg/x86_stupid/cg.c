@@ -15,9 +15,12 @@ typedef struct {
     struct Location * stored;
 } RegType;
 
-#define MkRegType(idi, name0, name1, name2, name3) (RegType) { .id = (idi), .name = { name0, name1, name2, name3 }, .stored = NULL }
-#define MkRegType7(idi, name0, name1, name2, name3, name4, name5, name6) (RegType) { .id = (idi), .name = { name0, name1, name2, name3, name4, name5, name6 }, .stored = NULL }
-#define MkVecRegTy(id, vid) MkRegType7((id), "xmm" #vid, "xmm" #vid, "xmm" #vid, "xmm" #vid, "xmm" #vid, "ymm" #vid, "zmm" #vid)
+#define MkRegType(idi, name0, name1, name2, name3) \
+    ((RegType) { .id = (idi), .name = { name0, name1, name2, name3 }, .stored = NULL })
+#define MkRegType7(idi, name0, name1, name2, name3, name4, name5, name6) \
+    ((RegType) { .id = (idi), .name = { name0, name1, name2, name3, name4, name5, name6 }, .stored = NULL })
+#define MkVecRegTy(id, vid) \
+    MkRegType7((id), "xmm" #vid, "xmm" #vid, "xmm" #vid, "xmm" #vid, "xmm" #vid, "ymm" #vid, "zmm" #vid)
 
 static RegType REG_RAX  = MkRegType(0,  "al",   "ax",   "eax",  "rax");
 static RegType REG_RBX  = MkRegType(1,  "bl",   "bx",   "ebx",  "rbx");
@@ -103,11 +106,16 @@ typedef struct Location {
     } v;
 } Location;
 
-#define LocImm(width, value) ((Location) { .bytesWidth = (width), .type = LOC_IMM, .v.imm = (value) })
-#define LocReg(width, regId) ((Location) { .bytesWidth = (width), .type = LOC_REG, .v.reg = (regId) })
-#define LocEA(width, basee, off, sign, mul) ((Location) { .bytesWidth = (width), .type = LOC_EA, .v.ea.base = (basee), .v.ea.offsetSign = (sign), .v.ea.offset = (off), .v.ea.offsetMul = (mul) })
-#define LocMem(width, eaa) ((Location) { .bytesWidth = (width), .type = LOC_MEM, .v.mem.address = (eaa) })
-#define LocLabel(str) ((Location) { .type = LOC_LABEL, .v.label.label = (str) })
+#define LocImm(width, value) \
+    ((Location) { .bytesWidth = (width), .type = LOC_IMM, .v.imm = (value) })
+#define LocReg(width, regId) \
+    ((Location) { .bytesWidth = (width), .type = LOC_REG, .v.reg = (regId) })
+#define LocEA(width, basee, off, sign, mul) \
+    ((Location) { .bytesWidth = (width), .type = LOC_EA, .v.ea.base = (basee), .v.ea.offsetSign = (sign), .v.ea.offset = (off), .v.ea.offsetMul = (mul) })
+#define LocMem(width, eaa) \
+    ((Location) { .bytesWidth = (width), .type = LOC_MEM, .v.mem.address = (eaa) })
+#define LocLabel(str) \
+    ((Location) { .type = LOC_LABEL, .v.label.label = (str) })
 
 Location* loc_opt_copy(Location* old) {
     Location* new = fastalloc(sizeof(Location));
@@ -141,7 +149,8 @@ Location* loc_opt_copy(Location* old) {
             return new;
         }
 
-        case LOC_INVALID: {
+        case LOC_INVALID:
+	default: {
             assert(false);
             return NULL;
         }

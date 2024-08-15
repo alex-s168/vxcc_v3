@@ -174,7 +174,8 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
             return true;
 
         case VX_IR_OP____END:
-            assert(false);
+	default:
+	    assert(false);
             return false;
     }
 }
@@ -291,7 +292,7 @@ size_t vx_IrOp_inline_cost(vx_IrOp *op) {
     size_t total = 0;
 
     for (size_t i = 0; i < op->params_len; i ++)
-        if (op->params[i].val.type == VX_IR_NAME_BLOCK)
+        if (op->params[i].val.type == VX_IR_VAL_BLOCK)
             total += vx_IrBlock_inline_cost(op->params[i].val.block);
 
     total += cost_lut[op->id];

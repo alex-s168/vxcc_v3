@@ -6,6 +6,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest);
 
 static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
     bool *usedarr = malloc(sizeof(bool) * parent->outs_len);
+    assert(usedarr);
     for (size_t outid = 0; outid < parent->outs_len; outid ++) {
         vx_IrTypedVar var = parent->outs[outid];
         vx_IrVar vv = src->outs[outid];

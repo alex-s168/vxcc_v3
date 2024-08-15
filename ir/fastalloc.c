@@ -10,15 +10,23 @@ static size_t chunk_left = 0;
 void * fastalloc(size_t bytes) {
     if (chunk == NULL || bytes > chunk_left) {
         if (chunk) {
-            chunks = realloc(chunks, sizeof(void*) * (chunkslen + 1));
-            chunks[chunkslen ++] = chunk;
+	    void * temp = realloc(chunks, sizeof(void*) * (chunkslen + 1));
+            if (temp == NULL) {
+	        return NULL;
+	    }
+	    chunks = temp;
+	    chunks[chunkslen ++] = chunk;
         }
 
         size_t new = 1024;
         if (bytes > new)
             new = bytes * 2;
-        chunk = malloc(new);
-        chunk_left = new;
+        void * temp = malloc(new);
+	if (temp == NULL) {
+	    return NULL;
+	}
+        chunk = temp;
+	chunk_left = new;
     }
 
     chunk_left -= bytes;
@@ -40,6 +48,8 @@ void * fastrealloc(void * old, size_t oldBytes, size_t newBytes) {
     }
 
     void * new = fastalloc(newBytes);
+    if (new == NULL)
+        return NULL;
     memcpy(new, old, oldBytes);
     return new;
 }

@@ -56,6 +56,10 @@ size_t vx_IrType_size(vx_IrType *ty) {
 
     case VX_IR_TYPE_FUNC:
         return PTRSIZE;
+
+    default:
+	assert(false);
+	return 0;
     }
 }
 
@@ -75,6 +79,10 @@ void vx_IrType_free(vx_IrType *ty) {
     case VX_IR_TYPE_FUNC:
         free(ty->func.args);
         return;
+
+    default:
+	assert(false);
+	return;
     }
 }
 
@@ -88,6 +96,8 @@ vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
         case VX_IR_VAL_ID:
             return vx_ptrtype(root);
 
+	default:
+	    assert(false);
         case VX_IR_VAL_TYPE:
         case VX_IR_VAL_BLOCK:
             return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
@@ -240,6 +250,7 @@ vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
     root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
+    assert(root->as_root.vars);
     vx_IrVar new = root->as_root.vars_len ++;
     root->as_root.vars[new].decl = decl;
     return new;
@@ -251,6 +262,7 @@ size_t vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl) {
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
     root->as_root.labels = realloc(root->as_root.labels, (root->as_root.labels_len + 1) * sizeof(*root->as_root.labels));
+    assert(root->as_root.labels);
     size_t new = root->as_root.labels_len ++;
     root->as_root.vars[new].decl = decl;
     return new;
@@ -281,11 +293,13 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
                                           : NULL;
 
     vx_IrType **args = malloc(sizeof(vx_IrType*) * block->ins_len);
+    assert(args);
     for (size_t i = 0; i < block->ins_len; i ++) {
         args[i] = block->ins[i].type;
     }
 
     vx_IrType *type = malloc(sizeof(vx_IrType));
+    assert(type);
     type->kind = VX_IR_TYPE_FUNC;
     type->func.nullableReturnType = ret;
     type->func.args_len = block->ins_len;

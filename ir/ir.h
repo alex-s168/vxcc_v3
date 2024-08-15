@@ -18,9 +18,11 @@ void * fastalloc(size_t bytes);
 void * fastrealloc(void * old, size_t oldBytes, size_t newBytes);
 void   fastfreeall(void);
 static char * faststrdup(const char * str) {
+    assert(str);
     size_t len = strlen(str) + 1;
     len *= sizeof(char);
     char * ret = (char*) fastalloc(len);
+    assert(ret);
     memcpy(ret, str, len);
     return ret;
 }
@@ -101,7 +103,10 @@ struct vx_IrType_s {
 };
 
 static vx_IrType* vx_IrType_heap(void) {
-    return (vx_IrType*) memset(malloc(sizeof(vx_IrType)), 0, sizeof(vx_IrType));
+    vx_IrType* ptr = malloc(sizeof(vx_IrType));
+    assert(ptr);
+    memset(ptr, 0, sizeof(vx_IrType));
+    return ptr;
 }
 
 #define PTRSIZE (8)
@@ -443,7 +448,9 @@ void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
 void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
 void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);
 static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
-    vx_IrOp_add_param_s(dest, param, *vx_IrOp_param(src, param));
+    vx_IrValue* val = vx_IrOp_param(src, param);
+    assert(val);
+    vx_IrOp_add_param_s(dest, param, *val);
 }
 void vx_IrOp_remove_params(vx_IrOp *op);
 void vx_IrOp_remove_out_at(vx_IrOp *op, size_t id);

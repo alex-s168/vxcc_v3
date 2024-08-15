@@ -105,6 +105,8 @@ const char *vx_IrName_str[] = {
 };
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
+    assert(out);
+
     switch (value.type) {
         case VX_IR_VAL_BLOCKREF: {
             fprintf(out, "#%s", value.block->name);
@@ -178,10 +180,16 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
             fputc('}', out);
         }
         break;
+
+	default:
+	    assert(false);
+	break;
     }
 }
 
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
+    assert(out);
+
     for (size_t j = 0; j < indent; j ++)
         fputs("  ", out);
 
@@ -216,6 +224,8 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
 }
 
 void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, const size_t indent) {
+    assert(out);
+
     for (size_t i = 0; i < indent; i ++)
         fputs("  ", out);
 
