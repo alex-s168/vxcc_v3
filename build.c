@@ -4,7 +4,23 @@
 
 /* ========================================================================= */
 
+struct CompileData target_gen_files[] = {
+    DIR("build"),
+    DIR("build/common"),
+    SP(CT_CDEF, "common/targets.cdef"),
+};
+
+enum CompileResult target_gen() {
+    START;
+    DO(compile(LI(target_gen_files)));
+    END;
+}
+
+/* ========================================================================= */
+
 struct CompileData target_lib_files[] = {
+    DEP("build/common/targets.cdef.o"),
+
     DIR("build"),
 
     DIR("build/ir"),
@@ -48,7 +64,6 @@ struct CompileData target_lib_files[] = {
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),
-    SP(CT_CDEF, "common/targets.cdef"),
 };
 
 enum CompileResult target_lib() {
@@ -89,9 +104,10 @@ enum CompileResult target_tests() {
 /* ========================================================================= */
 
 struct Target targets[] = {
-	{ .name = "lib.a", .run = target_lib },
-    { .name = "x86.a", .run = target_x86, },
-	{ .name = "tests", .run = target_tests },
+    { .name = "gen",   .run = target_gen },
+    { .name = "lib.a", .run = target_lib },
+    { .name = "x86.a", .run = target_x86 },
+    { .name = "tests", .run = target_tests },
 };
 
 #define TARGETS_LEN (sizeof(targets) / sizeof(targets[0]))
