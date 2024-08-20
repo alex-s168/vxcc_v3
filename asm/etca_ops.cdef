@@ -14,6 +14,7 @@ table Instr_ETCA (
 ) {
 
     const reg = "reg";
+    const ctrlreg = "ctrlreg";
     const imm = "imm";
 
 # base isa
@@ -206,6 +207,26 @@ table Instr_ETCA (
                   stores_result false 
                   ;
 
-# missing: slo, readcr, writecr
+    entry sloRI   asm "slo"
+                  bits "01ss1100 aaabbbbb"
+                  operand0 reg 
+                  operand1 imm 
+                  stores_result true 
+                  ;
+
+    entry readcrRI  asm "readcr,mov"
+                    bits "01ss1110 aaabbbbb"
+                    operand0 reg 
+                    operand1 ctrlreg
+                    stores_result true 
+                    ;
+
+    entry writecrRI asm "writecr,mov"
+                    bits "01ss1111 aaabbbbb"
+                    operand0 reg 
+                    operand1 ctrlreg 
+                    order "1,0 "          # reversed 
+                    stores_result true 
+                    ;
 
 }

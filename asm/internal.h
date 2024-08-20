@@ -119,12 +119,13 @@ void bytesFromBits(const char * bits, uint8_t * out);
 void bitsReplace(char * bits, char what, int64_t with);
 
 typedef struct {
-    const char * name;
+    char * name;
     size_t location;
+    bool exported;
 } AsmSym;
 
 typedef struct {
-    const char * name;
+    char * name;
     uint8_t kind;
     size_t location;
 } AsmUnresSym;
@@ -136,8 +137,8 @@ typedef struct {
     AsmUnresSym * unresolved_items;
     size_t        unresolved_len;
 
-    AsmSym * exported_items;
-    size_t   exported_len;
+    AsmSym * defined_items;
+    size_t   defined_len;
 } AsmRes;
 
 typedef struct {
@@ -161,3 +162,4 @@ typedef struct {
 } AsmTarget;
 
 extern AsmTarget etca_asmTarget;
+extern AsmTarget ua16_asmTarget;
