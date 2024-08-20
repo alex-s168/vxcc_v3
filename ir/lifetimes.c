@@ -15,22 +15,16 @@ void vx_IrBlock_lifetimes(vx_IrBlock *block) {
 
         // llir shouldn't be nested 
 
-        vx_IrOp *start = (void*) -1;
-        vx_IrOp *end = 0;
+        vx_IrOp *start = decl;
+        vx_IrOp *end = decl;
         for (vx_IrOp *op = block->first; op; op = op->next) {
             if (vx_IrOp_var_used(op, var)) {
-                if (op > end)
+		if (vx_IrOp_after(op, end))
                     end = op;
-                else if (op < start)
+                else if (vx_IrOp_after(start, op))
                     start = op;
             }
         }
-
-        if (start == (void*)-1)
-            start = decl;
-
-        if (end == 0)
-            end = decl;
 
         lifetime lt;
         lt.first = start;

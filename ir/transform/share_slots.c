@@ -8,6 +8,7 @@
 // block needs to be 100% flat, decl of vars must be known, decl won't be known after this fn anymore
 
 void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
+    /*
     // TODO: is this even required
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         if (block->as_root.vars[var].decl == NULL)
@@ -31,6 +32,7 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
             block->as_root.vars[var].ll_lifetime = (lifetime){0};
         }
     }
+    */
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         lifetime *lt = &block->as_root.vars[var].ll_lifetime;
@@ -57,22 +59,13 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
                 continue;
             }
 
-            lifetime cmp_low = *lt;
-            lifetime cmp_high = *lt2;
-            if (vx_IrOp_after(cmp_low.first, cmp_high.first)) {
-                cmp_low = *lt2;
-                cmp_high = *lt;
+	    // merge var2 into var
+	    // only if var2.first >= var.last
+
+            if (vx_IrOp_after(lt2->first, lt->last) || lt2->first == lt->last) {
+              vx_IrBlock_rename_var(block, var2, var);
+	      lt->last = lt2->last;
             }
-
-            if (vx_IrOp_after(cmp_low.last, cmp_high.first)) {
-                continue;
-            }
-
-            // it's okay if end0 = start1 
-
-            vx_IrBlock_rename_var(block, var, var2);
-
-            break;
         }
     }
 }
