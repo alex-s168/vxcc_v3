@@ -8,7 +8,8 @@ static vx_IrVar block_res_as_var(vx_IrBlock *parent, vx_IrBlock *block) {
     vx_IrOp_init(op, VX_IR_OP_FLATTEN_PLEASE, parent);
     vx_IrVar dest = vx_IrBlock_new_var(parent, op);
     vx_IrOp_add_param_s(op, VX_IR_NAME_BLOCK, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = block });
-    vx_IrType* type = vx_IrBlock_typeof_var(root, block->outs[0]);
+    assert(block->outs_len >= 1);
+    vx_IrType* type = vx_IrBlock_typeof_var(block, block->outs[0]);
     assert(type);
     vx_IrOp_add_out(op, dest, type);
     return dest;

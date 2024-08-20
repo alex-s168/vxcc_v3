@@ -8,6 +8,12 @@
 static vx_IrType *ty_int;
 static vx_IrType *ty_bool;
 
+static vx_IrBlock *var_block(vx_IrBlock *parent, vx_IrVar var) {
+    vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->parent_op);
+    vx_IrBlock_add_out(block, var);
+    return block;
+}
+
 static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
     vx_IrBlock *block = vx_IrBlock_init_heap(parent, parent->parent_op);
 
@@ -20,25 +26,7 @@ static vx_IrBlock *always_true_block(vx_IrBlock *parent, vx_IrVar temp_var) {
     return block;
 }
 
-static vx_IrBlock *conditional_c_assign(vx_IrVar dest, vx_IrBlock *parent, vx_IrVar temp_var) {
-    vx_IrOp *op = vx_IrBlock_add_op_building(parent);
-    vx_IrOp_init(op, VX_IR_OP_IF, parent);
-    
-    vx_IrBlock *then = vx_IrBlock_init_heap(parent, parent->parent_op);
-    {
-        vx_IrOp *op2 = vx_IrBlock_add_op_building(then);
-        vx_IrOp_init(op2, VX_IR_OP_IMM, then);
-        vx_IrOp_add_out(op2, dest, ty_int);
-        vx_IrOp_add_param_s(op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 2 });
-    }
-    vx_IrOp_add_param_s(op, VX_IR_NAME_COND_THEN, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = then });
-
-    vx_IrOp_add_param_s(op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = always_true_block(parent, temp_var) });
-
-    return then;
-}
-
-static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, vx_IrVar temp_var) {
+static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, long long value, vx_IrVar condVar) {
     vx_IrOp *op = vx_IrBlock_add_op_building(parent);
     vx_IrOp_init(op, VX_IR_OP_IF, parent);
     
@@ -49,11 +37,11 @@ static vx_IrBlock *conditional_c_assign_else(vx_IrVar dest, vx_IrBlock *parent, 
         vx_IrOp *op2 = vx_IrBlock_add_op_building(els);
         vx_IrOp_init(op2, VX_IR_OP_IMM, els);
         vx_IrOp_add_out(op2, dest, ty_int);
-        vx_IrOp_add_param_s(op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 2 });
+        vx_IrOp_add_param_s(op2, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = value });
     }
     vx_IrOp_add_param_s(op, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = els });
 
-    vx_IrOp_add_param_s(op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = always_true_block(parent, temp_var) });
+    vx_IrOp_add_param_s(op, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = var_block(parent, condVar) });
 
     return els;
 }
@@ -77,6 +65,8 @@ static void gen_bin_op(vx_IrBlock *dest, vx_IrOpType optype, vx_IrType *outtype,
 
 static vx_IrBlock * build_test_cmov(void) {
     vx_IrBlock *block = vx_IrBlock_init_heap(NULL, 0);
+    vx_IrBlock_add_in(block, 10, ty_bool);
+    vx_IrBlock_add_in(block, 11, ty_bool);
 
     {
         vx_IrOp *op = vx_IrBlock_add_op_building(block);
@@ -85,8 +75,8 @@ static vx_IrBlock * build_test_cmov(void) {
         vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 1 });
     }
 
-    vx_IrBlock *els = conditional_c_assign_else(0, block, 1);
-    conditional_c_assign_else(0, els, 2);
+    vx_IrBlock *els = conditional_c_assign_else(0, block, 2, 10);
+    conditional_c_assign_else(0, els, 3, 11);
 
     {
         vx_IrOp *op = vx_IrBlock_add_op_building(block);
@@ -96,7 +86,7 @@ static vx_IrBlock * build_test_cmov(void) {
     }
 
     vx_IrBlock_add_out(block, 1); 
-    vx_IrBlock_make_root(block, 2);
+    vx_IrBlock_make_root(block, 12);
 
     return block;
 }

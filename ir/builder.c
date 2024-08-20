@@ -70,7 +70,7 @@ void vx_IrBlock_make_root(vx_IrBlock *block,
     block->is_root = true;
 
     block->as_root.vars_len = total_vars;
-    block->as_root.vars = malloc(sizeof(*block->as_root.vars) * total_vars);
+    block->as_root.vars = calloc(total_vars, sizeof(*block->as_root.vars));
     for (size_t i = 0; i < total_vars; i ++) {
         vx_IrOp *decl = find_var_decl(block, i);
         if (decl == NULL) {
@@ -98,8 +98,9 @@ static void root_block_put_var(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
     assert(root->is_root);
     if (var >= root->as_root.vars_len) {
         root->as_root.vars = realloc(root->as_root.vars, sizeof(*root->as_root.vars) * (var + 1));
-        root->as_root.vars_len = var + 1;
+	root->as_root.vars_len = var + 1;
     }
+    memset(&root->as_root.vars[var], 0, sizeof(*root->as_root.vars));
     root->as_root.vars[var].decl = decl;
 }
 

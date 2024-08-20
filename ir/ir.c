@@ -255,6 +255,7 @@ vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
     root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
     assert(root->as_root.vars);
     vx_IrVar new = root->as_root.vars_len ++;
+    memset(&root->as_root.vars[new], 0, sizeof(*root->as_root.vars));
     root->as_root.vars[new].decl = decl;
     return new;
 }
