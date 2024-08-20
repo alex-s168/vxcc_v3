@@ -58,6 +58,9 @@ size_t vx_IrType_size(vx_IrType *ty) {
         return PTRSIZE;
 
     default:
+	fprintf(stderr, "type %u doesn't have size\n", ty->kind);
+	fflush(stderr);
+	exit(1);
 	assert(false);
 	return 0;
     }
