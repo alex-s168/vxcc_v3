@@ -159,6 +159,9 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_BITLZCNT:
         case VX_IR_OP_EA:
         case VX_IR_OP_NEG:
+        case VX_IR_OP_GETELEM:
+        case VX_IR_OP_SETELEM:
+        case VX_IR_OP_ELEMPTR:
             return false;
 
         case VX_IR_OP_BREAK:
@@ -248,7 +251,7 @@ vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
 }
 
 static size_t cost_lut[VX_IR_OP____END] = {
-    [VX_IR_OP_IMM] = 1,
+    [VX_IR_OP_IMM] = 0,
     [VX_IR_OP_FLATTEN_PLEASE] = 0,
     [VX_IR_OP_REINTERPRET] = 0,
     [VX_IR_OP_ZEROEXT] = 1,
@@ -309,6 +312,9 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_BITLZCNT] = 1,
     [VX_IR_OP_EA] = 1,
     [VX_IR_OP_NEG] = 1,
+    [VX_IR_OP_ELEMPTR] = 0,
+    [VX_IR_OP_SETELEM] = 0,
+    [VX_IR_OP_GETELEM] = 0,
 };
 
 size_t vx_IrOp_inline_cost(vx_IrOp *op) {

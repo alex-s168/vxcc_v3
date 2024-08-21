@@ -12,9 +12,9 @@ FILES="test.c ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c"
 function prepare() {
   if [ -z $python ]; then
     echo \# detecting python...
-    if python --help; then
+    if python --help &>/dev/null; then
       python=python
-    elif python3 --help; then
+    elif python3 --help &>/dev/null; then
       python=python3
     else
       echo "python not found! tried \"python\" and \"python3\"! Set \"python\" variable or install python!"

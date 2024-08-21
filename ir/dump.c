@@ -76,6 +76,10 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_IR_OP_BITLZCNT] = "bit-lzcnt",
     [VX_IR_OP_EA] = "ea",
     [VX_IR_OP_VSCALE] = "vscale",
+
+    [VX_IR_OP_ELEMPTR] = "elemptr",
+    [VX_IR_OP_GETELEM] = "getelem",
+    [VX_IR_OP_SETELEM] = "setelem",
 };
 
 const char *vx_IrName_str[] = {
@@ -102,6 +106,8 @@ const char *vx_IrName_str[] = {
     [VX_IR_NAME_IDX] = "idx",
 
     [VX_IR_NAME_ID] = "id",
+    [VX_IR_NAME_TYPE] = "type",
+    [VX_IR_NAME_STRUCT] = "struct",
 };
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {

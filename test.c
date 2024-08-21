@@ -321,8 +321,6 @@ static int cir_test(vx_IrBlock *block) {
 }
 
 int main(void) {
-    vx_g_optconfig.if_eval = false;
-
     ty_int = vx_IrType_heap();
     ty_int->debugName = "i32";
     ty_int->kind = VX_IR_TYPE_KIND_BASE;

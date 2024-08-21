@@ -58,14 +58,6 @@ typedef struct {
     size_t align;
 } vx_IrTypeCIRStruct;
 
-// only in C IR
-typedef struct {
-    vx_IrType **members;
-    size_t      members_len;
-
-    size_t algin;
-} vx_IrTypeCIRUnion;
-
 typedef struct {
     bool   sizeless;
     size_t size;
@@ -81,29 +73,29 @@ typedef struct {
     vx_IrType  *nullableReturnType;
 } vx_IrTypeFunc;
 
+typedef enum {
+    // present in: cir
+    VX_IR_TYPE_KIND_CIR_STRUCT,
+
+    // present in: cir, ssa
+    VX_IR_TYPE_KIND_BASE,
+    VX_IR_TYPE_FUNC,
+} vx_IrTypeKind;
+
 struct vx_IrType_s {
     const char *debugName;
 
-    enum {
-        // present in: cir
-        VX_IR_TYPE_KIND_CIR_STRUCT,
-        VX_IR_TYPE_KIND_CIR_UNION,
-
-        // present in: cir, ssa
-        VX_IR_TYPE_KIND_BASE,
-        VX_IR_TYPE_FUNC,
-    } kind;
+    vx_IrTypeKind kind;
 
     union {
         vx_IrTypeBase       base;
         vx_IrTypeCIRStruct  cir_struct;
-        vx_IrTypeCIRUnion   cir_union;
         vx_IrTypeFunc       func;
     };
 };
 
 static vx_IrType* vx_IrType_heap(void) {
-    vx_IrType* ptr = malloc(sizeof(vx_IrType));
+    vx_IrType* ptr = (vx_IrType*) malloc(sizeof(vx_IrType));
     assert(ptr);
     memset(ptr, 0, sizeof(vx_IrType));
     return ptr;
@@ -287,6 +279,8 @@ typedef enum {
     VX_IR_NAME_ALTERNATIVE_B,
 
     VX_IR_NAME_IDX,
+    VX_IR_NAME_STRUCT,
+    VX_IR_NAME_TYPE,
 
     VX_IR_NAME_ID,
 } vx_IrName;
@@ -381,6 +375,11 @@ typedef enum {
     VX_IR_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
     VX_IR_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
     VX_CIR_OP_CFOR,          // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->. 
+
+    // various
+    VX_IR_OP_GETELEM,        // "struct": struct var, "idx": index of member
+    VX_IR_OP_SETELEM,        // "struct": old struct var, "idx": index of member, "val": new value of member
+    VX_IR_OP_ELEMPTR,        // "type": struct type, "idx": index of member, "val": pointer to struct
 
     // conditional
     VX_IR_OP_IF,            // "cond": ()->bool, "then": ()->R, ("else": ()->R)

@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 
-
 vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
     vx_IrOp *op = block->first;
     while (op && op->next) {
@@ -40,14 +39,6 @@ size_t vx_IrType_size(vx_IrType *ty) {
     case VX_IR_TYPE_KIND_BASE:
         return ty->base.size;
 
-    case VX_IR_TYPE_KIND_CIR_UNION:
-        for (size_t i = 0; i < ty->cir_union.members_len; i ++) {
-            size_t val = vx_IrType_size(ty->cir_union.members[i]);
-            if (val > total)
-                total = val;
-        }
-        return total;
-
     case VX_IR_TYPE_KIND_CIR_STRUCT:
         for (size_t i = 0; i < ty->cir_struct.members_len; i ++) {
             total += vx_IrType_size(ty->cir_struct.members[i]);
@@ -69,10 +60,6 @@ size_t vx_IrType_size(vx_IrType *ty) {
 void vx_IrType_free(vx_IrType *ty) {
     switch (ty->kind) {
     case VX_IR_TYPE_KIND_BASE:
-        return;
-
-    case VX_IR_TYPE_KIND_CIR_UNION:
-        free(ty->cir_union.members);
         return;
 
     case VX_IR_TYPE_KIND_CIR_STRUCT:
@@ -113,24 +100,6 @@ vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
     }
 }
 
-/*
-typedef struct {
-    vx_IrVar var;
-    vx_IrOp* decl;
-} vx_CIrBlock_fix_state;
-
-bool vx_CIrBlock_fix_iter(vx_IrOp* op, void* param) {
-    vx_CIrBlock_fix_state* state = param;
-
-    for (size_t i = 0; i < op->outs_len; i ++) {
-        if (op->outs[i].var == state->var) {
-            state->decl = op;
-            return true;
-        }
-    }
-    return false;
-}*/
-
 void vx_CIrBlock_fix(vx_IrBlock* block) {
     vx_IrBlock* root = vx_IrBlock_root(block);
 
@@ -146,20 +115,6 @@ void vx_CIrBlock_fix(vx_IrBlock* block) {
                 vx_CIrBlock_fix(op->params[i].val.block);
     }
 }
-
-/*void vx_CIrBlock_fix(vx_IrBlock *root) {
-    assert(root->is_root);
-
-    for (vx_IrVar var = 0; var < root->as_root.vars_len; var ++) {
-        vx_CIrBlock_fix_state state;
-        state.var = var;
-        state.decl = NULL;
-
-        vx_IrBlock_deep_traverse(root, vx_CIrBlock_fix_iter, &state);
-
-        root->as_root.vars[var].decl = state.decl;
-    }
-}*/
 
 void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
     assert(root->is_root);
