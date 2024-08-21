@@ -5,6 +5,7 @@
 
 // TODO: use lea for mul sometimes 
 // TODO: mul / div by power of 2
+// TODO: no tailcall opt if epilog
 
 struct Location;
 
@@ -218,6 +219,8 @@ static const char * widthWidthToASM[] = {
     [4] = "dword",
     [8] = "qword",
 };
+
+static bool needEpilog;
 
 static void emit(Location*, FILE*);
 
@@ -1014,6 +1017,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     }
 
                     if (ty == VX_IR_OP_CONDTAILCALL) {
+                        assert(!needEpilog);
                         vx_IrValue addr = *vx_IrOp_param(op->next, VX_IR_NAME_ADDR);
                         vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
                         if (v.type == VX_IR_VAL_VAR && v.var == ov) {
@@ -1038,6 +1042,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
         case VX_IR_OP_CONDTAILCALL:  // "addr": int / fnref, "cond": bool
             {
+                assert(!needEpilog);
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
                 Location* loc = as_loc(1, cond);
@@ -1076,6 +1081,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
         case VX_IR_OP_TAILCALL:      // "addr": int / fnref
             {
+                assert(!needEpilog);
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 emit_call_arg_load(op, file);
                 emiti_jump(as_loc(8, addr), file);
@@ -1262,6 +1268,11 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             for (; varId < varsHotFirstLen; varId ++) {
                 vx_IrVar var = varsHotFirst[varId];
                 
+                if (varData[var].heat == 0) {
+                    varData[var].location = NULL;
+                    continue;
+                }
+
                 vx_IrType* type = varData[var].type;
                 if (type == NULL) continue;
 
@@ -1346,6 +1357,11 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         }
 
         for (; varId < varsHotFirstLen; varId ++) {
+            if (varData[varId].heat == 0) {
+                varData[varId].location = NULL;
+                continue;
+            }
+
             vx_IrVar var = varsHotFirst[varId];
             if (varData[var].type == NULL) continue;
             size_t size = vx_IrType_size(varData[var].type);
@@ -1364,14 +1380,25 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         free(varsHotFirst);
     }
 
-    if (anyPlaced)
-        emiti_enter(out);
+    bool needProlog = (stackOff > 0 && !is_leaf) ||
+                      stackOff > 128 ||
+                      (stackOff > 0 && !vx_cg_x86stupid_options.use_red_zone);
 
-    if (!vx_cg_x86stupid_options.use_red_zone) {
-        fprintf(out, "sub rsp, %zu", stackOff);
-    } else if (stackOff > 128) { // red zone 
-        size_t v = 128 - stackOff;
-        fprintf(out, "sub rsp, %zu\n", v);
+    needEpilog = false;
+    if (anyPlaced || needProlog) {
+        emiti_enter(out);
+        needEpilog = true;
+    }
+
+    vx_IrBlock_ll_finalize(block, needEpilog);
+
+    if (needProlog) {
+        if (is_leaf && vx_cg_x86stupid_options.use_red_zone) {
+            size_t v = 128 - stackOff;
+            fprintf(out, "sub rsp, %zu\n", v);
+        } else {
+            fprintf(out, "sub rsp, %zu\n", stackOff);
+        }
     }
 
     vx_IrOp* op = block->first;
@@ -1413,7 +1440,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     assert(block->outs_len <= 2);
 
-    if (anyPlaced)
+    if (needEpilog)
         emiti_leave(out);
     fputs("ret\n", out);
 

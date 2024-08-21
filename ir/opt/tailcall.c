@@ -10,8 +10,8 @@ static bool trav(vx_IrOp *op, void *ignore) {
     return false;
 }
 
-void vx_opt_tailcall(vx_IrBlock *block) {
-   vx_IrBlock_deep_traverse(block, trav, NULL); 
+void vx_opt_ll_tailcall(vx_IrBlock *block) {
+    vx_IrBlock_deep_traverse(block, trav, NULL); 
 }
 
 void vx_opt_ll_condtailcall(vx_IrBlock *block) {

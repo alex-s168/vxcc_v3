@@ -45,12 +45,10 @@ void opt(vx_IrBlock *block) {
         vx_opt_reduce_loops(block);
         vx_opt_loop_simplify(block);
     }
-    vx_opt_tailcall(block);
 }
 
 void opt_ll(vx_IrBlock *block) {
     vx_opt_ll_dce(block);
-    vx_opt_ll_condtailcall(block);
     vx_opt_inline_vars(block);
     vx_opt_vars(block);
     vx_opt_ll_jumps(block);

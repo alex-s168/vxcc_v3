@@ -32,7 +32,6 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/verify_ssa.c"),
     SP(CT_C, "ir/transform.c"),
     SP(CT_C, "ir/builder.c"),
-    SP(CT_C, "ir/cir.h"),
     SP(CT_C, "ir/ir.c"),
     SP(CT_C, "ir/eval.c"),
     SP(CT_C, "ir/analysis.c"),
@@ -61,6 +60,7 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/transform/share_slots.c"),
     SP(CT_C, "ir/transform/ssair_llir_lower.c"),
     SP(CT_C, "ir/transform/cmov_expand.c"),
+    SP(CT_C, "ir/transform/ll_finalize.c"),
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),
@@ -96,8 +96,8 @@ enum CompileResult target_x86() {
 enum CompileResult target_tests() {
     START_TESTING;
     test("", "test.c", 0, CT_C,
-            DEP("build/lib.a"),
-            DEP("build/x86.a"));
+            DEP("build/x86.a"),
+            DEP("build/lib.a"));
     END_TESTING;
 }
 

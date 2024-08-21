@@ -2,6 +2,8 @@
 #include "ir.h"
 #include "llir.h"
 
+// TODO: multipart lifetimes because jumps
+
 /** only for root blocks */
 void vx_IrBlock_lifetimes(vx_IrBlock *block) {
     assert(block->is_root);
@@ -19,7 +21,7 @@ void vx_IrBlock_lifetimes(vx_IrBlock *block) {
         vx_IrOp *end = decl;
         for (vx_IrOp *op = block->first; op; op = op->next) {
             if (vx_IrOp_var_used(op, var)) {
-		if (vx_IrOp_after(op, end))
+                if (vx_IrOp_after(op, end))
                     end = op;
                 else if (vx_IrOp_after(start, op))
                     start = op;

@@ -1,6 +1,11 @@
 #include "ir.h"
 
+#ifndef _LLIR_H
+#define _LLIR_H
+
 OPT_PASS void vx_opt_ll_binary(vx_IrBlock *block);
+
+OPT_PASS void vx_opt_ll_tailcall(vx_IrBlock *block);
 
 void vx_IrBlock_llir_lower(vx_IrBlock *block);
 
@@ -16,6 +21,9 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block);
 
 void vx_IrBlock_ll_cmov_expand(vx_IrBlock *block);
 
+// called by the codegen after it knows if it needs epilog
+void vx_IrBlock_ll_finalize(vx_IrBlock *block, bool needEpilog);
+
 static void llir_prep_lower(vx_IrBlock *block) {
     vx_IrBlock_ll_cmov_expand(block);
     vx_IrBlock_llir_fix_decl(block);
@@ -24,3 +32,5 @@ static void llir_prep_lower(vx_IrBlock *block) {
     vx_IrBlock_ll_share_slots(block);
     vx_opt_ll_binary(block);
 }
+
+#endif //_LLIR_H

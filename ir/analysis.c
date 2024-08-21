@@ -2,6 +2,29 @@
 
 #include "ir.h"
 
+static bool anyPlacedIter(vx_IrBlock* block) {
+    for (vx_IrOp* op = block->first; op; op = op->next) {
+        if (op->id == VX_IR_OP_PLACE)
+            return true;
+
+        for (size_t i = 0; i < op->params_len; i ++)
+            if (op->params[i].val.type == VX_IR_VAL_BLOCK)
+                if (anyPlacedIter(op->params[i].val.block))
+                    return true;
+    }
+
+    return false;
+}
+
+bool vx_IrBlock_anyPlaced(vx_IrBlock* block) {
+    assert(block->is_root);
+
+    for (vx_IrVar v = 0; v < block->as_root.vars_len; v ++)
+        if (block->as_root.vars[v].ever_placed)
+            return true;
+
+    return anyPlacedIter(block);
+}
 
 bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after) {
     for (; op; op = op->next)
@@ -308,10 +331,21 @@ size_t vx_IrBlock_inline_cost(vx_IrBlock *block) {
     return total;
 }
 
+vx_IrOp* vx_IrOp_nextWithEffect(vx_IrOp* op) {
+    for (op = op->next; op; op = op->next)
+        if (vx_IrOpType_has_effect(op->id))
+            return op;
+    return NULL;
+}
+
+bool vx_IrOp_followingNoEffect(vx_IrOp* op) {
+    return vx_IrOp_nextWithEffect(op) == NULL;
+}
+
 static bool is_tail__rec(vx_IrBlock *block, vx_IrOp *op) {
     if (!op)
         return true;
-    if (op->next == NULL) {
+    if (vx_IrOp_followingNoEffect(op)) {
         if (block->parent)
             return is_tail__rec(block->parent, block->parent_op);
         return true;
@@ -320,7 +354,24 @@ static bool is_tail__rec(vx_IrBlock *block, vx_IrOp *op) {
 }
 
 bool vx_IrOp_is_tail(vx_IrOp *op) {
-    return is_tail__rec(op->parent, op);
+    if (is_tail__rec(op->parent, op)) {
+        return true;
+    }
+
+    vx_IrOp* effect = vx_IrOp_nextWithEffect(op);
+    if (effect == NULL)
+        return false;
+
+    vx_IrBlock* root = vx_IrBlock_root(op->parent);
+    assert(root);
+
+    if (effect->id == VX_LIR_GOTO) {
+        size_t label = vx_IrOp_param(effect, VX_IR_NAME_ID)->id;
+        vx_IrOp* dest = root->as_root.labels[label].decl;
+        return vx_IrOp_is_tail(dest);
+    }
+
+    return false;
 }
 
 bool vx_IrBlock_ll_isleaf(vx_IrBlock* block) {
