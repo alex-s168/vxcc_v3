@@ -57,12 +57,12 @@ static void vx_Target_##tg##__parseAdditionalFlags(vx_Target_##tg##__flags * des
 TARGET_FLAGS_GEN(ETCA)
 
 typedef enum {
-    // only compile to llir and then output 
-    VX_TARGET_VXLLIR,
+    VX_BIN_ELF,
+    VX_BIN_COFF,
+    VX_BIN_MACHO,
+} vx_BinFormat;
 
-    // only compile to ssair and then output 
-    VX_TARGET_SSAIR,
-
+typedef enum {
     VX_TARGET_X86_64,
     VX_TARGET_ETCA,
 } vx_TargetArch;

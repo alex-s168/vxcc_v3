@@ -15,6 +15,8 @@
 
 typedef size_t vx_IrVar;
 
+// TODO: add allocator similar to this to kallok (allibs) and use allocators here
+
 /** alloc things that are not meant to be freed or reallocated before end of compilation */
 void * fastalloc(size_t bytes);
 void * fastrealloc(void * old, size_t oldBytes, size_t newBytes);
@@ -185,7 +187,24 @@ typedef struct {
     size_t       blocks_len;
 } vx_CU;
 
-void vx_CU_compileAll(vx_CU * cu, const char * output_file_path);
+static vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
+    vx_cu->blocks = realloc(vx_cu->blocks, sizeof(vx_IrBlock) * (vx_cu->blocks_len));
+    return &vx_cu->blocks[vx_cu->blocks_len ++];
+}
+
+static void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool export) {
+    vx_CUBlock* cb = vx_CU_addBlock(vx_cu);
+    cb->type = VX_CU_BLOCK_IR;
+    cb->v.ir = block;
+    cb->do_export = export;
+}
+
+/** 0 if ok */
+int vx_CU_compile(vx_CU * cu,
+                  FILE* optionalOptimizedSsaIr,
+                  FILE* optionalOptimizedLlIr,
+                  FILE* optionalAsm,
+                  vx_BinFormat optionalBinFormat, FILE* optionalBinOut);
 
 vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block);
 

@@ -18,7 +18,7 @@ void vx_opt_ll_condtailcall(vx_IrBlock *block) {
     assert(block->is_root);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (op->id != VX_LIR_COND)
+        if (op->id != VX_LIR_OP_COND)
             continue;
 
         size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;

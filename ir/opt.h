@@ -27,6 +27,8 @@ OPT_PASS void vx_opt_simple_patterns(vx_IrBlock* block);
 OPT_PASS void vx_opt_ll_dce(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_condtailcall(vx_IrBlock *block);
 
+// TODO: rename to vx_opt
+
 void opt(vx_IrBlock *block);
 void opt_ll(vx_IrBlock *block);
 

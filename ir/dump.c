@@ -62,8 +62,8 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
     [VX_IR_OP_CMOV] = "cmov",
 
     [VX_LIR_OP_LABEL] = "label",
-    [VX_LIR_GOTO] = "goto",
-    [VX_LIR_COND] = "cond",
+    [VX_LIR_OP_GOTO] = "goto",
+    [VX_LIR_OP_COND] = "cond",
 
     [VX_IR_OP_CALL] = "call",
     [VX_IR_OP_TAILCALL] = "tail-call",

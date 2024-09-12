@@ -275,3 +275,23 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
 
     return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
 }
+
+/** 0 if ok */
+int vx_CU_compile(vx_CU * cu,
+                  FILE* optionalOptimizedSsaIr,
+                  FILE* optionalOptimizedLlIr,
+                  FILE* optionalAsm,
+                  vx_BinFormat optionalBinFormat, FILE* optionalBinOut)
+{
+
+    // TODO: implement
+
+    for (size_t i = 0; i < cu->blocks_len; i ++) {
+        if (cu->blocks[i].type == VX_CU_BLOCK_IR) {
+            vx_IrBlock* block = cu->blocks[i].v.ir;
+            vx_IrBlock_dump(block, stdout, 0);
+        }
+    }
+
+    return 0;
+}
