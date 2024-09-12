@@ -235,6 +235,15 @@ size_t vx_IrBlock_append_label_op(vx_IrBlock *block) {
     return label_id;
 }
 
+void vx_IrBlock_append_label_op_predefined(vx_IrBlock *block, size_t label_id) {
+    vx_IrOp *label_decl = vx_IrBlock_add_op_building(block);
+    vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
+    vx_IrOp_add_param_s(label_decl, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
+
+    vx_IrBlock* root = vx_IrBlock_root(block);
+    root->as_root.labels[label_id].decl = label_decl;
+}
+
 /** false for nop and label   true for everything else */
 bool vx_IrOpType_has_effect(vx_IrOpType type) {
     switch (type) {

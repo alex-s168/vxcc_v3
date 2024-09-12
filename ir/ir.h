@@ -11,6 +11,8 @@
 
 #include "../common/common.h"
 
+// TODO make sure that all analysis functions iterate params AND args
+
 typedef size_t vx_IrVar;
 
 /** alloc things that are not meant to be freed or reallocated before end of compilation */
@@ -263,6 +265,8 @@ void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
 void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
 size_t vx_IrBlock_append_label_op(vx_IrBlock *block);
+/** for when you aquired a label id via vx_IrBlock_new_label(?, NULL) and want to add a label op at the tail*/
+void   vx_IrBlock_append_label_op_predefined(vx_IrBlock *block, size_t id);
 void vx_IrBlock_putVar(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl);
 bool vx_IrBlock_anyPlaced(vx_IrBlock* block); // only for root blocks
 
@@ -411,11 +415,11 @@ typedef enum {
 
     // conditional
     VX_IR_OP_IF,            // "cond": ()->bool, "then": ()->R, ("else": ()->R)
-    VX_IR_OP_CMOV,          // "cond": ()->bool, "then": value, "else": value
+    VX_IR_OP_CMOV,          // "cond": ()->bool, "then": value, "else": value 
 
     VX_LIR_OP_LABEL,        // "id"
-    VX_LIR_GOTO,            // "id"
-    VX_LIR_COND,            // "id", "cond": bool
+    VX_LIR_OP_GOTO,            // "id"
+    VX_LIR_OP_COND,            // "id", "cond": bool
 
     VX_IR_OP_CALL,          // "addr": int / fnref
     VX_IR_OP_TAILCALL,      // "addr": int / fnref
@@ -475,6 +479,7 @@ void vx_IrOp_init(vx_IrOp *op, vx_IrOpType type, vx_IrBlock *parent);
 void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
 void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
 void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);
+void vx_IrOp_add_arg(vx_IrOp *op, vx_IrValue val);
 static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
     vx_IrValue* val = vx_IrOp_param(src, param);
     assert(val);
@@ -486,6 +491,7 @@ void vx_IrOp_remove_param_at(vx_IrOp *op, size_t id);
 void vx_IrOp_remove_param(vx_IrOp *op, vx_IrName name);
 void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src);
 void vx_IrOp_destroy(vx_IrOp *op);
+// TODO: rename states to args 
 void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);
 bool vx_IrOp_is_volatile(vx_IrOp *op);
 size_t vx_IrOp_inline_cost(vx_IrOp *op);
