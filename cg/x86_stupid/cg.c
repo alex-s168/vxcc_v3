@@ -295,8 +295,8 @@ static Location* gen_mem_var(size_t size, Location* addr) {
 }
 
 static Location* gen_stack_var(size_t varSize, size_t stackOffset) {
-    Location* reg = gen_reg_var(8, REG_RBP.id);
-    Location* off = gen_imm_var(8, varSize + stackOffset);
+    Location* reg = gen_reg_var(PTRSIZE, REG_RBP.id);
+    Location* off = gen_imm_var(PTRSIZE, varSize + stackOffset);
     
     Location* ea = fastalloc(sizeof(Location));
     *ea = LocEA(varSize, reg, off, NEGATIVE, 1);
@@ -840,7 +840,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 vx_IrValue val = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
                 vx_IrVar out = op->outs[0].var;
                 Location* outLoc = varData[out].location;
-                Location* mem = gen_mem_var(outLoc->bytesWidth, as_loc(8, val));
+                Location* mem = gen_mem_var(outLoc->bytesWidth, as_loc(PTRSIZE, val));
                 emiti_move(mem, outLoc, false, file);
             } break;
 
@@ -1011,7 +1011,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         vx_IrValue id = *vx_IrOp_param(op->next, VX_IR_NAME_ID);
                         vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
                         if (v.type == VX_IR_VAL_VAR && v.var == ov) {
-                            emiti_jump_cond(as_loc(8, id), cc, file);
+                            emiti_jump_cond(as_loc(PTRSIZE, id), cc, file);
                             return op->next->next;
                         }
                     }
@@ -1022,7 +1022,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
                         if (v.type == VX_IR_VAL_VAR && v.var == ov) {
                             emit_call_arg_load(op->next, file);
-                            emiti_jump_cond(as_loc(8, addr), cc, file);
+                            emiti_jump_cond(as_loc(PTRSIZE, addr), cc, file);
                             emit_call_ret_store(op->next, file);
                             return op->next->next;
                         }
@@ -1037,7 +1037,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
                 Location* loc = as_loc(1, cond);
                 emiti_cmp0(loc, file);
-                emiti_jump_cond(as_loc(8, id), "nz", file);
+                emiti_jump_cond(as_loc(PTRSIZE, id), "nz", file);
             } break;
 
         case VX_IR_OP_CONDTAILCALL:  // "addr": int / fnref, "cond": bool
@@ -1048,7 +1048,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 Location* loc = as_loc(1, cond);
                 emiti_cmp0(loc, file);
                 emit_call_arg_load(op, file);
-                emiti_jump_cond(as_loc(8, addr), "nz", file);
+                emiti_jump_cond(as_loc(PTRSIZE, addr), "nz", file);
             } break;
 
         case VX_IR_OP_CMOV:          // "cond": ()->bool, "then": value, "else": value
@@ -1067,7 +1067,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
         case VX_LIR_GOTO:            // "id"
             {
-                Location* tg = as_loc(8, *vx_IrOp_param(op, VX_IR_NAME_ID));
+                Location* tg = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_ID));
                 emiti_jump(tg, file);
             } break;
 
@@ -1075,7 +1075,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
             {
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 emit_call_arg_load(op, file);
-                emiti_call(as_loc(8, addr), file);
+                emiti_call(as_loc(PTRSIZE, addr), file);
                 emit_call_ret_store(op, file);
             } break;
 
@@ -1084,7 +1084,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 assert(!needEpilog);
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 emit_call_arg_load(op, file);
-                emiti_jump(as_loc(8, addr), file);
+                emiti_jump(as_loc(PTRSIZE, addr), file);
             } break;
 
         default:

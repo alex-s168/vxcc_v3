@@ -157,6 +157,34 @@ struct vx_IrBlock_s {
     const char *name;
 };
 
+typedef enum {
+    VX_CU_BLOCK_IR,
+    VX_CU_BLOCK_SYM_REF,
+    VX_CU_BLOCK_ASM,
+} vx_CUBlockType;
+
+typedef struct {
+    vx_CUBlockType type;
+    union {
+        vx_IrBlock * ir;
+        const char * sym_ref;
+        char *       asmb; // ptr to malloc()-ed asm source code
+    } v;
+    bool       do_export;
+} vx_CUBlock;
+
+// TODO: move opt config into vx_CU
+
+/** single compilation unit */ 
+typedef struct {
+    vx_Target target;
+
+    vx_CUBlock * blocks;
+    size_t       blocks_len;
+} vx_CU;
+
+void vx_CU_compileAll(vx_CU * cu, const char * output_file_path);
+
 vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block);
 
 // TODO: do differently
