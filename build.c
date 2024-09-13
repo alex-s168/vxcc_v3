@@ -64,6 +64,10 @@ struct CompileData target_lib_files[] = {
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),
+
+    DIR("build/cg"),
+    DIR("build/cg/x86_stupid"),
+    SP(CT_C, "cg/x86_stupid/cg.c"),
 };
 
 enum CompileResult target_lib() {
@@ -73,37 +77,12 @@ enum CompileResult target_lib() {
         CHANGED("ir/opt/");
         CHANGED("ir/transform/");
         CHANGED("common/");
-    });
-
-    START;
-    DO(compile(LI(target_lib_files)));
-    DO(linkTask(LI(target_lib_files), "build/lib.a"));
-    END;
-}
-
-/* ========================================================================= */
-
-struct CompileData target_x86_files[] = {
-    DIR("build"),
-
-    DIR("build/cg"),
-
-    DIR("build/cg/x86_stupid"),
-    SP(CT_C, "cg/x86_stupid/cg.c"),
-};
-
-enum CompileResult target_x86() {
-    ONLY_IF({
-        NOT_FILE("build/x86.a");
-        CHANGED("ir/ir.h");
-        CHANGED("ir/llir.h");
-        CHANGED("common/");
         CHANGED("cg/x86_stupid");
     });
 
     START;
-    DO(compile(LI(target_x86_files)));
-    DO(linkTask(LI(target_x86_files), "build/x86.a"));
+        DO(compile(LI(target_lib_files)));
+        DO(linkTask(LI(target_lib_files), "build/lib.a"));
     END;
 }
 
@@ -112,7 +91,6 @@ enum CompileResult target_x86() {
 enum CompileResult target_tests() {
     START_TESTING;
     test("", "test.c", 0, CT_C,
-            DEP("build/x86.a"),
             DEP("build/lib.a"));
     END_TESTING;
 }
@@ -122,7 +100,6 @@ enum CompileResult target_tests() {
 struct Target targets[] = {
     { .name = "gen",   .run = target_gen },
     { .name = "lib.a", .run = target_lib },
-    { .name = "x86.a", .run = target_x86 },
     { .name = "tests", .run = target_tests },
 };
 

@@ -306,7 +306,8 @@ bool vx_IrBlock_eval_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest);
 bool vx_Irblock_mightbe_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
 bool vx_Irblock_alwaysis_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
 void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v);
-void vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
+/** ret val: did rename any? **/
+bool vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
 bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data);
 bool vx_IrBlock_is_volatile(vx_IrBlock *block);
 size_t vx_IrBlock_inline_cost(vx_IrBlock *block);

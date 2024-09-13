@@ -14,7 +14,10 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
         bool used = false;
 
         vx_IrOp *decl = vx_IrBlock_root(src->parent)->as_root.vars[vv].decl;
-        if (decl->parent != src)
+
+        if (decl == NULL) // probably! arg
+            used = true;
+        else if (decl->parent != src)
             used = true;
 
         if (!used) {

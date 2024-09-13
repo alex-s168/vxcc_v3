@@ -28,14 +28,6 @@ static vx_IrVar megic(vx_IrBlock *outer,
         }
     }
 
-    const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
-    {
-        vx_IrOp *oldstart = outer->first;
-        outer->first = orig_assign->next;
-        vx_IrBlock_rename_var(outer, var, manipulate);
-        outer->first = oldstart;
-    }
-
     vx_IrBlock *then = vx_IrOp_param(ifOp, VX_IR_NAME_COND_THEN)->block;
     vx_IrValue *pels = vx_IrOp_param(ifOp, VX_IR_NAME_COND_ELSE);
 
@@ -43,6 +35,7 @@ static vx_IrVar megic(vx_IrBlock *outer,
     if (pels == NULL) {
         els = vx_IrBlock_init_heap(then->parent, then->parent_op); // lazyness
         vx_IrOp_add_param_s(ifOp, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = els });
+        vx_IrBlock_add_out(els, var);
     } else {
         els = pels->block;
     }
@@ -53,9 +46,14 @@ static vx_IrVar megic(vx_IrBlock *outer,
     vx_IrVar elseVar = vx_IrBlock_new_var(els, NULL);
     vx_IrBlock_rename_var(els, var, elseVar);
 
-    thenVar = vx_CIrBlock_partial_mksaFinal_norec(then, thenVar);
-    elseVar = vx_CIrBlock_partial_mksaFinal_norec(els, elseVar);
-        
+    const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
+    {
+        vx_IrOp *oldstart = outer->first;
+        outer->first = ifOp->next;
+        vx_IrBlock_rename_var(outer, var, manipulate);
+        outer->first = oldstart;
+    }
+
     vx_IrOp_add_out(ifOp, manipulate, type);
     vx_IrBlock_add_out(then, thenVar);
     vx_IrBlock_add_out(els, elseVar);

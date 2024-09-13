@@ -209,7 +209,6 @@ void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b) {
 
 vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
     assert(block != NULL);
-    assert(decl != NULL);
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
     root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
@@ -222,7 +221,6 @@ vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
 
 size_t vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl) {
     assert(block != NULL);
-    assert(decl != NULL);
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
     root->as_root.labels = realloc(root->as_root.labels, (root->as_root.labels_len + 1) * sizeof(*root->as_root.labels));

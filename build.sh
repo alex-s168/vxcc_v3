@@ -58,18 +58,12 @@ elif [[ $1 == "build" ]]; then
   
   echo "# lib.a"
   ./build.exe lib.a 
-
-  echo "# x86.a"
-  ./build.exe x86.a 
 elif [[ $1 == "test" ]]; then 
   echo "compile Debug"
   prepare
   
   echo "# lib.a"
   ./build.exe lib.a 
-
-  echo "# x86.a"
-  ./build.exe x86.a 
 
   echo "# tests"
   ./build.exe tests
