@@ -64,30 +64,12 @@ static vx_IrVar megic(vx_IrBlock *outer,
         outer->first = oldstart;
     }
 
+
+    vx_IrBlock *then = vx_IrOp_param(ifOp, VX_IR_NAME_COND_THEN)->block;
+    vx_IrValue *pels = vx_IrOp_param(ifOp, VX_IR_NAME_COND_ELSE);
+
     // stage 2
-    vx_IrVar last_cond_assign = manipulate;
-    for (vx_IrOp *op = cond_op; op; op = op->next) {
-        // make sure that we assign in this op
-        bool found = false;
-        for (size_t j = 0; j < op->outs_len; j ++) {
-            if (op->outs[j].var == last_cond_assign) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-            continue;
-
-        // we don't have to check children because megic gets called from the inside out
-
-        const vx_IrVar new = vx_IrBlock_new_var(outer, op);
-        // we include the current index on purpose
-        vx_IrOp *oldstart = conditional->first;
-        conditional->first = op;
-        vx_IrBlock_rename_var(conditional, last_cond_assign, new);
-        last_cond_assign = new;
-        conditional->first = oldstart;
-    }
+    // TODO: mksa_final on then and pels but only on one var and store output var id
 
     // stage 3
 
@@ -98,11 +80,10 @@ static vx_IrVar megic(vx_IrBlock *outer,
 
     vx_IrType *type = NULL;
     for (size_t i = 0; i < orig_assign->outs_len; i ++)
-        if (orig_assign->outs[i].var == var)
+        if (orig_assign->outs[i].var == var) {
             type = orig_assign->outs[i].type;
-
-    vx_IrBlock *then = vx_IrOp_param(ifOp, VX_IR_NAME_COND_THEN)->block;
-    const vx_IrValue *pels = vx_IrOp_param(ifOp, VX_IR_NAME_COND_ELSE);
+            break;
+        }
 
     vx_IrBlock *els;
     if (pels == NULL) {
