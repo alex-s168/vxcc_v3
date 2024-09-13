@@ -67,6 +67,12 @@ struct CompileData target_lib_files[] = {
 };
 
 enum CompileResult target_lib() {
+    ONLY_IF({
+        NOT_FILE("build/lib.a");
+        CHANGED("ir/");
+        CHANGED("common/");
+    });
+
     START;
     DO(compile(LI(target_lib_files)));
     DO(linkTask(LI(target_lib_files), "build/lib.a"));
@@ -85,6 +91,14 @@ struct CompileData target_x86_files[] = {
 };
 
 enum CompileResult target_x86() {
+    ONLY_IF({
+        NOT_FILE("build/x86.a");
+        CHANGED("ir/ir.h");
+        CHANGED("ir/llir.h");
+        CHANGED("common/");
+        CHANGED("cg/x86_stupid");
+    });
+
     START;
     DO(compile(LI(target_x86_files)));
     DO(linkTask(LI(target_x86_files), "build/x86.a"));
