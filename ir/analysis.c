@@ -77,6 +77,7 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
     case VX_IR_OP_CONTINUE:
     case VX_IR_OP_TAILCALL:
     case VX_IR_OP_CONDTAILCALL:
+    case VX_IR_OP_RETURN:
         return true;
 
     default:
@@ -162,6 +163,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_GETELEM:
         case VX_IR_OP_SETELEM:
         case VX_IR_OP_ELEMPTR:
+        case VX_IR_OP_RETURN:
             return false;
 
         case VX_IR_OP_BREAK:
@@ -251,6 +253,7 @@ vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
 }
 
 static size_t cost_lut[VX_IR_OP____END] = {
+    [VX_IR_OP_RETURN] = 0,
     [VX_IR_OP_IMM] = 0,
     [VX_IR_OP_FLATTEN_PLEASE] = 0,
     [VX_IR_OP_REINTERPRET] = 0,

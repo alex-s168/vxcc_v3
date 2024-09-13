@@ -251,17 +251,18 @@ typedef struct {
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 
-// used for C IR transforms
-//
-// block is optional
-//
-// block:
-//   __  nested blocks can also exist
-//  /\
-//    \ search here
-//     \
-//     before
-//
+/**
+ * used for C IR transforms
+ *
+ * block is optional
+ *
+ * block:
+ *   __  nested blocks can also exist
+ *  /\
+ *    \ search here
+ *     \
+ *   before
+*/ 
 vx_IrOp *vx_IrBlock_vardecl_out_before(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before);
 vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block);
 /** DON'T RUN INIT AFTERWARDS */
@@ -351,6 +352,8 @@ static vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
 }
 void vx_IrNamedValue_destroy(vx_IrNamedValue v);
 
+// TODO: replace with .cdef file
+
 typedef enum {
     VX_IR_OP_IMM = 0,        // "val"
     VX_IR_OP_FLATTEN_PLEASE, // "block"
@@ -435,6 +438,7 @@ typedef enum {
     // conditional
     VX_IR_OP_IF,            // "cond": ()->bool, "then": ()->R, ("else": ()->R)
     VX_IR_OP_CMOV,          // "cond": ()->bool, "then": value, "else": value 
+    VX_IR_OP_RETURN,        // args = early return values (need to be same len as block outs)
 
     VX_LIR_OP_LABEL,        // "id"
     VX_LIR_OP_GOTO,            // "id"

@@ -1,6 +1,7 @@
 #include "ir.h"
 
 const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
+    [VX_IR_OP_RETURN] = "return",
     [VX_IR_OP_IMM] = "imm",
     [VX_IR_OP_FLATTEN_PLEASE] = ".",
     
