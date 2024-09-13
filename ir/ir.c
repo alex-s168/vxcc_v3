@@ -328,13 +328,14 @@ int vx_CU_compile(vx_CU * cu,
         vx_IrBlock_llir_lower(block);
 
         vx_IrBlock_llir_fix_decl(block);
+    });
+
+    FOR_BLOCK({
         opt_ll(block);
 
         if (optionalOptimizedLlIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
-    });
 
-    FOR_BLOCK({
         llir_prep_lower(block);
 
         if (optionalAsm)

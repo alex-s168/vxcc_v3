@@ -33,6 +33,7 @@ static vx_IrVar block_res_as_var(vx_IrBlock *parent, vx_IrBlock *block) {
 
 void vx_opt_cmov(vx_IrBlock *block)
 {
+    return;
     vx_IrBlock* root = vx_IrBlock_root(block);
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id != VX_IR_OP_IF)

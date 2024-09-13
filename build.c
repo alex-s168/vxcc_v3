@@ -70,6 +70,8 @@ enum CompileResult target_lib() {
     ONLY_IF({
         NOT_FILE("build/lib.a");
         CHANGED("ir/");
+        CHANGED("ir/opt/");
+        CHANGED("ir/transform/");
         CHANGED("common/");
     });
 

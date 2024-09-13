@@ -123,7 +123,26 @@ static vx_IrVar megic(vx_IrBlock *outer,
         vx_IrBlock_add_out(then, manipIn.var);
     else
         vx_IrBlock_add_out(then, last_cond_assign);
-    vx_IrBlock_add_out(els, var);
+
+    bool foundInEls = false;
+    for (vx_IrOp* elsOp = els->first; elsOp; elsOp = elsOp->next) {
+         // there can only be one occurance because mksa_states ran before that 
+        for (size_t o = 0; o < elsOp->outs_len; o ++) {
+            if (elsOp->outs[o].var == var) {
+                vx_IrVar temp = vx_IrBlock_new_var(els, elsOp);
+                elsOp->outs[o].var = temp;
+                vx_IrBlock_add_out(els, temp);
+
+                foundInEls = true;
+                break;
+            }
+        }
+        if (foundInEls) break;
+    }
+
+    if (!foundInEls) {
+        vx_IrBlock_add_out(els, var);
+    }
 
     return manipulate;
 }
@@ -143,8 +162,6 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
         FOR_PARAMS(ifOp, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
             vx_IrBlock *conditional = param.block;
             vx_OptIrVar manip = vx_CIrBlock_mksa_states(conditional);
-
-            // TODO: make work if we have a else block and assign there too!!!!
 
             // are we assigning any variable directly in that block that we also assign on the outside before the inst?
             for (vx_IrOp *condAssignOp = conditional->first; condAssignOp; condAssignOp = condAssignOp->next) {

@@ -162,6 +162,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
             into(body, op, dest);    
         }
         else if (op->id == VX_IR_OP_CMOV) {
+
             vx_IrValue *pcond = vx_IrOp_param(op, VX_IR_NAME_COND);
             vx_IrBlock *cond = pcond->block;
 
@@ -181,7 +182,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
         }
     }
 
-    if (dest->is_root) {
+    if (old->is_root) {
         vx_IrOp* ret = vx_IrBlock_add_op_building(dest);
         vx_IrOp_init(ret, VX_IR_OP_RETURN, dest);
         for (size_t i = 0; i < old->outs_len; i++) {
