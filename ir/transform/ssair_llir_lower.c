@@ -180,6 +180,21 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
             vx_IrBlock_add_op(dest, op); 
         }
     }
+
+    vx_IrOp* ret = vx_IrBlock_add_op_building(dest);
+    vx_IrOp_init(ret, VX_IR_OP_RETURN, dest);
+    for (size_t i = 0; i < old->outs_len; i++) {
+        vx_IrOp_add_arg(ret, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = old->outs[i] });
+    }
+
+    dest->ll_out_types = malloc(sizeof(vx_IrType*) * old->outs_len);
+    dest->ll_out_types_len = old->outs_len;
+    for (size_t i = 0; i < old->outs_len; i ++)
+         dest->ll_out_types[i] = vx_IrBlock_typeof_var(old, old->outs[i]);
+
+    free(dest->outs);
+    dest->outs = NULL;
+    dest->outs_len = 0;
 }
 
 void vx_IrBlock_llir_lower(vx_IrBlock *block) {

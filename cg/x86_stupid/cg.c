@@ -633,7 +633,8 @@ static void emiti_unary(Location* v, Location* o, const char * unary, FILE* out)
     fputc('\n', out);
 }
 
-#define SCRATCH_REG (REG_RAX.id)
+static size_t SCRATCH_REG;
+static size_t SCRATCH_REG2;
 
 typedef struct {
     vx_IrType* type;
@@ -667,6 +668,12 @@ static Location* as_loc(size_t width, vx_IrValue val) {
     case VX_IR_VAL_BLOCKREF: {
         Location* loc = fastalloc(sizeof(Location));
         *loc = LocLabel(val.block->name);
+        return loc;
+    }
+
+    case VX_IR_VAL_UNINIT: {
+        Location* loc = fastalloc(sizeof(Location));
+        loc->type = LOC_INVALID;
         return loc;
     }
 
@@ -797,8 +804,49 @@ static void emiti_bittest(Location* val, Location* idx, FILE* file) {
     end_as_primitive(idxv, idx, file);
 }
 
+static void emiti_ret(vx_IrBlock* block, vx_IrValue* values, FILE* out) {
+    if (block->ll_out_types_len >= 1) {
+        VarData vd = varData[values[0].var];
+        Location* src = vd.location;
+        
+        assert(vd.type != NULL);
+
+        char reg = REG_RAX.id;
+        if (vd.type->kind == VX_IR_TYPE_KIND_BASE && vd.type->base.isfloat)
+            reg = REG_XMM0.id;
+
+        Location* dest = gen_reg_var(src->bytesWidth, reg);
+        emiti_move(src, dest, false, out);
+    }
+
+    if (block->ll_out_types_len >= 2) {
+        VarData vd = varData[values[1].var];
+        Location* src = vd.location;
+        
+        assert(vd.type != NULL);
+
+        char reg = REG_RDX.id;
+        if (vd.type->kind == VX_IR_TYPE_KIND_BASE && vd.type->base.isfloat)
+            reg = REG_XMM1.id;
+
+        Location* dest = gen_reg_var(src->bytesWidth, reg);
+        emiti_move(src, dest, false, out);
+    }
+
+    assert(block->ll_out_types_len <= 2);
+
+    if (needEpilog)
+        emiti_leave(out);
+    fputs("ret\n", out);
+}
+
 static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file) {
     switch (op->id) {
+        case VX_IR_OP_RETURN:
+            {
+                emiti_ret(block, op->args, file);
+            } break;
+
         case VX_IR_OP_FROMFLT: // "val" 
             {
                 vx_IrValue val = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
@@ -887,13 +935,8 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     int sign = op->id == VX_IR_OP_ADD ? 1 : -1;
 
                     Location* ea = fastalloc(sizeof(Location));
-
-                    Location* as = start_as_size(PTRSIZE, a, file);
-                    Location* bs = start_as_size(PTRSIZE, b, file);
                     *ea = LocEA(o->bytesWidth, a, b, sign, 1);
                     emiti_move(ea, o, false, file);
-                    end_as_size(bs, b, file);
-                    end_as_size(as, a, file);
 
                     break;
                 }
@@ -917,8 +960,6 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
                 const char * bin;
                 switch (op->id) {
-                case VX_IR_OP_ADD: bin = "add"; break;
-                case VX_IR_OP_SUB: bin = "sub"; break;
                 case VX_IR_OP_MOD: bin = "mod"; break;
                 case VX_IR_OP_MUL: bin = "imul"; break;
                 case VX_IR_OP_UDIV: bin = "div"; break;
@@ -1106,15 +1147,29 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     bool is_leaf = vx_IrBlock_ll_isleaf(block);
     bool use_rax = is_leaf &&
-                   block->outs_len > 0 &&
-                   !block->as_root.vars[block->outs[0]].ever_placed;
+                   block->ll_out_types_len > 0;
     vx_IrType* use_rax_type = NULL;
+    vx_OptIrVar optLastRetFirstArg = VX_IRVAR_OPT_NONE;
     if (use_rax) {
-        use_rax_type = vx_IrBlock_typeof_var(block, block->outs[0]);
+        use_rax_type = block->ll_out_types[0];
         assert(use_rax_type);
         if (vx_IrType_size(use_rax_type) > 8) {
             use_rax = false;
             use_rax_type = NULL;
+        } else {
+            vx_IrOp* lastRet = vx_IrBlock_lastOfType(block, VX_IR_OP_RETURN);
+            if (lastRet) {
+                vx_IrValue val = lastRet->args[0];
+                if (val.type == VX_IR_VAL_VAR) {
+                    optLastRetFirstArg = VX_IRVAR_OPT_SOME(val.var);
+                } else {
+                    use_rax = false;
+                    use_rax_type = NULL;
+                }
+            } else {
+                use_rax = false;
+                use_rax_type = false;
+            }
         }
     }
 
@@ -1129,16 +1184,19 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     // always used   : RBP, RSP, R10 
     // calle cleanup : RBX, R12, R13, R14, R15
 
-    size_t availableRegistersCount = 2;
-    if (is_leaf && !use_rax) {
-        availableRegistersCount = 3;
+    size_t availableRegistersCount = 1;
+    if (use_rax) {
+        availableRegistersCount --;
+        SCRATCH_REG = REG_R11.id;
     }
+
     char * availableRegisters = fastalloc(availableRegistersCount);
-    availableRegisters[0] = REG_R10.id;
-    availableRegisters[1] = REG_R11.id;
-    if (is_leaf && !use_rax) {
-        availableRegisters[2] = REG_RAX.id;
+    if (!use_rax) {
+        SCRATCH_REG = REG_RAX.id;
+        availableRegisters[0] = REG_R11.id;
     }
+
+    SCRATCH_REG2 = REG_R10.id;
 
     size_t anyIntArgsCount = block->ins_len;
     size_t anyCalledIntArgsCount = 0;
@@ -1241,7 +1299,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
         char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
         if (use_rax) {
-            varsSorted[block->outs[0]] = true;
+            varsSorted[optLastRetFirstArg.var] = true;
         }
         for (size_t i = anyCalledIntArgsCount; i < block->ins_len; i ++) {
             vx_IrVar var = block->ins[i].var;
@@ -1288,10 +1346,10 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             varId ++;
         }
 
-        if (use_rax) {
-            size_t size = vx_IrType_size(use_rax_type);
+        if (optLastRetFirstArg.present) {
+            size_t size = vx_IrType_size(varData[optLastRetFirstArg.var].type);
             size = widthToWidthWidth(size);
-            varData[block->outs[0]].location = gen_reg_var(size, REG_RAX.id);
+            varData[optLastRetFirstArg.var].location = gen_reg_var(size, REG_RAX.id);
         }
 
         char intArgRegs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
@@ -1410,40 +1468,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         op = new;
     }
 
-    if (block->outs_len >= 1) {
-        VarData vd = varData[block->outs[0]];
-        Location* src = vd.location;
-        
-        assert(vd.type != NULL);
-
-        char reg = REG_RAX.id;
-        if (vd.type->kind == VX_IR_TYPE_KIND_BASE && vd.type->base.isfloat)
-            reg = REG_XMM0.id;
-
-        Location* dest = gen_reg_var(src->bytesWidth, reg);
-        emiti_move(src, dest, false, out);
-    }
-
-    if (block->outs_len >= 2) {
-        VarData vd = varData[block->outs[1]];
-        Location* src = vd.location;
-        
-        assert(vd.type != NULL);
-
-        char reg = REG_RDX.id;
-        if (vd.type->kind == VX_IR_TYPE_KIND_BASE && vd.type->base.isfloat)
-            reg = REG_XMM1.id;
-
-        Location* dest = gen_reg_var(src->bytesWidth, reg);
-        emiti_move(src, dest, false, out);
-    }
-
-    assert(block->outs_len <= 2);
-
-    if (needEpilog)
-        emiti_leave(out);
-    fputs("ret\n", out);
-
     free(varData);
     varData = NULL;
 }
@@ -1462,10 +1486,17 @@ static Location* start_scratch_reg(size_t size, FILE* out) {
         return loc;
     }
 
-    assert(RegLut[SCRATCH_REG]->stored == NULL); // TODO 
-    Location* loc = gen_reg_var(size, SCRATCH_REG);
-    RegLut[SCRATCH_REG]->stored = loc;
-    return loc;
+    if (RegLut[SCRATCH_REG]->stored == NULL) {
+        Location* loc = gen_reg_var(size, SCRATCH_REG);
+        RegLut[SCRATCH_REG]->stored = loc;
+        return loc;
+    } else if (RegLut[SCRATCH_REG2]->stored == NULL) {
+        Location* loc = gen_reg_var(size, SCRATCH_REG2);
+        RegLut[SCRATCH_REG2]->stored = loc;
+        return loc;
+    } else {
+        assert(false);
+    }
 }
 
 static void end_scratch_reg(Location* loc, FILE* out) {

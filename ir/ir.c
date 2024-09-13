@@ -168,6 +168,11 @@ bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, v
                 if (vx_IrBlock_deep_traverse(op->params[j].val.block, callback, data))
                     return true;
 
+        for (size_t j = 0; j < op->args_len; j ++)
+            if (op->args[j].type == VX_IR_VAL_BLOCK)
+                if (vx_IrBlock_deep_traverse(op->args[j].block, callback, data))
+                    return true;
+
         if (callback(op, data))
             return true;
     }
@@ -276,6 +281,9 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
     return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
 }
 
+#include "opt.h"
+#include "../cg/x86_stupid/cg.h"
+
 /** 0 if ok */
 int vx_CU_compile(vx_CU * cu,
                   FILE* optionalOptimizedSsaIr,
@@ -284,17 +292,56 @@ int vx_CU_compile(vx_CU * cu,
                   vx_BinFormat optionalBinFormat, FILE* optionalBinOut)
 {
 
-    // TODO: implement
-
-    if (optionalOptimizedSsaIr == NULL)
-        optionalOptimizedSsaIr = stdout;
-
-    for (size_t i = 0; i < cu->blocks_len; i ++) {
-        if (cu->blocks[i].type == VX_CU_BLOCK_IR) {
-            vx_IrBlock* block = cu->blocks[i].v.ir;
-            vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
-        }
+#define FOR_BLOCK(code) \
+    for (size_t i = 0; i < cu->blocks_len; i ++) { \
+        if (cu->blocks[i].type == VX_CU_BLOCK_IR) { vx_IrBlock* block = cu->blocks[i].v.ir; code; } \
     }
+
+    FOR_BLOCK({
+        if (optionalOptimizedSsaIr != NULL)
+            vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
+        if (vx_cir_verify(block) != 0)
+            return 1;
+    });
+
+    FOR_BLOCK({
+        vx_CIrBlock_fix(block); // TODO: why...
+        vx_CIrBlock_normalize(block);
+        vx_CIrBlock_mksa_states(block);
+        vx_CIrBlock_mksa_final(block);
+
+        if (vx_ir_verify(block) != 0)
+            return 1;
+    });
+
+    FOR_BLOCK({
+        opt(block);
+
+        if (optionalOptimizedSsaIr != NULL)
+            vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
+
+        if (vx_ir_verify(block) != 0)
+            return 1;
+    });
+
+    FOR_BLOCK({
+        vx_IrBlock_llir_lower(block);
+
+        vx_IrBlock_llir_fix_decl(block);
+        opt_ll(block);
+
+        if (optionalOptimizedLlIr != NULL)
+            vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
+    });
+
+    FOR_BLOCK({
+        llir_prep_lower(block);
+
+        if (optionalAsm)
+            vx_cg_x86stupid_gen(block, optionalAsm);
+    });
+
+#undef FOR_BLOCK
 
     return 0;
 }

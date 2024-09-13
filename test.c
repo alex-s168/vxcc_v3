@@ -5,6 +5,8 @@
 #include "ir/opt.h"
 #include "cg/x86_stupid/cg.h"
 
+// TODO: use CU compile
+
 static vx_IrType *ty_int;
 static vx_IrType *ty_bool;
 

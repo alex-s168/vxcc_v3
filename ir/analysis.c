@@ -11,6 +11,11 @@ static bool anyPlacedIter(vx_IrBlock* block) {
             if (op->params[i].val.type == VX_IR_VAL_BLOCK)
                 if (anyPlacedIter(op->params[i].val.block))
                     return true;
+
+        for (size_t i = 0; i < op->args_len; i ++)
+            if (op->args[i].type == VX_IR_VAL_BLOCK)
+                if (anyPlacedIter(op->args[i].block))
+                    return true;
     }
 
     return false;
@@ -24,6 +29,14 @@ bool vx_IrBlock_anyPlaced(vx_IrBlock* block) {
             return true;
 
     return anyPlacedIter(block);
+}
+
+vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type) {
+    vx_IrOp* last = NULL;
+    for (vx_IrOp* op = block->first; op; op = op->next)
+        if (op->id == type)
+            last = op;
+    return last;
 }
 
 bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after) {
@@ -85,17 +98,20 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
     }
 }
 
+static bool var_used_val(vx_IrValue val, vx_IrVar var) {
+    if (val.type == VX_IR_VAL_BLOCK)
+        return vx_IrBlock_var_used(val.block, var);
+    if (val.type == VX_IR_VAL_VAR)
+        return val.var == var;
+    return false;
+}
+
 bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var) {
     for (size_t j = 0; j < op->params_len; j++) {
-        if (op->params[j].val.type == VX_IR_VAL_BLOCK) {
-            if (vx_IrBlock_var_used(op->params[j].val.block, var)) {
-                return true;
-            }
-        } else if (op->params[j].val.type == VX_IR_VAL_VAR) {
-            if (op->params[j].val.var == var) {
-                return true;
-            }
-        }
+        if (var_used_val(op->params[j].val, var)) return true;
+    }
+    for (size_t i = 0; i < op->args_len; i ++) {
+        if (var_used_val(op->args[i], var)) return true;
     }
     return false;
 }
@@ -163,7 +179,6 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_GETELEM:
         case VX_IR_OP_SETELEM:
         case VX_IR_OP_ELEMPTR:
-        case VX_IR_OP_RETURN:
             return false;
 
         case VX_IR_OP_BREAK:
@@ -171,6 +186,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_CALL:
         case VX_IR_OP_TAILCALL:
         case VX_IR_OP_CONDTAILCALL:
+        case VX_IR_OP_RETURN:
             return true;
 
         case VX_IR_OP_STORE:
@@ -235,6 +251,13 @@ static vx_IrType* typeofvar(vx_IrBlock* block, vx_IrVar var) {
         for (size_t i = 0; i < op->params_len; i ++) {
             if (op->params[i].val.type == VX_IR_VAL_BLOCK) {
                 vx_IrType* ty = typeofvar(op->params[i].val.block, var);
+                if (ty) return ty;
+            }
+        }
+
+        for (size_t i = 0; i < op->args_len; i ++) {
+            if (op->args[i].type == VX_IR_VAL_BLOCK) {
+                vx_IrType* ty = typeofvar(op->args[i].block, var);
                 if (ty) return ty;
             }
         }
@@ -326,6 +349,10 @@ size_t vx_IrOp_inline_cost(vx_IrOp *op) {
     for (size_t i = 0; i < op->params_len; i ++)
         if (op->params[i].val.type == VX_IR_VAL_BLOCK)
             total += vx_IrBlock_inline_cost(op->params[i].val.block);
+
+    for (size_t i = 0; i < op->args_len; i ++)
+        if (op->args[i].type == VX_IR_VAL_BLOCK)
+            total += vx_IrBlock_inline_cost(op->args[i].block);
 
     total += cost_lut[op->id];
 

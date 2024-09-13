@@ -32,6 +32,16 @@ void vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
                 vx_IrBlock_rename_var(child, old, new);
             }
         }
+
+        for (size_t j = 0; j < op->args_len; j ++) {
+            if (op->args[j].type == VX_IR_VAL_VAR && op->args[j].var == old) {
+                op->args[j].var = new;
+            }
+            else if (op->args[j].type == VX_IR_VAL_BLOCK) {
+                vx_IrBlock *child = op->args[j].block;
+                vx_IrBlock_rename_var(child, old, new);
+            }
+        }
     }
 }
 

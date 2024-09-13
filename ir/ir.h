@@ -156,6 +156,9 @@ struct vx_IrBlock_s {
     vx_IrVar *outs;
     size_t    outs_len;
 
+    vx_IrType ** ll_out_types;
+    size_t       ll_out_types_len;
+
     bool should_free;
 
     const char *name;
@@ -472,6 +475,8 @@ struct vx_IrOp_s {
     vx_IrBlock  * parent;
     vx_IrOpType   id;
 };
+
+vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type);
 
 #define MKARR(...) { __VA_ARGS__ }
 
