@@ -77,6 +77,7 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
     case VX_IR_OP_CONTINUE:
     case VX_IR_OP_TAILCALL:
     case VX_IR_OP_CONDTAILCALL:
+    case VX_IR_OP_RETURN:
         return true;
 
     default:
@@ -162,6 +163,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_GETELEM:
         case VX_IR_OP_SETELEM:
         case VX_IR_OP_ELEMPTR:
+        case VX_IR_OP_RETURN:
             return false;
 
         case VX_IR_OP_BREAK:
@@ -194,8 +196,8 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
                         return true;
             return false;
 
-        case VX_LIR_COND:
-        case VX_LIR_GOTO:
+        case VX_LIR_OP_COND:
+        case VX_LIR_OP_GOTO:
         case VX_LIR_OP_LABEL:
             return true;
 
@@ -251,6 +253,7 @@ vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var) {
 }
 
 static size_t cost_lut[VX_IR_OP____END] = {
+    [VX_IR_OP_RETURN] = 0,
     [VX_IR_OP_IMM] = 0,
     [VX_IR_OP_FLATTEN_PLEASE] = 0,
     [VX_IR_OP_REINTERPRET] = 0,
@@ -299,8 +302,8 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_IF] = 1,
     [VX_IR_OP_CMOV] = 1,
     [VX_LIR_OP_LABEL] = 1,
-    [VX_LIR_GOTO] = 1,
-    [VX_LIR_COND] = 1,
+    [VX_LIR_OP_GOTO] = 1,
+    [VX_LIR_OP_COND] = 1,
     [VX_IR_OP_CALL] = 1,
     [VX_IR_OP_TAILCALL] = 1,
     [VX_IR_OP_CONDTAILCALL] = 1,
@@ -371,7 +374,7 @@ bool vx_IrOp_is_tail(vx_IrOp *op) {
     vx_IrBlock* root = vx_IrBlock_root(op->parent);
     assert(root);
 
-    if (effect->id == VX_LIR_GOTO) {
+    if (effect->id == VX_LIR_OP_GOTO) {
         size_t label = vx_IrOp_param(effect, VX_IR_NAME_ID)->id;
         vx_IrOp* dest = root->as_root.labels[label].decl;
         return vx_IrOp_is_tail(dest);

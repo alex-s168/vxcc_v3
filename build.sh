@@ -52,18 +52,29 @@ elif [[ $1 == "info" ]]; then
   echo files: $FILES
   echo cc:
   "$CC" --version
-else
+elif [[ $1 == "build" ]]; then
   echo "compile Debug"
   prepare
   
   echo "# lib.a"
   ./build.exe lib.a 
+
+  echo "# x86.a"
+  ./build.exe x86.a 
+elif [[ $1 == "test" ]]; then 
+  echo "compile Debug"
+  prepare
   
+  echo "# lib.a"
+  ./build.exe lib.a 
+
   echo "# x86.a"
   ./build.exe x86.a 
 
   echo "# tests"
   ./build.exe tests
+else 
+  echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build|test]"
 fi
 
 # shellcheck enable=SC2086

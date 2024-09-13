@@ -270,6 +270,12 @@ void vx_IrOp_add_param_s(vx_IrOp *op,
     vx_IrOp_add_param(op, vx_IrNamedValue_create(name, val));
 }
 
+void vx_IrOp_add_arg(vx_IrOp *op, vx_IrValue val)
+{
+    op->args = realloc(op->args, sizeof(vx_IrValue) * (op->args_len + 1));
+    op->args[op->args_len ++] = val;
+}
+
 void vx_IrOp_undeclare(vx_IrOp *op)
 {
     vx_IrBlock *root = (vx_IrBlock*) vx_IrBlock_root(op->parent);

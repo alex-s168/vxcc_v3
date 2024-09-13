@@ -157,8 +157,8 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             (void) analyze_if(dest, op);
             break;
 
-        case VX_LIR_GOTO:
-        case VX_LIR_COND: {
+        case VX_LIR_OP_GOTO:
+        case VX_LIR_OP_COND: {
             size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
             if (label >= root->as_root.labels_len || root->as_root.labels[label].decl == NULL) {
                 static char buf[256];

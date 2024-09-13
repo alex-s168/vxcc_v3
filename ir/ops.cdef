@@ -1,0 +1,583 @@
+# TODO: in cmov opt : check if blocks no sideEffect
+
+table vx_IrOpType (
+    debug      str  ;
+    args       str  ;
+    descr      str  ;
+
+    inlineCost int  ;
+    execCost   int  ;
+    endsFlow   bool ;
+    hasEffect  bool ;
+    volatile   bool ;
+    sideEffect bool ;
+)
+enum_entry_prefix "VX_IR_OP_"
+{
+
+    entry IMM            args       "val: variable"
+                         debug      "imm"
+                         descr      "copy value from src var to out0 var"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false
+                         sideEffect false
+                         ;
+
+    entry FLATTEN_PLEASE args       "block: block"
+                         debug      "."
+                         descr      "operations in arg block will replace this operation in lowering passes"
+                         inlineCost 0        # \/ arg blocks will be automatically combined with these values
+                         execCost   0 
+                         endsFlow   false 
+                         hasEffect  false 
+                         volatile   false  
+                         sideEffect false
+                         ;
+
+    entry ZEROEXT        args       "val: value"
+                         debug      "zx" 
+                         descr      "zero-extends the given value to the result type"
+                         inlineCost 1 
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false
+                         ;
+
+    entry SIGNEXT        args       "val: value"
+                         debug      "sx"
+                         descr      "sign-extends the given value to the result type"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false  
+                         sideEffect false
+                         ;
+
+    entry TOFLT          args       "val: value"
+                         debug      "toflt"
+                         descr      "converts the given integer to a float"
+                         inlineCost 1
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry FROMFLT        args       "val: value"
+                         debug      "fromflt"
+                         descr      "converts the given float to an integer"
+                         inlineCost 1 
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry BITCAST        args       "val: value"
+                         debug      "bitcast"
+                         descr      "reinterpret the bits of the given value as a different type"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false
+                         ;
+
+    entry LOAD           args       "addr: value"
+                         debug      "load"
+                         descr      "load T from memory at the given address , T = type of output variable" 
+                         inlineCost 2
+                         execCost   5
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry LOAD_VOLATILE  args       "addr: value"
+                         debug      "vload"
+                         descr      "load T from volatile memory at the given address , T = type of output variable" 
+                         inlineCost 2
+                         execCost   5
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   true 
+                         sideEffect true
+                         ;
+
+    entry STORE          args       "addr: value, val: value"
+                         debug      "store"
+                         descr      "store the given value into memory at the given address"
+                         inlineCost 2 
+                         execCost   5 
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect true 
+                         ;
+
+    entry STORE_VOLATILE args       "addr: value, val: value"
+                         debug      "vstore"
+                         descr      "store the given value into volatile memory at the given address"
+                         inlineCost 2 
+                         execCost   5 
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   true 
+                         sideEffect true 
+                         ;
+
+    entry PLACE          args       "var: variable"
+                         debug      "place"
+                         descr      "force the given variable to be in memory (typically on the stack) and returns the address to that variable."
+                         inlineCost 1 
+                         execCost   1 
+                         endsFlow   false 
+                         hasEffect  false 
+                         volatile   false
+                         sideEffect false
+                         ;
+
+    entry ADD            args       "a: value, b: value"
+                         debug      "add"
+                         descr      "add the two given integer or float numbers together ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SUB            args       "a: value, b: value"
+                         debug      "sub"
+                         descr      "subctract the float or integer b from the float or intege a ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry MUL            args       "a: value, b: value"
+                         debug      "mul"
+                         descr      "multiply the two given integer or float numbers together ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   2
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry UDIV           args       "a: value, b: value"
+                         debug      "udiv"
+                         descr      "divide a / b ; unsigned int ; the output type has to be a unsigned integer ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   4 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SDIV           args       "a: value, b: value"
+                         debug      "sdiv"
+                         descr      "divide a / b ; signed int ; the output type has to be a signed integer ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   4 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry FDIV           args       "a: value, b: value"
+                         debug      "fdiv"
+                         descr      "divide a / b ; float ; the output type has to be a floating point number ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   5
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry MOD            args       "a: value, b: value"
+                         debug      "mod"
+                         descr      "modulus a % b ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry UGT            args       "a: value, b: value"
+                         debug      "ugt"
+                         descr      "compare unsigned a > b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry UGTE           args       "a: value, b: value"
+                         debug      "ugte"
+                         descr      "compare unsigned a >= b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry ULT            args       "a: value, b: value"
+                         debug      "ult"
+                         descr      "compare unsigned a < b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry ULTE           args       "a: value, b: value"
+                         debug      "ulte"
+                         descr      "compare unsigned a <= b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SGT            args       "a: value, b: value"
+                         debug      "sgt"
+                         descr      "compare signed a > b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SGTE           args       "a: value, b: value"
+                         debug      "sgte"
+                         descr      "compare signed a >= b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SLT            args       "a: value, b: value"
+                         debug      "slt"
+                         descr      "compare signed a < b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SLTE           args       "a: value, b: value"
+                         debug      "slte"
+                         descr      "compare signed a <= b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry EQ             args       "a: value, b: value"
+                         debug      "eq"
+                         descr      "compare a == b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry NEQ            args       "a: value, b: value"
+                         debug      "neq"
+                         descr      "compare a != b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry AND            args       "a: value, b: value"
+                         debug      "and"
+                         descr      "boolean a && b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry OR             args       "a: value, b: value"
+                         debug      "or"
+                         descr      "boolean a || b ; both values have to have the same type ; output type can be different (boolean)"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry BITWISE_AND    args       "a: value, b: value"
+                         debug      "bwand"
+                         descr      "bitwise a & b ; both values have to have the same type as output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry BITIWSE_OR     args       "a: value, b: value"
+                         debug      "bwor"
+                         descr      "bitwise a | b ; both values have to have the same type as output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SHL            args       "a: value, b: value"
+                         debug      "shl"
+                         descr      "a << b ; both values have to have the same type as output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SHR            args       "a: value, b: value"
+                         debug      "shr" 
+                         descr      "a >> b ; both values have to have the same type as output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry ASHR           args       "a: value, b: value"
+                         debug      "ashr"
+                         descr      "arithmetic a >> b ; both values have to have the same type as output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry NEG            args       "val: value"
+                         debug      "neg"
+                         descr      "negate the given value ; value has to have same type as output"
+                         inlineCost 1
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry NOT            args       "val: value"
+                         debug      "not"
+                         descr      "boolean not the given value ; value does not have to have same type as output"
+                         inlineCost 1
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+                         
+    entry BITWISE_NOT    args       "val: value"
+                         debug      "not"
+                         descr      "bitwise not the given value ; value has to have same type as output"
+                         inlineCost 1
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry BITMASK        args       "idx: value"
+                         debug      "bitmask"
+                         descr      "generate a mask that corresponds to the bit at the given index ; identical to 1 << idx ; value has to have same type as output"
+                         inlineCost 1
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry BITEXTRACT     args       "val: value, idx: value"
+                         debug      "bit-extract"
+                         descr      "bitmask(idx) & value"
+                         inlineCost 2
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false
+                         ;
+
+    entry BITPOPCNT      args       "val: value" 
+                         debug      "popcnt"
+                         descr      "count the set bits in the given number ; output type can be different from input"
+                         inlineCost 8
+                         execCost   10
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false
+                         ;
+
+    entry BITTZCNT       args       "val: value" 
+                         debug      "tzcnt"
+                         descr      "count the amount of trailing zero bits"
+                         inlineCost 8
+                         execCost   10
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false
+                         ; 
+
+    entry BITLZCNT       args       "val: value" 
+                         debug      "lzcnt"
+                         descr      "count the amount of leading zero bits"
+                         inlineCost 8
+                         execCost   10
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false
+                         ;
+
+    entry EA             args       "base: value, (optional) offset: value, idx: value, elsize: value"
+                         debug      "ea"
+                         descr      "base + offset + elsize * idx ; types can be different ; used for computing addresses ; not supported on some architectures -> should not be used by frontend"
+                         inlineCost 3
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry FOR            args       "start: varlue, cond: (counter,states..)->continue?, stride: value, do: (counter,states..)->states, states.."
+                         debug      "for" 
+                         descr      "for loop ; stride can be negative ; states are initialized at begin ; every iter states passed into do block and output of do block overwrites states"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry INFINITE       args       "start: value, stride: value, do: (counter,states..)->states, states.."
+                         debug      "infinite" 
+                         descr      "repeat forever ; can contain break and continue ; stride can be negative ; states are initialized at begin ; every iter states passed into do block and output of do block overwrites states"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry CONTINUE       args       "states.."
+                         debug      "continue"
+                         descr      "stop this loop iteration and continue with the next ; set the states to the args"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   true
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry BREAK          args       "states.."
+                         debug      "break"
+                         descr      "stop the loop ; set the states to the args"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   true
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry RETURN         args       "returns.."
+                         debug      "ret" 
+                         descr      "early return frm root block" 
+                         inlineCost 3
+                         execCost   3 
+                         endsFlow   true 
+                         hasEffect  true 
+                         volatile   false
+                         sideEffect false 
+                         ;
+
+    entry WHILE          args "cond": (States)->bool, "do": (counter)->States, States 
+    entry REPEAT         args "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
+    entry CFOR           args "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->. 
+    entry GETELEM        args "struct": struct var, "idx": index of member
+    entry SETELEM        args "struct": old struct var, "idx": index of member, "val": new value of member
+    entry ELEMPTR        args "type": struct type, "idx": index of member, "val": pointer to struct
+    entry IF             args "cond": ()->bool, "then": ()->R, ("else": ()->R)
+    entry CMOV           args "cond": ()->bool, "then": value, "else": value
+    entry LABEL          args "id"
+    entry GOTO           args "id"
+    entry COND           args "id", "cond": bool
+    entry CALL           args "addr": int / fnref
+    entry TAILCALL       args "addr": int / fnref
+    entry CONDTAILCALL   args "addr": int / fnref, "cond": bool
+
+}

@@ -103,13 +103,13 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
                 // .end:
 
                 vx_IrOp *jmp_cond = vx_IrBlock_add_op_building(dest);
-                vx_IrOp_init(jmp_cond, VX_LIR_COND, dest);
+                vx_IrOp_init(jmp_cond, VX_LIR_OP_COND, dest);
                 vx_IrOp_add_param_s(jmp_cond, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
 
                 into(els, op, dest);
 
                 vx_IrOp *jmp_end = vx_IrBlock_add_op_building(dest);
-                vx_IrOp_init(jmp_end, VX_LIR_GOTO, dest);
+                vx_IrOp_init(jmp_end, VX_LIR_OP_GOTO, dest);
 
                 size_t label_then = vx_IrBlock_append_label_op(dest);
 
@@ -147,7 +147,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
                 // conditional jump to after the else block 
 
                 vx_IrOp *jump = vx_IrBlock_add_op_building(dest);
-                vx_IrOp_init(jump, VX_LIR_COND, dest);
+                vx_IrOp_init(jump, VX_LIR_OP_COND, dest);
                 vx_IrOp_add_param_s(jump, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_VAR, .var = cond_var });
 
                 into(els, op, dest);

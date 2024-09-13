@@ -993,7 +993,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     }
                 }
 
-                if (!(op->next && vx_IrOp_var_used(op->next, ov) && (op->next->id == VX_IR_OP_CMOV || op->next->id == VX_IR_OP_CONDTAILCALL || op->next->id == VX_LIR_COND))) {
+                if (!(op->next && vx_IrOp_var_used(op->next, ov) && (op->next->id == VX_IR_OP_CMOV || op->next->id == VX_IR_OP_CONDTAILCALL || op->next->id == VX_LIR_OP_COND))) {
                     emiti_storecond(o, cc, file);
                 }
 
@@ -1007,7 +1007,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         }
                     }
 
-                    if (ty == VX_LIR_COND) {
+                    if (ty == VX_LIR_OP_COND) {
                         vx_IrValue id = *vx_IrOp_param(op->next, VX_IR_NAME_ID);
                         vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
                         if (v.type == VX_IR_VAL_VAR && v.var == ov) {
@@ -1031,7 +1031,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
             } break;
 
 
-        case VX_LIR_COND:            // "id", "cond": bool
+        case VX_LIR_OP_COND:         // "id", "cond": bool
             {
                 vx_IrValue id = *vx_IrOp_param(op, VX_IR_NAME_ID);
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
@@ -1065,7 +1065,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 fprintf(file, ".l%zu:\n", id.id);
             } break;
 
-        case VX_LIR_GOTO:            // "id"
+        case VX_LIR_OP_GOTO:         // "id"
             {
                 Location* tg = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_ID));
                 emiti_jump(tg, file);
