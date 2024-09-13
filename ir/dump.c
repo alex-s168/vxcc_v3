@@ -14,8 +14,10 @@ const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
 
     [VX_IR_OP_LOAD] = "load",
     [VX_IR_OP_LOAD_VOLATILE] = "load-v",
+    [VX_IR_OP_LOAD_EA] = "load-ea",
     [VX_IR_OP_STORE] = "store",
     [VX_IR_OP_STORE_VOLATILE] = "store-v",
+    [VX_IR_OP_STORE_EA] = "store-ea",
     [VX_IR_OP_PLACE] = "place",
     
     [VX_IR_OP_ADD] = "add",
@@ -105,6 +107,8 @@ const char *vx_IrName_str[] = {
     [VX_IR_NAME_ALTERNATIVE_B] = "b",
 
     [VX_IR_NAME_IDX] = "idx",
+    [VX_IR_NAME_ELSIZE] = "elsize",
+    [VX_IR_NAME_OFF] = "off",
 
     [VX_IR_NAME_ID] = "id",
     [VX_IR_NAME_TYPE] = "type",

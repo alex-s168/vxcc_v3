@@ -43,7 +43,7 @@ bool VX_IR_OPFILTER_CONDITIONAL__impl(vx_IrOp* op, void* ign1) {
 bool VX_IR_OPFILTER_PURE__impl(vx_IrOp* op, void* ign1) {
     (void) ign1;
 
-    return !vx_IrOp_is_volatile(op) && op->id != VX_IR_OP_LOAD;
+    return !vx_IrOp_is_volatile(op) && op->id != VX_IR_OP_LOAD && op->id != VX_IR_OP_LOAD_EA;
 }
 
 bool VX_IR_OPFILTER_BOTH__impl(vx_IrOp* op, void* arrIn) {
@@ -316,6 +316,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
         case VX_IR_OP_SHR:
         case VX_IR_OP_FOR:
         case VX_IR_OP_LOAD:
+        case VX_IR_OP_LOAD_EA:
         case VX_IR_OP_CMOV:
         case VX_IR_OP_BITMASK:
         case VX_IR_OP_BITEXTRACT:
@@ -338,6 +339,7 @@ bool vx_IrOp_is_volatile(vx_IrOp *op)
             return true;
 
         case VX_IR_OP_STORE:
+        case VX_IR_OP_STORE_EA:
         case VX_IR_OP_PLACE: 
             return true;
 
@@ -484,7 +486,9 @@ static size_t cost_lut[VX_IR_OP____END] = {
     [VX_IR_OP_BITPOPCNT] = 1, 
     [VX_IR_OP_BITTZCNT] = 1,
     [VX_IR_OP_BITLZCNT] = 1,
-    [VX_IR_OP_EA] = 1,
+    [VX_IR_OP_EA] = 2,
+    [VX_IR_OP_LOAD_EA] = 2,
+    [VX_IR_OP_STORE_EA] = 2,
     [VX_IR_OP_NEG] = 1,
     [VX_IR_OP_ELEMPTR] = 0,
     [VX_IR_OP_SETELEM] = 0,

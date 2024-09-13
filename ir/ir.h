@@ -337,6 +337,8 @@ typedef enum {
     VX_IR_NAME_IDX,
     VX_IR_NAME_STRUCT,
     VX_IR_NAME_TYPE,
+    VX_IR_NAME_ELSIZE,
+    VX_IR_NAME_OFF,
 
     VX_IR_NAME_ID,
 } vx_IrName;
@@ -377,7 +379,9 @@ typedef enum {
     VX_IR_OP_STORE,           // "addr", "val"
     VX_IR_OP_STORE_VOLATILE,  // "addr", "val"
     VX_IR_OP_PLACE,           // "var"
-    
+    VX_IR_OP_LOAD_EA,         // "ptr", "idx", "elsize"       base + elsize * idx
+    VX_IR_OP_STORE_EA,        // "val", "ptr", "idx", "elsize"       base + elsize * idx
+
     // arithm
     VX_IR_OP_ADD,  // "a", "b"
     VX_IR_OP_SUB,  // "a", "b"
@@ -386,7 +390,7 @@ typedef enum {
     VX_IR_OP_SDIV, // "a", "b"
     VX_IR_OP_MOD,  // "a", "b"
     VX_IR_OP_NEG,  // "val"
-    VX_IR_OP_EA,   // "base", "offset", "idx", "elsize"       base + offset + elsize * idx
+    VX_IR_OP_EA,   // "ptr", "idx", "elsize"       base + elsize * idx
 
     // compare
     VX_IR_OP_UGT,  // "a", "b"

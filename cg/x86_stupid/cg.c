@@ -94,7 +94,7 @@ typedef struct Location {
             struct Location* base;
             int  offsetSign;
             struct Location* offset; // nullable!
-            size_t offsetMul;
+            struct Location* offsetMul; // nullable!
         } ea;
 
         struct {
@@ -228,18 +228,25 @@ static void emitEa(Location* ea, FILE* out) {
     assert(ea->v.ea.base->type != LOC_MEM);
     assert(ea->v.ea.base->type != LOC_EA);
 
-    emit(ea->v.ea.base, out);
+    if (ea->v.ea.base) {
+        emit(ea->v.ea.base, out);
+    }
     if (ea->v.ea.offset != NULL) {
         assert(ea->v.ea.offset->type != LOC_MEM);
         assert(ea->v.ea.offset->type != LOC_EA);
 
-        if (ea->v.ea.offsetSign == NEGATIVE) {
-            fputs(" - ", out);
-        } else {
-            fputs(" + ", out);
+        if (ea->v.ea.base) {
+            if (ea->v.ea.offsetSign == NEGATIVE) {
+                fputs(" - ", out);
+            } else {
+                fputs(" + ", out);
+            }
         }
         emit(ea->v.ea.offset, out);
-        fprintf(out, " * %zu", ea->v.ea.offsetMul);
+        if (ea->v.ea.offsetMul) {
+            fputs(" * ", out);
+            emit(ea->v.ea.offsetMul, out);
+        }
     }
 }
 
@@ -299,7 +306,7 @@ static Location* gen_stack_var(size_t varSize, size_t stackOffset) {
     Location* off = gen_imm_var(PTRSIZE, varSize + stackOffset);
     
     Location* ea = fastalloc(sizeof(Location));
-    *ea = LocEA(varSize, reg, off, NEGATIVE, 1);
+    *ea = LocEA(varSize, reg, off, NEGATIVE, NULL);
 
     return gen_mem_var(varSize, ea);
 }
@@ -889,11 +896,16 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
         case VX_IR_OP_LOAD:            // "addr"
         case VX_IR_OP_LOAD_VOLATILE:   // "addr"
             {
-                vx_IrValue val = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
+                vx_IrValue val = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
+                Location* val_loc = as_loc(PTRSIZE, val);
+                Location* addr_loc = start_as_primitive(val_loc, file);
+
                 vx_IrVar out = op->outs[0].var;
                 Location* outLoc = varData[out].location;
-                Location* mem = gen_mem_var(outLoc->bytesWidth, as_loc(PTRSIZE, val));
+                Location* mem = gen_mem_var(outLoc->bytesWidth, addr_loc);
                 emiti_move(mem, outLoc, false, file);
+
+                end_as_primitive(addr_loc, val_loc, file);
             } break;
 
         case VX_IR_OP_STORE:           // "addr", "val"
@@ -905,9 +917,13 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 assert(type.ptr);
 
                 Location* addr = as_loc(PTRSIZE, addrV);
+                Location* addr_real = start_as_primitive(addr, file);
+
                 Location* val = as_loc(vx_IrType_size(type.ptr), valV);
-                Location* mem = gen_mem_var(val->bytesWidth, addr);
+                Location* mem = gen_mem_var(val->bytesWidth, addr_real);
                 emiti_move(val, mem, false, file);
+
+                end_as_primitive(addr_real, addr, file);
 
                 vx_IrTypeRef_drop(type);
             } break;
@@ -927,6 +943,113 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 emiti_move(loc->v.mem.address, outLoc, false, file);
             } break;
 
+        case VX_IR_OP_LOAD_EA:         // "ptr", "idx", "elsize"       base + elsize * idx
+        case VX_IR_OP_STORE_EA:        // "val", "ptr", "idx", "elsize"       base + elsize * idx
+        case VX_IR_OP_EA:              // "ptr", "offset", "idx", "elsize"       base + offset + elsize * idx
+            {
+                Location* o = op->outs_len > 0 ? varData[op->outs[0].var].location : NULL;
+
+                size_t eaBytesWidth = o->bytesWidth;
+                switch (op->id)
+                {
+                    case VX_IR_OP_LOAD_EA:
+                    case VX_IR_OP_STORE_EA:
+                        eaBytesWidth = PTRSIZE;
+                        break;
+
+                    default: break;
+                }
+
+                vx_IrValue* base = vx_IrOp_param(op, VX_IR_NAME_ADDR); 
+                Location* base_loc = base ? as_loc(eaBytesWidth, *base) : NULL;
+
+                vx_IrValue* idx = vx_IrOp_param(op, VX_IR_NAME_IDX); 
+                Location* idx_loc = idx ? as_loc(eaBytesWidth, *idx) : NULL;
+
+                vx_IrValue* elsize = vx_IrOp_param(op, VX_IR_NAME_ADDR); 
+                Location* elsize_loc = elsize ? as_loc(eaBytesWidth, *elsize) : NULL;
+
+                size_t numMemOrEa = 0;
+                if (base_loc->type == LOC_MEM || base_loc->type == LOC_EA) numMemOrEa ++;
+                if (idx_loc->type == LOC_MEM || idx_loc->type == LOC_EA) numMemOrEa ++;
+                if (elsize_loc->type == LOC_MEM || elsize_loc->type == LOC_EA) numMemOrEa ++;
+
+                switch (op->id)
+                {
+                    case VX_IR_OP_LOAD_EA:
+                    case VX_IR_OP_STORE_EA:
+                        numMemOrEa = 0;
+                        break;
+
+                    default: break;
+                }
+
+                // branch always taken if loadea or storeea
+                if (numMemOrEa < 2)
+                {
+                    Location* base_prim_loc = base_loc ? start_as_primitive(base_loc, file) : NULL;
+                    Location* idx_prim_loc = idx_loc ? start_as_primitive(idx_loc, file) : NULL;
+                    Location* elsize_prim_loc = elsize_loc ? start_as_primitive(elsize_loc, file) : NULL;
+
+                    Location* ea = fastalloc(sizeof(Location));
+                    *ea = LocEA(PTRSIZE, base_prim_loc, idx_prim_loc, 1, elsize_prim_loc);
+
+                    switch (op->id)
+                    {
+                        case VX_IR_OP_LOAD_EA: {
+                            Location* mem = fastalloc(sizeof(Location));
+                            *mem = LocMem(o->bytesWidth, ea);
+                            emiti_move(mem, o, false, file);
+                            break;
+                        }
+
+                        case VX_IR_OP_STORE_EA: {
+                            vx_IrTypeRef valTy = vx_IrValue_type(block, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
+                            size_t bytes = vx_IrType_size(valTy.ptr);
+                            Location* val = as_loc(bytes, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
+                            vx_IrTypeRef_drop(valTy);
+                            Location* mem = fastalloc(sizeof(Location));
+                            *mem = LocMem(bytes, ea);
+                            emiti_move(val, mem, false, file);
+                            break;
+                        }
+
+                        case VX_IR_OP_EA: {
+                            emiti_move(ea, o, false, file);
+                            break;
+                        }
+
+                        default: assert(false); break;
+                    }
+
+                    if (elsize_prim_loc) end_as_primitive(elsize_prim_loc, elsize_loc, file);
+                    if (idx_prim_loc) end_as_primitive(idx_prim_loc, idx_loc, file);
+                    if (base_prim_loc) end_as_primitive(base_prim_loc, base_loc, file);
+                }
+                else 
+                {
+                    if (base_loc && idx_loc && elsize_loc)
+                    {
+                        Location* mult = start_scratch_reg(eaBytesWidth, file);
+                        emiti_binary(idx_loc, elsize_loc, mult, "imul", file);
+                        emiti_binary(base_loc, mult, o, "add", file);
+                        end_scratch_reg(mult, file);
+                    }
+                    else if (base_loc && idx_loc)
+                    {
+                        emiti_binary(base_loc, idx_loc, o, "add", file);
+                    }
+                    else if (idx_loc && elsize_loc)
+                    {
+                        emiti_binary(idx_loc, elsize_loc, o, "imul", file);
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
+                }
+            } break;
+
         case VX_IR_OP_ADD: // "a", "b"
         case VX_IR_OP_SUB: // "a", "b"
             {
@@ -939,7 +1062,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     int sign = op->id == VX_IR_OP_ADD ? 1 : -1;
 
                     Location* ea = fastalloc(sizeof(Location));
-                    *ea = LocEA(o->bytesWidth, a, b, sign, 1);
+                    *ea = LocEA(o->bytesWidth, a, b, sign, NULL);
                     emiti_move(ea, o, false, file);
 
                     break;
@@ -964,6 +1087,8 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
                 const char * bin;
                 switch (op->id) {
+                case VX_IR_OP_ADD: bin = "add"; break;
+                case VX_IR_OP_SUB: bin = "sub"; break;
                 case VX_IR_OP_MOD: bin = "mod"; break;
                 case VX_IR_OP_MUL: bin = "imul"; break;
                 case VX_IR_OP_UDIV: bin = "div"; break;
@@ -1373,16 +1498,16 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
             if (var.type->base.isfloat) {
                 Location* loc;
-                if (id_i >= 8) {
+                if (id_f >= 8) {
                     loc = gen_stack_var(size, stackOff);
                     stackOff += size;
                     anyPlaced = true;
                 } else {
                     size = widthToWidthWidth(size);
-                    loc = gen_reg_var(size, IntRegCount + id_i);
+                    loc = gen_reg_var(size, IntRegCount + id_f);
                 }
 
-                if (id_i >= anyCalledXmmArgsCount) {
+                if (id_f >= anyCalledXmmArgsCount) {
                     varData[var.var].location = loc;
                 } else {
                     toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
@@ -1418,14 +1543,17 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             }
         }
 
-        for (; varId < varsHotFirstLen; varId ++) {
-            if (varData[varId].heat == 0) {
-                varData[varId].location = NULL;
+        free(varsHotFirst);
+
+        for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+            if (varData[var].heat == 0) {
+                varData[var].location = NULL;
                 continue;
             }
 
-            vx_IrVar var = varsHotFirst[varId];
+            if (varData[var].location) continue;
             if (varData[var].type == NULL) continue;
+
             size_t size = vx_IrType_size(varData[var].type);
             varData[var].location = gen_stack_var(size, stackOff);
             stackOff += size;
@@ -1439,7 +1567,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         }
 
         free(toMove);
-        free(varsHotFirst);
     }
 
     bool needProlog = (stackOff > 0 && !is_leaf) ||
@@ -1474,6 +1601,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     free(varData);
     varData = NULL;
+
+    fputc('\n', out);
 }
 
 static Location* start_scratch_reg(size_t size, FILE* out) {
@@ -1499,7 +1628,7 @@ static Location* start_scratch_reg(size_t size, FILE* out) {
         RegLut[SCRATCH_REG2]->stored = loc;
         return loc;
     } else {
-        assert(false);
+        assert(/* out of regs */ false);
     }
 }
 
