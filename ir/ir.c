@@ -286,10 +286,13 @@ int vx_CU_compile(vx_CU * cu,
 
     // TODO: implement
 
+    if (optionalOptimizedSsaIr == NULL)
+        optionalOptimizedSsaIr = stdout;
+
     for (size_t i = 0; i < cu->blocks_len; i ++) {
         if (cu->blocks[i].type == VX_CU_BLOCK_IR) {
             vx_IrBlock* block = cu->blocks[i].v.ir;
-            vx_IrBlock_dump(block, stdout, 0);
+            vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
         }
     }
 
