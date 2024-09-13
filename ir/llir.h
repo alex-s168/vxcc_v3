@@ -25,7 +25,6 @@ void vx_IrBlock_ll_cmov_expand(vx_IrBlock *block);
 void vx_IrBlock_ll_finalize(vx_IrBlock *block, bool needEpilog);
 
 static void llir_prep_lower(vx_IrBlock *block) {
-    vx_IrBlock_ll_cmov_expand(block);
     vx_IrBlock_llir_fix_decl(block);
     //vx_IrBlock_llir_compact(block);
     vx_IrBlock_lifetimes(block);

@@ -2,6 +2,154 @@
 
 #include "ir.h"
 
+
+bool VX_IR_OPFILTER_COMPARISION__impl(vx_IrOp* op, void* ign0) {
+    (void) ign0;
+
+    switch (op->id)
+    {
+        case VX_IR_OP_UGT:
+        case VX_IR_OP_UGTE:
+        case VX_IR_OP_ULT:
+        case VX_IR_OP_ULTE:
+        case VX_IR_OP_SGT:
+        case VX_IR_OP_SGTE:
+        case VX_IR_OP_SLT:
+        case VX_IR_OP_SLTE:
+        case VX_IR_OP_EQ:
+        case VX_IR_OP_NEQ:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool VX_IR_OPFILTER_CONDITIONAL__impl(vx_IrOp* op, void* ign1) {
+    (void) ign1;
+
+    switch (op->id)
+    {
+        case VX_IR_OP_CONDTAILCALL:
+        case VX_LIR_OP_COND:
+        case VX_IR_OP_CMOV:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool VX_IR_OPFILTER_PURE__impl(vx_IrOp* op, void* ign1) {
+    (void) ign1;
+
+    return !vx_IrOp_is_volatile(op) && op->id != VX_IR_OP_LOAD;
+}
+
+bool VX_IR_OPFILTER_BOTH__impl(vx_IrOp* op, void* arrIn) {
+    void **arr = arrIn;
+
+    vx_IrOpFilter fil0 = arr[0];
+    vx_IrOpFilter fil1 = arr[2];
+
+    return fil0(op, arr[1]) && fil1(op, arr[3]);
+}
+
+bool vx_IrBlock_allMatch(vx_IrOp* first, vx_IrOp* last,
+                         vx_IrOpFilter fil, void* data)
+{
+    for (; first; first = first->next) {
+        if (!fil(first, data)) return false;
+        if (first == last) break;
+    }
+    return true;
+}
+
+bool vx_IrBlock_nextOpListBetween(vx_IrBlock* block,
+                                  vx_IrOp** first, vx_IrOp** last,
+                                  vx_IrOpFilter matchBegin, void *data0,
+                                  vx_IrOpFilter matchEnd, void *data1)
+{
+    vx_IrOp* op = *last ? (*last)->next : block->first;
+
+    for (; op; op = op->next)
+    {
+        if (matchBegin(op, data0)) break;
+    }
+    if (op == NULL) return false;
+    *first = op;
+
+    for (op = op->next; op; op = op->next)
+    {
+        if (matchEnd(op, data1)) break;
+    }
+    if (op == NULL) return false;
+    *last = op;
+
+    return true;
+}
+
+bool vx_IrOp_inRange(vx_IrOp* op,
+                     vx_IrOp* first, vx_IrOp* last)
+{
+    for (; first; first = first->next) {
+        if (first == op) return true;
+        if (first == last) break;
+    }
+    return false;
+}
+
+
+bool vx_IrOp_allDepsInRangeOrArgs(vx_IrBlock* block, vx_IrOp* op,
+                                  vx_IrOp* first, vx_IrOp* last)
+{
+    block = vx_IrBlock_root(block);
+
+    for (size_t i = 0; i < op->args_len; i ++) {
+        if (op->args[i].type != VX_IR_VAL_VAR) continue;
+
+        bool found = false;
+        for (vx_IrOp* r = first; r; r = r->next)
+        {
+            for (size_t o = 0; o < r->outs_len; o ++) 
+            {
+                if (r->outs[o].var == op->args[i].var) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+
+        if (block->as_root.vars[op->args[i].var].decl == NULL)
+            found = true; // in block args
+
+        if (!found) return false;
+    }
+    for (size_t i = 0; i < op->params_len; i ++) {
+        if (op->params[i].val.type != VX_IR_VAL_VAR) continue;
+
+        bool found = false;
+        for (vx_IrOp* r = first; r; r = r->next)
+        {
+            for (size_t o = 0; o < r->outs_len; o ++) 
+            {
+                if (r->outs[o].var == op->params[i].val.var) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+
+        if (block->as_root.vars[op->params[i].val.var].decl == NULL)
+            found = true; // in block args
+
+        if (!found) return false;
+    }
+    return true;
+}
+
 static bool anyPlacedIter(vx_IrBlock* block) {
     for (vx_IrOp* op = block->first; op; op = op->next) {
         if (op->id == VX_IR_OP_PLACE)

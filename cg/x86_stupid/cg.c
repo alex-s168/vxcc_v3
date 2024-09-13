@@ -1034,10 +1034,6 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     }
                 }
 
-                if (!(op->next && vx_IrOp_var_used(op->next, ov) && (op->next->id == VX_IR_OP_CMOV || op->next->id == VX_IR_OP_CONDTAILCALL || op->next->id == VX_LIR_OP_COND))) {
-                    emiti_storecond(o, cc, file);
-                }
-
                 if (op->next) {
                     vx_IrOpType ty = op->next->id;
                     if (ty == VX_IR_OP_CMOV) {
@@ -1069,6 +1065,8 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         }
                     }
                 }
+
+                emiti_storecond(o, cc, file);
             } break;
 
 
@@ -1141,6 +1139,8 @@ vx_cg_x86stupid vx_cg_x86stupid_options = (vx_cg_x86stupid) {
 };
 
 void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
+    vx_IrBlock_dump(block, stdout, 0);
+
     fprintf(out, "%s:\n", block->name);
 
     assert(block->is_root);

@@ -530,6 +530,50 @@ bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after);
 bool vx_IrOp_followingNoEffect(vx_IrOp* op);
 vx_IrOp* vx_IrOp_nextWithEffect(vx_IrOp* op);
 
+typedef bool (*vx_IrOpFilter)(vx_IrOp* op, void* userdata);
+
+bool VX_IR_OPFILTER_COMPARISION__impl(vx_IrOp*,void*);
+#define VX_IR_OPFILTER_COMPARISION \
+    VX_IR_OPFILTER_COMPARISION__impl, \
+    NULL 
+
+bool VX_IR_OPFILTER_CONDITIONAL__impl(vx_IrOp*,void*);
+#define VX_IR_OPFILTER_CONDITIONAL \
+    VX_IR_OPFILTER_CONDITIONAL__impl, \
+    NULL
+
+bool VX_IR_OPFILTER_PURE__impl(vx_IrOp*,void*);
+#define VX_IR_OPFILTER_PURE \
+    VX_IR_OPFILTER_PURE__impl, \
+    NULL
+
+bool VX_IR_OPFILTER_BOTH__impl(vx_IrOp*,void*);
+#define VX_IR_OPFILTER_BOTH(a, b) \
+    VX_IR_OPFILTER_BOTH__impl, \
+    (void*[]) { a, b }
+
+bool vx_IrBlock_nextOpListBetween(vx_IrBlock* block,
+                                  vx_IrOp** first, vx_IrOp** last,
+                                  vx_IrOpFilter matchBegin, void *data0,
+                                  vx_IrOpFilter matchEnd, void *data1);
+
+static vx_IrOp* vx_IrOp_nextWhile(vx_IrOp* op, vx_IrOpFilter match, void *data0)
+{
+    while (op && match(op, data0)) {
+        op = op->next;
+    }
+    return op;
+}
+
+bool vx_IrBlock_allMatch(vx_IrOp* first, vx_IrOp* last,
+                         vx_IrOpFilter fil, void* data);
+
+bool vx_IrOp_inRange(vx_IrOp* op,
+                     vx_IrOp* first, vx_IrOp* last);
+
+bool vx_IrOp_allDepsInRangeOrArgs(vx_IrBlock* block, vx_IrOp* op,
+                                  vx_IrOp* first, vx_IrOp* last);
+
 struct IrStaticIncrement {
     bool detected;
     vx_IrVar var;

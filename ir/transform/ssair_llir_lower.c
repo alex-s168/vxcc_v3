@@ -2,7 +2,7 @@
 
 #include "../llir.h"
 
-static void lower_into(vx_IrBlock *old, vx_IrBlock *dest);
+static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock* newParent);
 
 static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
     bool *usedarr = malloc(sizeof(bool) * parent->outs_len);
@@ -50,7 +50,7 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
         }
     }
     
-    lower_into(src, dest);
+    lower_into(src, dest, dest);
 
     for (size_t outid = 0; outid < parent->outs_len; outid ++) {
         if (usedarr[outid]) {
@@ -71,8 +71,9 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
     free(usedarr);
 }
 
-static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
+static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent) {
     for (vx_IrOp *op = old->first; op; op = op->next) {
+        op->parent = newParent;
         if (op->id == VX_IR_OP_IF) {
             vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
             
@@ -95,7 +96,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
 
             vx_IrVar cond_var = cond->outs[0];
 
-            lower_into(cond, dest);
+            lower_into(cond, dest, newParent);
 
             if (els && then) {
                 //   cond .then COND
@@ -171,7 +172,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest) {
 
             vx_IrVar cond_var = cond->outs[0];
 
-            lower_into(cond, dest);
+            lower_into(cond, dest, newParent);
 
             pcond->type = VX_IR_VAL_VAR;
             pcond->var = cond_var;
@@ -207,5 +208,5 @@ void vx_IrBlock_llir_lower(vx_IrBlock *block) {
     static vx_IrBlock copy;
     copy = *block;
     block->first = NULL;
-    lower_into(&copy, block);
+    lower_into(&copy, block, block);
 }

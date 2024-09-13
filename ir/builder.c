@@ -393,6 +393,8 @@ void vx_IrOp_remove_successor(vx_IrOp *op) {
 vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op) {
     if (op) {
         assert(op->parent);
+        if (op->parent->first == op)
+            return NULL;
         for (vx_IrOp *curr = op->parent->first; curr; curr = curr->next)
             if (curr->next == op)
                 return curr;

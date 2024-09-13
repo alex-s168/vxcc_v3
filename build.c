@@ -52,6 +52,7 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/opt/ll_jumps.c"),
     SP(CT_C, "ir/opt/ll_binary.c"),
     SP(CT_C, "ir/opt/simple_patterns.c"),
+    SP(CT_C, "ir/opt/ll_sched.c"),
 
     DIR("build/ir/transform"),
     SP(CT_C, "ir/transform/single_assign_conditional.c"),
