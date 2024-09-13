@@ -122,39 +122,39 @@ Location* loc_opt_copy(Location* old) {
     Location* new = fastalloc(sizeof(Location));
     switch (old->type) {
         case LOC_REG: { 
-            *new = LocReg(old->bytesWidth, old->v.reg.id);
-            return new;
-        }
+                          *new = LocReg(old->bytesWidth, old->v.reg.id);
+                          return new;
+                      }
 
         case LOC_IMM: {
-            *new = LocImm(old->bytesWidth, old->v.imm.bits);
-            return new;
-        }
+                          *new = LocImm(old->bytesWidth, old->v.imm.bits);
+                          return new;
+                      }
 
         case LOC_EA: {
-            if (old->v.ea.offsetMul == 0) {
-                return loc_opt_copy(old);
-            }
+                         if (old->v.ea.offsetMul == 0) {
+                             return loc_opt_copy(old);
+                         }
 
-            *new = LocEA(old->bytesWidth, old->v.ea.base, old->v.ea.offset, old->v.ea.offsetSign, old->v.ea.offsetMul);
-            return new;
-        }
+                         *new = LocEA(old->bytesWidth, old->v.ea.base, old->v.ea.offset, old->v.ea.offsetSign, old->v.ea.offsetMul);
+                         return new;
+                     }
 
         case LOC_MEM: {
-            *new = LocMem(old->bytesWidth, old->v.mem.address);
-            return new;
-        }
+                          *new = LocMem(old->bytesWidth, old->v.mem.address);
+                          return new;
+                      }
 
         case LOC_LABEL: {
-            *new = LocLabel(old->v.label.label);
-            return new;
-        }
+                            *new = LocLabel(old->v.label.label);
+                            return new;
+                        }
 
         case LOC_INVALID:
-	default: {
-            assert(false);
-            return NULL;
-        }
+        default: {
+                     assert(false);
+                     return NULL;
+                 }
     }
 }
 
@@ -261,25 +261,25 @@ static void emit(Location* loc, FILE* out) {
             break;
 
         case LOC_MEM: {
-            char ww = widthToWidthWidth(loc->bytesWidth);
-            const char * str = widthWidthToASM[ww];
-            fputs(str, out);
-            fputs(" [", out);
-            emit(loc->v.mem.address, out);
-            fputs("]", out);
-        } break;
+                          char ww = widthToWidthWidth(loc->bytesWidth);
+                          const char * str = widthWidthToASM[ww];
+                          fputs(str, out);
+                          fputs(" [", out);
+                          emit(loc->v.mem.address, out);
+                          fputs("]", out);
+                      } break;
 
         case LOC_REG:
-            fputs(RegLut[loc->v.reg.id]->name[widthToWidthIdx(loc->bytesWidth)], out);
-            break;
+                      fputs(RegLut[loc->v.reg.id]->name[widthToWidthIdx(loc->bytesWidth)], out);
+                      break;
 
         case LOC_LABEL:
-            fputs(loc->v.label.label, out);
-            break;
+                      fputs(loc->v.label.label, out);
+                      break;
 
         case LOC_INVALID:
-            assert(false);
-            break;
+                      assert(false);
+                      break;
     }
 }
 
@@ -304,7 +304,7 @@ static Location* gen_mem_var(size_t size, Location* addr) {
 static Location* gen_stack_var(size_t varSize, size_t stackOffset) {
     Location* reg = gen_reg_var(PTRSIZE, REG_RBP.id);
     Location* off = gen_imm_var(PTRSIZE, varSize + stackOffset);
-    
+
     Location* ea = fastalloc(sizeof(Location));
     *ea = LocEA(varSize, reg, off, NEGATIVE, NULL);
 
@@ -479,7 +479,7 @@ static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) 
 
     const char *prefix = "mov ";
     if ((src->type == LOC_MEM && dest->type == LOC_REG && !IsIntReg(dest->v.reg.id)) ||
-        (dest->type == LOC_MEM && src->type == LOC_REG && !IsIntReg(src->v.reg.id)))
+            (dest->type == LOC_MEM && src->type == LOC_REG && !IsIntReg(src->v.reg.id)))
     {
         if (src->bytesWidth == 4) {
             prefix = "movss ";
@@ -565,7 +565,7 @@ static void emiti_cmp(Location* a, Location* b, FILE* out) {
         end_scratch_reg(scratch, out);
         return;
     }
-    
+
     Location* as_prim_b = start_as_primitive(b, out);
 
     fputs("cmp ", out);
@@ -657,40 +657,40 @@ VarData* varData = NULL;
 
 static Location* as_loc(size_t width, vx_IrValue val) {
     switch (val.type) {
-    case VX_IR_VAL_VAR:
-        return varData[val.var].location;
+        case VX_IR_VAL_VAR:
+            return varData[val.var].location;
 
-    case VX_IR_VAL_IMM_INT:
-        return gen_imm_var(width, val.imm_int);
+        case VX_IR_VAL_IMM_INT:
+            return gen_imm_var(width, val.imm_int);
 
-    case VX_IR_VAL_IMM_FLT: {
-        int64_t bits = *(int64_t*)&val.imm_flt;
-        return gen_imm_var(width, bits);
-    }
+        case VX_IR_VAL_IMM_FLT: {
+                                    int64_t bits = *(int64_t*)&val.imm_flt;
+                                    return gen_imm_var(width, bits);
+                                }
 
-    case VX_IR_VAL_ID: {
-        Location* loc = fastalloc(sizeof(Location));
-        static char str[16];
-        sprintf(str, ".l%zu", val.id);
-        *loc = LocLabel(faststrdup(str));
-        return loc;
-    }
+        case VX_IR_VAL_ID: {
+                               Location* loc = fastalloc(sizeof(Location));
+                               static char str[16];
+                               sprintf(str, ".l%zu", val.id);
+                               *loc = LocLabel(faststrdup(str));
+                               return loc;
+                           }
 
-    case VX_IR_VAL_BLOCKREF: {
-        Location* loc = fastalloc(sizeof(Location));
-        *loc = LocLabel(val.block->name);
-        return loc;
-    }
+        case VX_IR_VAL_BLOCKREF: {
+                                     Location* loc = fastalloc(sizeof(Location));
+                                     *loc = LocLabel(val.block->name);
+                                     return loc;
+                                 }
 
-    case VX_IR_VAL_UNINIT: {
-        Location* loc = fastalloc(sizeof(Location));
-        loc->type = LOC_INVALID;
-        return loc;
-    }
+        case VX_IR_VAL_UNINIT: {
+                                   Location* loc = fastalloc(sizeof(Location));
+                                   loc->type = LOC_INVALID;
+                                   return loc;
+                               }
 
-    default:
-        assert(false);
-        return NULL;
+        default:
+                               assert(false);
+                               return NULL;
     }
 }
 
@@ -776,7 +776,7 @@ static void emiti_flt_to_int(Location* src, Location* dest, FILE* file) {
 static void emiti_int_to_flt(Location* src, Location* dest, FILE* file) {
     Location* dest_v = start_as_dest_reg(dest, file);
     Location* src_v = start_as_size(dest->bytesWidth, src, file);
-    
+
     const char *op;
     if (dest->bytesWidth == 4) {
         op = "cvtsi2ss ";
@@ -819,7 +819,7 @@ static void emiti_ret(vx_IrBlock* block, vx_IrValue* values, FILE* out) {
     if (block->ll_out_types_len >= 1) {
         VarData vd = varData[values[0].var];
         Location* src = vd.location;
-        
+
         assert(vd.type != NULL);
 
         char reg = REG_RAX.id;
@@ -833,7 +833,7 @@ static void emiti_ret(vx_IrBlock* block, vx_IrValue* values, FILE* out) {
     if (block->ll_out_types_len >= 2) {
         VarData vd = varData[values[1].var];
         Location* src = vd.location;
-        
+
         assert(vd.type != NULL);
 
         char reg = REG_RDX.id;
@@ -873,7 +873,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 Location* outLoc = varData[out].location;
                 emiti_int_to_flt(as_loc(outLoc->bytesWidth, val), outLoc, file);
             } break;
-        
+
         case VX_IR_OP_REINTERPRET: // "val"
         case VX_IR_OP_BITCAST:     // "val"
         case VX_IR_OP_IMM: // "val"
@@ -966,13 +966,13 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 vx_IrValue* idx = vx_IrOp_param(op, VX_IR_NAME_IDX); 
                 Location* idx_loc = idx ? as_loc(eaBytesWidth, *idx) : NULL;
 
-                vx_IrValue* elsize = vx_IrOp_param(op, VX_IR_NAME_ADDR); 
+                vx_IrValue* elsize = vx_IrOp_param(op, VX_IR_NAME_ELSIZE); 
                 Location* elsize_loc = elsize ? as_loc(eaBytesWidth, *elsize) : NULL;
 
                 size_t numMemOrEa = 0;
-                if (base_loc->type == LOC_MEM || base_loc->type == LOC_EA) numMemOrEa ++;
-                if (idx_loc->type == LOC_MEM || idx_loc->type == LOC_EA) numMemOrEa ++;
-                if (elsize_loc->type == LOC_MEM || elsize_loc->type == LOC_EA) numMemOrEa ++;
+                if (base_loc && (base_loc->type == LOC_MEM || base_loc->type == LOC_EA)) numMemOrEa ++;
+                if (idx_loc && (idx_loc->type == LOC_MEM || idx_loc->type == LOC_EA)) numMemOrEa ++;
+                if (elsize_loc && (elsize_loc->type == LOC_MEM || elsize_loc->type == LOC_EA)) numMemOrEa ++;
 
                 switch (op->id)
                 {
@@ -1068,7 +1068,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     break;
                 }
             } // no break 
-        
+
         case VX_IR_OP_MOD: // "a", "b"
         case VX_IR_OP_MUL: // "a", "b"
         case VX_IR_OP_UDIV: // "a", "b"
@@ -1087,20 +1087,20 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
                 const char * bin;
                 switch (op->id) {
-                case VX_IR_OP_ADD: bin = "add"; break;
-                case VX_IR_OP_SUB: bin = "sub"; break;
-                case VX_IR_OP_MOD: bin = "mod"; break;
-                case VX_IR_OP_MUL: bin = "imul"; break;
-                case VX_IR_OP_UDIV: bin = "div"; break;
-                case VX_IR_OP_SDIV: bin = "idiv"; break;
-                case VX_IR_OP_AND: 
-                case VX_IR_OP_BITWISE_AND: bin = "and"; break;
-                case VX_IR_OP_OR:
-                case VX_IR_OP_BITIWSE_OR: bin = "orr"; break;
-                case VX_IR_OP_SHL: bin = "shl"; break;
-                case VX_IR_OP_SHR: bin = "shr"; break;
+                    case VX_IR_OP_ADD: bin = "add"; break;
+                    case VX_IR_OP_SUB: bin = "sub"; break;
+                    case VX_IR_OP_MOD: bin = "mod"; break;
+                    case VX_IR_OP_MUL: bin = "imul"; break;
+                    case VX_IR_OP_UDIV: bin = "div"; break;
+                    case VX_IR_OP_SDIV: bin = "idiv"; break;
+                    case VX_IR_OP_AND: 
+                    case VX_IR_OP_BITWISE_AND: bin = "and"; break;
+                    case VX_IR_OP_OR:
+                    case VX_IR_OP_BITIWSE_OR: bin = "orr"; break;
+                    case VX_IR_OP_SHL: bin = "shl"; break;
+                    case VX_IR_OP_SHR: bin = "shr"; break;
 
-                default: assert(false); break;
+                    default: assert(false); break;
                 }
 
                 emiti_binary(a, b, o, bin, file);
@@ -1148,18 +1148,18 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     emiti_cmp(a, b, file);
 
                     switch (op->id) {
-                    case VX_IR_OP_UGT: cc = "a"; break;
-                    case VX_IR_OP_ULT: cc = "b"; break;
-                    case VX_IR_OP_UGTE: cc = "ae"; break;
-                    case VX_IR_OP_ULTE: cc = "be"; break;
-                    case VX_IR_OP_SGT: cc = "g"; break;
-                    case VX_IR_OP_SLT: cc = "l"; break;
-                    case VX_IR_OP_SGTE: cc = "ge"; break;
-                    case VX_IR_OP_SLTE: cc = "le"; break;
-                    case VX_IR_OP_EQ: cc = "e"; break;
-                    case VX_IR_OP_NEQ: cc = "ne"; break;
+                        case VX_IR_OP_UGT: cc = "a"; break;
+                        case VX_IR_OP_ULT: cc = "b"; break;
+                        case VX_IR_OP_UGTE: cc = "ae"; break;
+                        case VX_IR_OP_ULTE: cc = "be"; break;
+                        case VX_IR_OP_SGT: cc = "g"; break;
+                        case VX_IR_OP_SLT: cc = "l"; break;
+                        case VX_IR_OP_SGTE: cc = "ge"; break;
+                        case VX_IR_OP_SLTE: cc = "le"; break;
+                        case VX_IR_OP_EQ: cc = "e"; break;
+                        case VX_IR_OP_NEQ: cc = "ne"; break;
 
-                    default: assert(false); break;
+                        default: assert(false); break;
                     }
                 }
 
@@ -1276,7 +1276,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     bool is_leaf = vx_IrBlock_ll_isleaf(block);
     bool use_rax = is_leaf &&
-                   block->ll_out_types_len > 0;
+        block->ll_out_types_len > 0;
     vx_IrType* use_rax_type = NULL;
     vx_OptIrVar optLastRetFirstArg = VX_IRVAR_OPT_NONE;
     if (use_rax) {
@@ -1346,7 +1346,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             for (size_t i = 0; i < fn.args_len; i ++) {
                 vx_IrType* arg = fn.args[i];
                 assert(arg->kind == VX_IR_TYPE_KIND_BASE);
-                
+
                 if (arg->base.isfloat)
                     usedXmm ++;
                 else usedInt ++;
@@ -1454,7 +1454,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
             for (; varId < varsHotFirstLen; varId ++) {
                 vx_IrVar var = varsHotFirst[varId];
-                
+
                 if (varData[var].heat == 0) {
                     varData[var].location = NULL;
                     continue;
@@ -1465,7 +1465,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
                 size_t size = vx_IrType_size(type);
                 if (size > 8) continue;
-                
+
                 if (block->as_root.vars[var].ever_placed) continue; 
 
                 size = widthToWidthWidth(size);
@@ -1513,7 +1513,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                     toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
                     toMove[toMoveLen ++] = (struct VarD) {
                         .var = var.var,
-                        .argLoc = loc
+                            .argLoc = loc
                     };
                 }
 
@@ -1535,7 +1535,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                     toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
                     toMove[toMoveLen ++] = (struct VarD) {
                         .var = var.var,
-                        .argLoc = loc
+                            .argLoc = loc
                     };
                 } 
 
@@ -1570,8 +1570,8 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     }
 
     bool needProlog = (stackOff > 0 && !is_leaf) ||
-                      stackOff > 128 ||
-                      (stackOff > 0 && !vx_cg_x86stupid_options.use_red_zone);
+        stackOff > 128 ||
+        (stackOff > 0 && !vx_cg_x86stupid_options.use_red_zone);
 
     needEpilog = false;
     if (anyPlaced || needProlog) {

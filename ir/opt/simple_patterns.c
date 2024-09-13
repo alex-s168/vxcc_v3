@@ -94,6 +94,13 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                     vx_IrOp_steal_param(op, decl, VX_IR_NAME_IDX);
                     continue;
                 }
+                if (decl->id == VX_IR_OP_ADD) {
+                    op->id = VX_IR_OP_LOAD_EA;
+                    vx_IrOp_remove_param(op, VX_IR_NAME_ADDR);
+                    vx_IrOp_add_param_s(op, VX_IR_NAME_ADDR, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_A));
+                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_B));
+                    continue;
+                }
             }
         }
 
@@ -108,6 +115,13 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                     vx_IrOp_steal_param(op, decl, VX_IR_NAME_ADDR);
                     vx_IrOp_steal_param(op, decl, VX_IR_NAME_ELSIZE);
                     vx_IrOp_steal_param(op, decl, VX_IR_NAME_IDX);
+                    continue;
+                }
+                if (decl->id == VX_IR_OP_ADD) {
+                    op->id = VX_IR_OP_STORE_EA;
+                    vx_IrOp_remove_param(op, VX_IR_NAME_ADDR);
+                    vx_IrOp_add_param_s(op, VX_IR_NAME_ADDR, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_A));
+                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_B));
                     continue;
                 }
             }
