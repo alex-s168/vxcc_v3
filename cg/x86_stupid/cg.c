@@ -437,6 +437,10 @@ static bool equal(Location* a, Location* b) {
 }
 
 static void emiti_move(Location* src, Location *dest, bool sign_ext, FILE* out) {
+    if (src->type == LOC_INVALID) { // undefined means that we don't have to set it at all
+        return;
+    }
+
     if (src->type == LOC_IMM && src->v.imm.bits == 0) {
         emiti_zero(dest, out);
         return;
