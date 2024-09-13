@@ -1,44 +1,9 @@
 #include <assert.h>
 
 #include "../ir.h"
+#include "../cir.h"
 
 /**
- * megic
- *
- * example input:
- * \code
- * %0 = important()
- * important()
- * if (%1) {
- *     %0 = 23
- * }
- * \endcode
- *
- * stage 1:
- * \code
- * %0 = important()
- * %2 = %0
- * if (%1) {
- *     %2 = 23
- * }
- * \endcode
- * The reason for this is that we cannot move the assignment of %0 arround because it has side effects
- *
- * stage 2:
- * we don't have an example for this so here is an explanation:
- * when the variable gets set multiple times in the conditional block,
- * we need to do the same thing as in \see irblock_mksa_final but capture the last assignment and operate with that.
- *
- * stage 3:
- * \code
- * %0 = important()
- * %2 = if (%1) {
- *     23
- * } else {
- *     %0
- * }
- * \endcode
- *
  * @param outer assignment of var that is closest to conditional
  * @param outerOff the index of the assignment in outer
  * @param conditional block containing ther condtional assignment of var
@@ -55,7 +20,14 @@ static vx_IrVar megic(vx_IrBlock *outer,
                       const vx_IrVar    var,
                       const vx_OptIrVar manipIn)
 {
-    // stage 1
+    vx_IrType *type = NULL;
+    for (size_t i = 0; i < orig_assign->outs_len; i ++) {
+        if (orig_assign->outs[i].var == var) {
+            type = orig_assign->outs[i].type;
+            break;
+        }
+    }
+
     const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
     {
         vx_IrOp *oldstart = outer->first;
@@ -64,26 +36,8 @@ static vx_IrVar megic(vx_IrBlock *outer,
         outer->first = oldstart;
     }
 
-
     vx_IrBlock *then = vx_IrOp_param(ifOp, VX_IR_NAME_COND_THEN)->block;
     vx_IrValue *pels = vx_IrOp_param(ifOp, VX_IR_NAME_COND_ELSE);
-
-    // stage 2
-    // TODO: mksa_final on then and pels but only on one var and store output var id
-
-    // stage 3
-
-    // for people that can't keep track of shit, like me, here is a short summary of the current state:
-    //  var              <=> the unconditional var that we need to return in the else block
-    //  last_cond_assign <=> the conditional var that we need to return in the then block
-    //  manipulate       <=> the new target var
-
-    vx_IrType *type = NULL;
-    for (size_t i = 0; i < orig_assign->outs_len; i ++)
-        if (orig_assign->outs[i].var == var) {
-            type = orig_assign->outs[i].type;
-            break;
-        }
 
     vx_IrBlock *els;
     if (pels == NULL) {
@@ -93,37 +47,18 @@ static vx_IrVar megic(vx_IrBlock *outer,
         els = pels->block;
     }
 
-    if (conditional == els) {
-        vx_IrBlock *temp = then;
-        then = els;
-        els = temp;
-    }
+    vx_IrVar thenVar = vx_IrBlock_new_var(then, NULL);
+    vx_IrBlock_rename_var(then, var, thenVar);
 
+    vx_IrVar elseVar = vx_IrBlock_new_var(els, NULL);
+    vx_IrBlock_rename_var(els, var, elseVar);
+
+    thenVar = vx_CIrBlock_partial_mksaFinal_norec(then, thenVar);
+    elseVar = vx_CIrBlock_partial_mksaFinal_norec(els, elseVar);
+        
     vx_IrOp_add_out(ifOp, manipulate, type);
-    if (manipIn.present)
-        vx_IrBlock_add_out(then, manipIn.var);
-    else
-        vx_IrBlock_add_out(then, last_cond_assign);
-
-    bool foundInEls = false;
-    for (vx_IrOp* elsOp = els->first; elsOp; elsOp = elsOp->next) {
-         // there can only be one occurance because mksa_states ran before that 
-        for (size_t o = 0; o < elsOp->outs_len; o ++) {
-            if (elsOp->outs[o].var == var) {
-                vx_IrVar temp = vx_IrBlock_new_var(els, elsOp);
-                elsOp->outs[o].var = temp;
-                vx_IrBlock_add_out(els, temp);
-
-                foundInEls = true;
-                break;
-            }
-        }
-        if (foundInEls) break;
-    }
-
-    if (!foundInEls) {
-        vx_IrBlock_add_out(els, var);
-    }
+    vx_IrBlock_add_out(then, thenVar);
+    vx_IrBlock_add_out(els, elseVar);
 
     return manipulate;
 }
