@@ -191,12 +191,14 @@ typedef struct {
 } vx_CU;
 
 static vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
-    vx_cu->blocks = realloc(vx_cu->blocks, sizeof(vx_IrBlock) * (vx_cu->blocks_len));
+    vx_cu->blocks = realloc(vx_cu->blocks, sizeof(vx_IrBlock) * (vx_cu->blocks_len + 1));
+    if (vx_cu->blocks == NULL) return NULL;
     return &vx_cu->blocks[vx_cu->blocks_len ++];
 }
 
 static void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool export) {
     vx_CUBlock* cb = vx_CU_addBlock(vx_cu);
+    assert(cb);
     cb->type = VX_CU_BLOCK_IR;
     cb->v.ir = block;
     cb->do_export = export;
