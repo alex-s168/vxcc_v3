@@ -4,7 +4,7 @@ http://vxcc.vxcc.dev/
 use the `./build.sh`
 
 ## deps 
-`clang`: different C compiler can be used by doing `CC=someothercc ./build.sh [build|test]` (`test` builds the project and then runs all tests)
+`clang`: different C compiler can be used by doing `CC=someothercc ./build.sh [build|test]` (`test` can be executed after `build` to run all tests)
 
 `python3`: it is recommended to create a venv in the repository root using `python -m venv venv`
 

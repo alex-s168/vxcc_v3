@@ -44,6 +44,8 @@ elif [[ $1 == "ganalyze" ]]; then
   echo "# starting analyzer (gcc)"
   gcc -fanalyzer -fsanitize-trap=undefined $CFLAGS $FILES
 elif [[ $1 == "info" ]]; then
+  echo python:
+  $python --version
   echo clang:
   clang --version
   echo gcc:
@@ -54,17 +56,10 @@ elif [[ $1 == "info" ]]; then
   "$CC" --version
 elif [[ $1 == "build" ]]; then
   echo "compile Debug"
-  prepare
-  
+  prepare  
   echo "# lib.a"
   ./build.exe lib.a 
 elif [[ $1 == "test" ]]; then 
-  echo "compile Debug"
-  prepare
-  
-  echo "# lib.a"
-  ./build.exe lib.a 
-
   echo "# tests"
   ./build.exe tests
 else 
