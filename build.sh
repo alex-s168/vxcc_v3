@@ -44,8 +44,6 @@ elif [[ $1 == "ganalyze" ]]; then
   echo "# starting analyzer (gcc)"
   gcc -fanalyzer -fsanitize-trap=undefined $CFLAGS $FILES
 elif [[ $1 == "info" ]]; then
-  echo python:
-  $python --version
   echo clang:
   clang --version
   echo gcc:
