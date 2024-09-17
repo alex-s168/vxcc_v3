@@ -1387,7 +1387,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         availableRegistersCount += extraAv;
     }
 
-    varData = calloc(block->as_root.vars_len, sizeof(VarData));
+    varData = block->as_root.vars_len == 0 ? NULL : calloc(block->as_root.vars_len, sizeof(VarData));
     for (size_t i = 0; i < block->ins_len; i ++) {
         varData[block->ins[i].var].type = block->ins[i].type;
     }

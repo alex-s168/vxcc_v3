@@ -191,7 +191,7 @@ typedef struct {
 } vx_CU;
 
 static vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
-    vx_cu->blocks = realloc(vx_cu->blocks, sizeof(vx_IrBlock) * (vx_cu->blocks_len + 1));
+    vx_cu->blocks = realloc(vx_cu->blocks, sizeof(vx_CUBlock) * (vx_cu->blocks_len + 1));
     if (vx_cu->blocks == NULL) return NULL;
     return &vx_cu->blocks[vx_cu->blocks_len ++];
 }
