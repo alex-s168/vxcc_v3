@@ -3,6 +3,13 @@
 #include "ir.h"
 
 
+size_t vx_IrOp_countSuccessors(vx_IrOp *op)
+{
+    size_t count = 0;
+    for (; op; op = op->next) count ++;
+    return count;
+}
+
 bool VX_IR_OPFILTER_COMPARISION__impl(vx_IrOp* op, void* ign0) {
     (void) ign0;
 
@@ -244,6 +251,13 @@ bool vx_IrOp_ends_flow(vx_IrOp *op) {
     default:
         return false;
     }
+}
+
+bool vx_IrOp_var_inOuts(const vx_IrOp *op, vx_IrVar var) {
+    for (size_t i = 0; i < op->outs_len; i ++)
+        if (op->outs[i].var == var)
+            return true;
+    return false;
 }
 
 static bool var_used_val(vx_IrValue val, vx_IrVar var) {

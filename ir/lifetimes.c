@@ -2,41 +2,70 @@
 #include "ir.h"
 #include "llir.h"
 
-// TODO: multipart lifetimes because jumps
+static void extendLifetimeSegment(bool * bools, vx_IrOp * op)
+{
+    size_t last = 0;
+
+    op = op->next;
+    for (size_t i = 1; op; (op = op->next, i ++))
+    {
+        if (bools[i]) {
+            last = i;
+            break;
+        }
+
+        if (vx_IrOp_ends_flow(op)) {
+            if (last != 0)
+                last = i;
+            break;
+        }
+    }
+
+    for (size_t i = 0; i < last; i ++)
+    {
+        bools[i] = true;
+    }
+}
 
 /** only for root blocks */
 void vx_IrBlock_lifetimes(vx_IrBlock *block) {
     assert(block->is_root);
+    size_t numOps = vx_IrBlock_countOps(block);
 
-    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        vx_IrOp *decl = block->as_root.vars[var].decl;
-        if (decl == NULL) {
-            block->as_root.vars[var].ll_lifetime.first = NULL;
-            continue;
+    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++)
+    {
+        lifetime* lt = &block->as_root.vars[var].ll_lifetime;
+        lt->used_in_op = fastalloc(sizeof(bool) * numOps);
+
+        size_t i = 0;
+        for (vx_IrOp* op = block->first; op; (op = op->next, i ++))
+        {
+            lt->used_in_op[i] = vx_IrOp_var_used(op, var) || vx_IrOp_var_inOuts(op, var);
         }
 
-        // llir shouldn't be nested 
-
-        vx_IrOp *start = decl;
-        vx_IrOp *end = decl;
-        for (vx_IrOp *op = block->first; op; op = op->next) {
-            if (vx_IrOp_var_used(op, var)) {
-                if (vx_IrOp_after(op, end))
-                    end = op;
-                else if (vx_IrOp_after(start, op))
-                    start = op;
+        i = 0; 
+        for (vx_IrOp* op = block->first; op; (op = op->next, i ++))
+        {
+            if (lt->used_in_op[i])
+            {
+                extendLifetimeSegment(&lt->used_in_op[i], op);
             }
         }
 
-        lifetime lt;
-        lt.first = start;
-        lt.last = end;
-
-        block->as_root.vars[var].ll_lifetime = lt;
+        /*
+        printf("%%%zu = ", var);
+        for (size_t i = 0; i < numOps; i ++) {
+            printf("%i, ", lt->used_in_op[i]);
+        }
+        puts("");
+        */
     }
 
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (op->id == VX_IR_OP_PLACE) {
+    // completely unrelated
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
+        if (op->id == VX_IR_OP_PLACE)
+        {
             vx_IrVar var = vx_IrOp_param(op, VX_IR_NAME_VAR)->var;
             block->as_root.vars[var].ever_placed = true;
         }

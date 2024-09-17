@@ -11,6 +11,8 @@
 
 #include "../common/common.h"
 
+// TODO: use build.c
+
 // TODO make sure that all analysis functions iterate params AND args
 
 typedef size_t vx_IrVar;
@@ -119,9 +121,9 @@ typedef struct {
     vx_IrType *type;
 } vx_IrTypedVar;
 
+// TODO: make bit vec and re-name to alive_in_op
 typedef struct {
-    vx_IrOp *first;
-    vx_IrOp *last;
+    bool * used_in_op;
 } lifetime;
 
 struct vx_IrBlock_s;
@@ -191,17 +193,17 @@ typedef struct {
 } vx_CU;
 
 static vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
-    vx_cu->blocks = realloc(vx_cu->blocks, sizeof(vx_CUBlock) * (vx_cu->blocks_len + 1));
+    vx_cu->blocks = (vx_CUBlock*) realloc(vx_cu->blocks, sizeof(vx_CUBlock) * (vx_cu->blocks_len + 1));
     if (vx_cu->blocks == NULL) return NULL;
     return &vx_cu->blocks[vx_cu->blocks_len ++];
 }
 
-static void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool export) {
+static void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool doExport) {
     vx_CUBlock* cb = vx_CU_addBlock(vx_cu);
     assert(cb);
     cb->type = VX_CU_BLOCK_IR;
     cb->v.ir = block;
-    cb->do_export = export;
+    cb->do_export = doExport;
 }
 
 /** 0 if ok */
@@ -498,6 +500,11 @@ vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type);
     } \
 }
 
+size_t vx_IrOp_countSuccessors(vx_IrOp *op);
+static size_t vx_IrBlock_countOps(vx_IrBlock *block) {
+    return block->first ? (vx_IrOp_countSuccessors(block->first) + 1) : 0;
+}
+
 vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op);
 void vx_IrOp_remove_successor(vx_IrOp *op);
 /** should use remove_successor whenever possible! */
@@ -507,6 +514,7 @@ bool vx_IrOp_ends_flow(vx_IrOp *op);
 bool vx_IrOpType_has_effect(vx_IrOpType type);
 void vx_IrOp_undeclare(vx_IrOp *op);
 bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var);
+bool vx_IrOp_var_inOuts(const vx_IrOp *op, vx_IrVar var);
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1);
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent);
 vx_IrValue *vx_IrOp_param(const vx_IrOp *op, vx_IrName name);
