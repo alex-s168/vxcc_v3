@@ -4,14 +4,14 @@
 
 static bool trav(vx_IrOp *op, void *ignore) {
     (void) ignore;
-    if (op->id == VX_IR_OP_CALL && vx_IrOp_is_tail(op)) {
+    if (op->id == VX_IR_OP_CALL && vx_IrOp_isTail(op)) {
         op->id = VX_IR_OP_TAILCALL;
     }
     return false;
 }
 
 void vx_opt_ll_tailcall(vx_IrBlock *block) {
-    vx_IrBlock_deep_traverse(block, trav, NULL); 
+    vx_IrBlock_deepTraverse(block, trav, NULL); 
 }
 
 void vx_opt_ll_condtailcall(vx_IrBlock *block) {
@@ -31,14 +31,14 @@ void vx_opt_ll_condtailcall(vx_IrBlock *block) {
             continue;
 
         vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
-        vx_IrOp_remove_param(op, VX_IR_NAME_COND); // don't want it to free that
+        vx_IrOp_removeParam(op, VX_IR_NAME_COND); // don't want it to free that
         vx_IrOp *nxt = op->next;
         vx_IrOp_destroy(op);
         vx_IrOp_init(op, VX_IR_OP_CONDTAILCALL, block);
         op->next = nxt;
-        vx_IrOp_add_param_s(op, VX_IR_NAME_COND, cond);
+        vx_IrOp_addParam_s(op, VX_IR_NAME_COND, cond);
 
-        vx_IrOp_steal_param(op, tailcall, VX_IR_NAME_ADDR);
+        vx_IrOp_stealParam(op, tailcall, VX_IR_NAME_ADDR);
 
         vx_IrOp_remove(tailcall);
     }

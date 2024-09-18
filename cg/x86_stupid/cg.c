@@ -7,6 +7,8 @@
 // TODO: mul / div by power of 2
 // TODO: no tailcall opt if epilog
 
+#define PTRSIZE (8) // TODO
+
 struct Location;
 
 typedef struct {
@@ -740,14 +742,14 @@ static size_t var_used_after_and_before_overwrite(vx_IrOp* after, vx_IrVar var) 
             if (op->outs[o].var == var)
                 break;
 
-        if (vx_IrOp_var_used(op, var))
+        if (vx_IrOp_varUsed(op, var))
             i ++;
     }
     return i;
 }
 
 static bool ops_after_and_before_usage_or_overwrite(vx_IrOp* after, vx_IrVar var) {
-    return after->next && !vx_IrOp_var_used(after->next, var);
+    return after->next && !vx_IrOp_varUsed(after->next, var);
 }
 
 static void emiti_flt_to_int(Location* src, Location* dest, FILE* file) {
@@ -1274,7 +1276,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     assert(block->is_root);
 
-    bool is_leaf = vx_IrBlock_ll_isleaf(block);
+    bool is_leaf = vx_IrBlock_llIsLeaf(block);
     bool use_rax = is_leaf &&
         block->ll_out_types_len > 0;
     vx_IrType* use_rax_type = NULL;
@@ -1629,6 +1631,7 @@ static Location* start_scratch_reg(size_t size, FILE* out) {
         return loc;
     } else {
         assert(/* out of regs */ false);
+        return NULL;
     }
 }
 

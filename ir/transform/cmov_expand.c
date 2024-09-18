@@ -13,8 +13,8 @@ void vx_IrBlock_ll_cmov_expand(vx_IrBlock *block) {
         vx_IrOp* new = fastalloc(sizeof(vx_IrOp));
 
         vx_IrOp_init(new, VX_IR_OP_IMM, block);
-        vx_IrOp_add_out(new, out.var, out.type);
-        vx_IrOp_add_param_s(new, VX_IR_NAME_VALUE, velse);
+        vx_IrOp_addOut(new, out.var, out.type);
+        vx_IrOp_addParam_s(new, VX_IR_NAME_VALUE, velse);
 
         if (pred) {
             new->next = op;
@@ -24,6 +24,6 @@ void vx_IrBlock_ll_cmov_expand(vx_IrBlock *block) {
             block->first = new;
         }
 
-        vx_IrOp_remove_param(op, VX_IR_NAME_COND_ELSE);
+        vx_IrOp_removeParam(op, VX_IR_NAME_COND_ELSE);
     }
 }

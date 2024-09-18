@@ -51,6 +51,14 @@ static size_t boolArrLast(bool* a, size_t len)
     return last;
 }
 
+static void boolArrOrAssign(bool* dest, bool* src, size_t len)
+{
+    for (size_t i = 0; i < len; i ++)
+    {
+        dest[i] = dest[i] || src[i];
+    }
+}
+
 // merge lifetimes based on when and their type (are compatible)
 // block needs to be 100% flat, decl of vars must be known, decl won't be known after this fn anymore
 
@@ -65,6 +73,9 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
     memset(renamed, 0, sizeof(bool) * varsLen);
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        if (vx_IrBlock_vardeclIsInIns(block, var))
+            continue;
+
     recheck:
         if (renamed[var])
             continue;
@@ -72,7 +83,7 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
         lifetime lt = block->as_root.vars[var].ll_lifetime;
         size_t heat1 = boolArrCount(lt.used_in_op, blkInstLen);
 
-        vx_IrType* type1 = vx_IrBlock_typeof_var(block, var);
+        vx_IrType* type1 = vx_IrBlock_typeofVar(block, var);
         if (type1 == NULL)
             continue;
 
@@ -85,9 +96,12 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
             if (renamed[var2])
                 continue;
 
+            if (vx_IrBlock_vardeclIsInIns(block, var2))
+                continue;
+
             lifetime lt2 = block->as_root.vars[var2].ll_lifetime;
 
-            vx_IrType* type2 = vx_IrBlock_typeof_var(block, var2);
+            vx_IrType* type2 = vx_IrBlock_typeofVar(block, var2);
             if (type2 == NULL)
                 continue;
 
@@ -112,24 +126,16 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
             if (heat1 > heat2)
             {
-                vx_IrBlock_rename_var(block, var2, var);
+                vx_IrBlock_renameVar(block, var2, var);
                 renamed[var2] = true;
-                // add lifetimes 
-                for (size_t i = 0; i < blkInstLen; i ++)
-                {
-                    lt.used_in_op[i] = lt.used_in_op[i] || lt2.used_in_op[i];
-                }
+                boolArrOrAssign(lt.used_in_op, lt2.used_in_op, blkInstLen);
                 goto recheck;
             }
             else 
             {
-                vx_IrBlock_rename_var(block, var, var2);
+                vx_IrBlock_renameVar(block, var, var2);
                 renamed[var] = true;
-                // add lifetimes 
-                for (size_t i = 0; i < blkInstLen; i ++)
-                {
-                    lt2.used_in_op[i] = lt2.used_in_op[i] || lt.used_in_op[i];
-                }
+                boolArrOrAssign(lt2.used_in_op, lt.used_in_op, blkInstLen);
                 break; // don't want to continue finding matches for this var since we renamed it 
             }
         }

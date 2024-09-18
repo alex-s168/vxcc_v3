@@ -28,7 +28,7 @@ static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
 
 static void vx_IrBlock_substitute_var(vx_IrBlock *block, vx_IrVar old, vx_IrValue new) {
     struct vx_IrView_substitute_var__data data = { .block = block, .old = old, .new = new };
-    vx_IrBlock_deep_traverse(block, vx_IrView_substitute_var__trav, &data);
+    vx_IrBlock_deepTraverse(block, vx_IrView_substitute_var__trav, &data);
 }
 
 // =======================================================================
@@ -51,5 +51,5 @@ static bool trav (vx_IrOp *op, void *data)
 }
 
 void vx_opt_inline_vars(vx_IrBlock *block) {
-    vx_IrBlock_deep_traverse(block, trav, block);
+    vx_IrBlock_deepTraverse(block, trav, block);
 }

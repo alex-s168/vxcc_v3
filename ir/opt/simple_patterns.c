@@ -11,9 +11,9 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
         // shift num 1 left 
         if (op->id == VX_IR_OP_SHL && operandA && operandA->type == VX_IR_VAL_IMM_INT && operandA->imm_int == 1) {
             op->id = VX_IR_OP_BITMASK;
-            vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, *operandB);
-            vx_IrOp_remove_param(op, VX_IR_NAME_OPERAND_A);
-            vx_IrOp_remove_param(op, VX_IR_NAME_OPERAND_B);
+            vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, *operandB);
+            vx_IrOp_removeParam(op, VX_IR_NAME_OPERAND_A);
+            vx_IrOp_removeParam(op, VX_IR_NAME_OPERAND_B);
             continue;
         }
 
@@ -25,9 +25,9 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                     vx_IrValue idx = *vx_IrOp_param(decl, VX_IR_NAME_IDX);
                     op->id = VX_IR_OP_BITEXTRACT;
                     vx_IrValue opB = *operandB;
-                    vx_IrOp_remove_params(op);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, idx);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, opB);
+                    vx_IrOp_removeParams(op);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, idx);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_VALUE, opB);
                     continue;
                 }
             }
@@ -38,9 +38,9 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                     vx_IrValue idx = *vx_IrOp_param(decl, VX_IR_NAME_IDX);
                     op->id = VX_IR_OP_BITEXTRACT;
                     vx_IrValue opA = *operandA;
-                    vx_IrOp_remove_params(op);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, idx);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, opA);
+                    vx_IrOp_removeParams(op);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, idx);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_VALUE, opA);
                     continue;
                 }
             }
@@ -56,10 +56,10 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                     vx_IrValue base = *operandB;
 
                     op->id = VX_IR_OP_EA;
-                    vx_IrOp_remove_params(op);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_ADDR, base);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_ELSIZE, mulA);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, mulB);
+                    vx_IrOp_removeParams(op);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_ADDR, base);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_ELSIZE, mulA);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, mulB);
                     continue;
                 }
             }
@@ -72,10 +72,10 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                     vx_IrValue base = *operandA;
 
                     op->id = VX_IR_OP_EA;
-                    vx_IrOp_remove_params(op);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_ADDR, base);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_ELSIZE, mulA);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, mulB);
+                    vx_IrOp_removeParams(op);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_ADDR, base);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_ELSIZE, mulA);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, mulB);
                     continue;
                 }
             }
@@ -88,17 +88,17 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                 vx_IrOp* decl = root->as_root.vars[addr.var].decl;
                 if (decl->id == VX_IR_OP_EA) {
                     op->id = VX_IR_OP_LOAD_EA;
-                    vx_IrOp_remove_param(op, VX_IR_NAME_ADDR);
-                    vx_IrOp_steal_param(op, decl, VX_IR_NAME_ADDR);
-                    vx_IrOp_steal_param(op, decl, VX_IR_NAME_ELSIZE);
-                    vx_IrOp_steal_param(op, decl, VX_IR_NAME_IDX);
+                    vx_IrOp_removeParam(op, VX_IR_NAME_ADDR);
+                    vx_IrOp_stealParam(op, decl, VX_IR_NAME_ADDR);
+                    vx_IrOp_stealParam(op, decl, VX_IR_NAME_ELSIZE);
+                    vx_IrOp_stealParam(op, decl, VX_IR_NAME_IDX);
                     continue;
                 }
                 if (decl->id == VX_IR_OP_ADD) {
                     op->id = VX_IR_OP_LOAD_EA;
-                    vx_IrOp_remove_param(op, VX_IR_NAME_ADDR);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_ADDR, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_A));
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_B));
+                    vx_IrOp_removeParam(op, VX_IR_NAME_ADDR);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_ADDR, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_A));
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_B));
                     continue;
                 }
             }
@@ -111,17 +111,17 @@ void vx_opt_simple_patterns(vx_IrBlock* block)
                 vx_IrOp* decl = root->as_root.vars[addr.var].decl;
                 if (decl->id == VX_IR_OP_EA) {
                     op->id = VX_IR_OP_STORE_EA;
-                    vx_IrOp_remove_param(op, VX_IR_NAME_ADDR);
-                    vx_IrOp_steal_param(op, decl, VX_IR_NAME_ADDR);
-                    vx_IrOp_steal_param(op, decl, VX_IR_NAME_ELSIZE);
-                    vx_IrOp_steal_param(op, decl, VX_IR_NAME_IDX);
+                    vx_IrOp_removeParam(op, VX_IR_NAME_ADDR);
+                    vx_IrOp_stealParam(op, decl, VX_IR_NAME_ADDR);
+                    vx_IrOp_stealParam(op, decl, VX_IR_NAME_ELSIZE);
+                    vx_IrOp_stealParam(op, decl, VX_IR_NAME_IDX);
                     continue;
                 }
                 if (decl->id == VX_IR_OP_ADD) {
                     op->id = VX_IR_OP_STORE_EA;
-                    vx_IrOp_remove_param(op, VX_IR_NAME_ADDR);
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_ADDR, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_A));
-                    vx_IrOp_add_param_s(op, VX_IR_NAME_IDX, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_B));
+                    vx_IrOp_removeParam(op, VX_IR_NAME_ADDR);
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_ADDR, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_A));
+                    vx_IrOp_addParam_s(op, VX_IR_NAME_IDX, *vx_IrOp_param(decl, VX_IR_NAME_OPERAND_B));
                     continue;
                 }
             }

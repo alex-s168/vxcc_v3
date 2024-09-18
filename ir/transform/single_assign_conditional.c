@@ -33,30 +33,30 @@ static vx_IrVar megic(vx_IrBlock *outer,
 
     vx_IrBlock *els;
     if (pels == NULL) {
-        els = vx_IrBlock_init_heap(then->parent, then->parent_op); // lazyness
-        vx_IrOp_add_param_s(ifOp, VX_IR_NAME_COND_ELSE, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = els });
-        vx_IrBlock_add_out(els, var);
+        els = vx_IrBlock_initHeap(then->parent, then->parent_op); // lazyness
+        vx_IrOp_addParam_s(ifOp, VX_IR_NAME_COND_ELSE, VX_IR_VALUE_BLK(els));
+        vx_IrBlock_addOut(els, var);
     } else {
         els = pels->block;
     }
 
-    vx_IrVar thenVar = vx_IrBlock_new_var(then, NULL);
-    vx_IrBlock_rename_var(then, var, thenVar);
+    vx_IrVar thenVar = vx_IrBlock_newVar(then, NULL);
+    vx_IrBlock_renameVar(then, var, thenVar);
 
-    vx_IrVar elseVar = vx_IrBlock_new_var(els, NULL);
-    vx_IrBlock_rename_var(els, var, elseVar);
+    vx_IrVar elseVar = vx_IrBlock_newVar(els, NULL);
+    vx_IrBlock_renameVar(els, var, elseVar);
 
-    const vx_IrVar manipulate = vx_IrBlock_new_var(outer, ifOp);
+    const vx_IrVar manipulate = vx_IrBlock_newVar(outer, ifOp);
     {
         vx_IrOp *oldstart = outer->first;
         outer->first = ifOp->next;
-        vx_IrBlock_rename_var(outer, var, manipulate);
+        vx_IrBlock_renameVar(outer, var, manipulate);
         outer->first = oldstart;
     }
 
-    vx_IrOp_add_out(ifOp, manipulate, type);
-    vx_IrBlock_add_out(then, thenVar);
-    vx_IrBlock_add_out(els, elseVar);
+    vx_IrOp_addOut(ifOp, manipulate, type);
+    vx_IrBlock_addOut(then, thenVar);
+    vx_IrBlock_addOut(els, elseVar);
 
     return manipulate;
 }
@@ -82,7 +82,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
                 for (size_t l = 0; l < condAssignOp->outs_len; l ++) {
                     vx_IrVar var = condAssignOp->outs[l].var;
 
-                    vx_IrOp *alwaysAssignOp = vx_IrBlock_vardecl_out_before(block, var, ifOp);
+                    vx_IrOp *alwaysAssignOp = vx_IrBlock_vardeclOutBefore(block, var, ifOp);
                     if (alwaysAssignOp == NULL)
                         continue;
                     rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, ifOp, var, manip));

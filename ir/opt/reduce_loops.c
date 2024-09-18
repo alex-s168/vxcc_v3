@@ -49,7 +49,7 @@ void vx_opt_reduce_loops(vx_IrBlock *block)
             for (stateId = 0; stateId < op->outs_len; stateId ++) {
                 bool found = false;
                 for (vx_IrOp *incOp = newdo->first; incOp; incOp = incOp->next) {
-                    si = vx_IrOp_detect_static_increment(incOp);
+                    si = vx_IrOp_detectStaticIncrement(incOp);
                     if (si.detected &&
                         incOp->outs[0].var == op->outs[stateId].var &&
                         si.var == newcond->ins[stateId].var)
@@ -72,17 +72,17 @@ void vx_opt_reduce_loops(vx_IrBlock *block)
             const vx_IrValue init = op->args[stateId];
 
             // counter needs to be at pos 0 oviously
-            vx_IrBlock_swap_in_at(newcond, stateId, 0);
-            vx_IrBlock_swap_out_at(newcond, stateId, 0);
-            vx_IrOp_remove_state_at(op, stateId);
+            vx_IrBlock_swapInAt(newcond, stateId, 0);
+            vx_IrBlock_swapOutAt(newcond, stateId, 0);
+            vx_IrOp_removeArgAt(op, stateId);
 
             vx_IrOp new;
             vx_IrOp_init(&new, VX_IR_OP_FOR, block);
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_START, init);
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_STRIDE, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = si.by });
-            vx_IrOp_steal_states(&new, op);
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_COND, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = newcond });
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_DO, (vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = newdo });
+            vx_IrOp_addParam_s(&new, VX_IR_NAME_LOOP_START, init);
+            vx_IrOp_addParam_s(&new, VX_IR_NAME_LOOP_STRIDE, VX_IR_VALUE_IMM_INT(si.by));
+            vx_IrOp_stealArgs(&new, op);
+            vx_IrOp_addParam_s(&new, VX_IR_NAME_COND, VX_IR_VALUE_BLK(newcond));
+            vx_IrOp_addParam_s(&new, VX_IR_NAME_LOOP_DO, VX_IR_VALUE_BLK(newdo));
 
             vx_IrOp_remove(incOp);
 

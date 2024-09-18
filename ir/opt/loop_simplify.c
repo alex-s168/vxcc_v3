@@ -10,15 +10,15 @@ void vx_opt_loop_simplify(vx_IrBlock *block)
         const vx_IrVar condVar = cond->outs[0];
 
         // if it will always we 0, we optimize it out
-        if (vx_Irblock_alwaysis_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
+        if (vx_Irblock_alwaysIsVar(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             vx_IrOp_remove(op);
             continue;
         }
 
         // if it will never be 0 (not might be 0), it is always true => infinite loop
-        if (!vx_Irblock_mightbe_var(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
+        if (!vx_Irblock_mightbeVar(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             op->id = VX_IR_OP_INFINITE;
-            vx_IrOp_remove_param(op, VX_IR_NAME_COND);
+            vx_IrOp_removeParam(op, VX_IR_NAME_COND);
             continue;
         }
 
@@ -37,12 +37,12 @@ void vx_opt_loop_simplify(vx_IrBlock *block)
 
             vx_IrOp new;
             vx_IrOp_init(&new, VX_IR_OP_REPEAT, block);
-            vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_DO);
-            vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_START);
-            vx_IrOp_add_param_s(&new, VX_IR_NAME_LOOP_ENDEX, b);
-            vx_IrOp_steal_param(&new, op, VX_IR_NAME_LOOP_STRIDE);
-            vx_IrOp_steal_states(&new, op); // steal all state init params
-            vx_IrOp_steal_outs(&new, op);
+            vx_IrOp_stealParam(&new, op, VX_IR_NAME_LOOP_DO);
+            vx_IrOp_stealParam(&new, op, VX_IR_NAME_LOOP_START);
+            vx_IrOp_addParam_s(&new, VX_IR_NAME_LOOP_ENDEX, b);
+            vx_IrOp_stealParam(&new, op, VX_IR_NAME_LOOP_STRIDE);
+            vx_IrOp_stealArgs(&new, op); // steal all state init params
+            vx_IrOp_stealOuts(&new, op);
             // we probably do a bit of memory leaking here...
             *op = new;
         }

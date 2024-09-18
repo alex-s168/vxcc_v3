@@ -11,7 +11,7 @@ static void rmcode_before_label(vx_IrOp *op) {
 
 void vx_opt_ll_dce(vx_IrBlock *block) {
     for (vx_IrOp *op = block->first; op; op = op->next)
-        if (vx_IrOp_ends_flow(op))
+        if (vx_IrOp_endsFlow(op))
             rmcode_before_label(op->next);
 }
 

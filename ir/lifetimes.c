@@ -14,7 +14,7 @@ static void extendLifetimeSegment(bool * bools, vx_IrOp * op)
             break;
         }
 
-        if (vx_IrOp_ends_flow(op)) {
+        if (vx_IrOp_endsFlow(op)) {
             if (last != 0)
                 last = i;
             break;
@@ -40,7 +40,7 @@ void vx_IrBlock_lifetimes(vx_IrBlock *block) {
         size_t i = 0;
         for (vx_IrOp* op = block->first; op; (op = op->next, i ++))
         {
-            lt->used_in_op[i] = vx_IrOp_var_used(op, var) || vx_IrOp_var_inOuts(op, var);
+            lt->used_in_op[i] = vx_IrOp_varUsed(op, var) || vx_IrOp_varInOuts(op, var);
         }
 
         i = 0; 

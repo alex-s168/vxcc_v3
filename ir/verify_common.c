@@ -202,7 +202,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
                     };
                     vx_Errors_add(dest, &error);
                 } else if (root->as_root.vars[var].decl == NULL) {
-                    if (!vx_IrBlock_vardecl_is_in_ins(block, var)) {
+                    if (!vx_IrBlock_vardeclIsInIns(block, var)) {
                         static char buf[256];
                         sprintf(buf, "Variable %%%zu is never declared!", var);
                         vx_Error error = {

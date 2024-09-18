@@ -13,15 +13,15 @@ void vx_opt_constant_eval(vx_IrBlock *block)
                                             \
         if (a->type == VX_IR_VAL_IMM_INT && b->type == VX_IR_VAL_IMM_INT) { \
             op->id = VX_IR_OP_IMM; \
-            vx_IrOp_remove_params(op); \
-            vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
+            vx_IrOp_removeParams(op); \
+            vx_IrOp_addParam_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
                 .type = VX_IR_VAL_IMM_INT, \
                 .imm_int = ((typedest) a->imm_int) what ((typedest) b->imm_int) \
             }); \
         } else if (a->type == VX_IR_VAL_IMM_FLT && b->type == VX_IR_VAL_IMM_FLT) { \
             op->id = VX_IR_OP_IMM; \
-            vx_IrOp_remove_params(op); \
-            vx_IrOp_add_param_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
+            vx_IrOp_removeParams(op); \
+            vx_IrOp_addParam_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
                 .type = VX_IR_VAL_IMM_FLT, \
                 .imm_flt = ((typedest) a->imm_flt) + ((typedest) b->imm_flt) \
             }); \

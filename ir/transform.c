@@ -4,7 +4,7 @@
 #include <string.h>
 #include <assert.h>
 
-bool vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
+bool vx_IrBlock_renameVar(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
     for (size_t j = 0; j < block->ins_len; j ++)
         if (block->ins[j].var == old)
             block->ins[j].var = new;
@@ -39,7 +39,7 @@ bool vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
             }
             else if (op->params[j].val.type == VX_IR_VAL_BLOCK) {
                 vx_IrBlock *child = op->params[j].val.block;
-                if (vx_IrBlock_rename_var(child, old, new))
+                if (vx_IrBlock_renameVar(child, old, new))
                     any = true;
             }
         }
@@ -51,7 +51,7 @@ bool vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar new) {
             }
             else if (op->args[j].type == VX_IR_VAL_BLOCK) {
                 vx_IrBlock *child = op->args[j].block;
-                if (vx_IrBlock_rename_var(child, old, new))
+                if (vx_IrBlock_renameVar(child, old, new))
                     any = true;
             }
         }

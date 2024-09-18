@@ -24,7 +24,7 @@ static void part1(vx_IrBlock *block) {
             if (other == decl)
                 break;
 
-            if (vx_IrOpType_has_effect(other->id)) {
+            if (vx_IrOpType_hasEffect(other->id)) {
                 can_opt = false;
                 break;
             }

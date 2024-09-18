@@ -11,13 +11,11 @@
 
 #include "../common/common.h"
 
-// TODO: use build.c
-
+// TODO: use kollektions
+// TODO: add allocator similar to this to kallok (allibs) and use allocators here
 // TODO make sure that all analysis functions iterate params AND args
 
 typedef size_t vx_IrVar;
-
-// TODO: add allocator similar to this to kallok (allibs) and use allocators here
 
 /** alloc things that are not meant to be freed or reallocated before end of compilation */
 void * fastalloc(size_t bytes);
@@ -68,7 +66,6 @@ typedef struct {
     bool   sizeless;
     size_t size;
     size_t align;
-    size_t pad;
     bool   isfloat;
 } vx_IrTypeBase;
 
@@ -106,8 +103,6 @@ static vx_IrType* vx_IrType_heap(void) {
     memset(ptr, 0, sizeof(vx_IrType));
     return ptr;
 }
-
-#define PTRSIZE (8)
 
 size_t vx_IrType_size(vx_IrType *ty);
 void vx_IrType_free(vx_IrType *ty);
@@ -256,6 +251,15 @@ typedef struct {
     };
 } vx_IrValue;
 
+#define VX_IR_VALUE_IMM_INT(varin) ((vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = varin })
+#define VX_IR_VALUE_IMM_FLT(varin) ((vx_IrValue) { .type = VX_IR_VAL_IMM_FLT, .imm_flt = varin })
+#define VX_IR_VALUE_VAR(varin)  ((vx_IrValue) { .type = VX_IR_VAL_VAR, .var = varin })
+#define VX_IR_VALUE_UNINIT()    ((vx_IrValue) { .type = VX_IR_VAL_UNINIT })
+#define VX_IR_VALUE_BLKREF(blk) ((vx_IrValue) { .type = VX_IR_VAL_BLOCKREF, .block = blk })
+#define VX_IR_VALUE_TYPE(idin)  ((vx_IrValue) { .type = VX_IR_VAL_TYPE, .ty = idin })
+#define VX_IR_VALUE_BLK(blk)    ((vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = blk })
+#define VX_IR_VALUE_ID(idin)    ((vx_IrValue) { .type = VX_IR_VAL_ID, .id = idin })
+
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 
 /**
@@ -270,31 +274,32 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
  *     \
  *   before
 */ 
-vx_IrOp *vx_IrBlock_vardecl_out_before(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before);
+vx_IrOp *vx_IrBlock_vardeclOutBefore(vx_IrBlock *block, vx_IrVar var, vx_IrOp *before);
 vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block);
 /** DON'T RUN INIT AFTERWARDS */
-vx_IrBlock *vx_IrBlock_init_heap(vx_IrBlock *parent, vx_IrOp *parent_op);
+vx_IrBlock *vx_IrBlock_initHeap(vx_IrBlock *parent, vx_IrOp *parent_op);
 void vx_IrBlock_init(vx_IrBlock *block, vx_IrBlock *parent, vx_IrOp *parent_op);
 /** run AFTER you finished building it! */
-void vx_IrBlock_make_root(vx_IrBlock *block, size_t total_vars);
-void vx_IrBlock_add_in(vx_IrBlock *block, vx_IrVar var, vx_IrType *type);
-void vx_IrBlock_add_op(vx_IrBlock *block, const vx_IrOp *op);
+void vx_IrBlock_makeRoot(vx_IrBlock *block, size_t total_vars);
+void vx_IrBlock_addIn(vx_IrBlock *block, vx_IrVar var, vx_IrType *type);
+void vx_IrBlock_addOp(vx_IrBlock *block, const vx_IrOp *op);
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
-vx_IrOp *vx_IrBlock_add_op_building(vx_IrBlock *block);
-vx_IrOp *vx_IrBlock_insert_op_building_after(vx_IrOp *after);
-void vx_IrBlock_add_all_op(vx_IrBlock *dest, const vx_IrBlock *src);
-void vx_IrBlock_add_out(vx_IrBlock *block, vx_IrVar out);
+vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block);
+vx_IrOp *vx_IrBlock_insertOpBuildingAfter(vx_IrOp *after);
+void vx_IrBlock_addAllOp(vx_IrBlock *dest, const vx_IrBlock *src);
+void vx_IrBlock_addOut(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);
-vx_IrType *vx_IrBlock_typeof_var(vx_IrBlock *block, vx_IrVar var);
-vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl);
-size_t   vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl);
-void vx_IrBlock_swap_in_at(vx_IrBlock *block, size_t a, size_t b);
-void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b);
-void vx_IrBlock_remove_out_at(vx_IrBlock *block, size_t id);
-size_t vx_IrBlock_append_label_op(vx_IrBlock *block);
+vx_IrType *vx_IrBlock_typeofVar(vx_IrBlock *block, vx_IrVar var);
+vx_IrVar vx_IrBlock_newVar(vx_IrBlock *block, vx_IrOp *decl);
+size_t   vx_IrBlock_newLabel(vx_IrBlock *block, vx_IrOp *decl);
+void vx_IrBlock_swapInAt(vx_IrBlock *block, size_t a, size_t b);
+void vx_IrBlock_swapOutAt(vx_IrBlock *block, size_t a, size_t b);
+void vx_IrBlock_removeOutAt(vx_IrBlock *block, size_t id);
+size_t vx_IrBlock_appendLabelOp(vx_IrBlock *block);
 /** for when you aquired a label id via vx_IrBlock_new_label(?, NULL) and want to add a label op at the tail*/
-void   vx_IrBlock_append_label_op_predefined(vx_IrBlock *block, size_t id);
+void vx_IrBlock_appendLabelOpPredefined(vx_IrBlock *block, size_t id);
 void vx_IrBlock_putVar(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl);
+void vx_IrBlock_putLabel(vx_IrBlock *root, size_t label, vx_IrOp *decl);
 bool vx_IrBlock_anyPlaced(vx_IrBlock* block); // only for root blocks
 
 static bool vx_IrBlock_empty(vx_IrBlock *block) {
@@ -303,19 +308,19 @@ static bool vx_IrBlock_empty(vx_IrBlock *block) {
     return block->first == NULL;
 }
 
-bool vx_IrBlock_var_used(vx_IrBlock *block, vx_IrVar var);
+bool vx_IrBlock_varUsed(vx_IrBlock *block, vx_IrVar var);
 void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, size_t indent);
 /** returns true if static eval ok; only touches dest if true */
-bool vx_IrBlock_eval_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest);
-bool vx_Irblock_mightbe_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
-bool vx_Irblock_alwaysis_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
+bool vx_IrBlock_evalVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest);
+bool vx_Irblock_mightbeVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
+bool vx_Irblock_alwaysIsVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
 void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v);
 /** ret val: did rename any? **/
-bool vx_IrBlock_rename_var(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
-bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data);
-bool vx_IrBlock_is_volatile(vx_IrBlock *block);
-size_t vx_IrBlock_inline_cost(vx_IrBlock *block);
-bool vx_IrBlock_vardecl_is_in_ins(vx_IrBlock *block, vx_IrVar var);
+bool vx_IrBlock_renameVar(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
+bool vx_IrBlock_deepTraverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data);
+bool vx_IrBlock_isVolatile(vx_IrBlock *block);
+size_t vx_IrBlock_inlineCost(vx_IrBlock *block);
+bool vx_IrBlock_vardeclIsInIns(vx_IrBlock *block, vx_IrVar var);
 
 typedef enum {
     VX_IR_NAME_OPERAND_A,
@@ -500,46 +505,56 @@ vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type);
     } \
 }
 
+#define FOR_INPUTS(op,inp,fn) { \
+    for (size_t __it = 0; __it < op->args_len; __it ++) {\
+        vx_IrValue inp = op->args[__it]; \
+        fn; \
+    } \
+    for (size_t __it = 0; __it < op->params_len; __it ++) { \
+        vx_IrValue inp = op->params[__it].val; \
+        fn; \
+    } \
+}
+
 size_t vx_IrOp_countSuccessors(vx_IrOp *op);
 static size_t vx_IrBlock_countOps(vx_IrBlock *block) {
     return block->first ? (vx_IrOp_countSuccessors(block->first) + 1) : 0;
 }
 
 vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op);
-void vx_IrOp_remove_successor(vx_IrOp *op);
+void vx_IrOp_removeSuccessor(vx_IrOp *op);
 /** should use remove_successor whenever possible! */
 void vx_IrOp_remove(vx_IrOp *op);
-bool vx_IrOp_ends_flow(vx_IrOp *op);
+bool vx_IrOp_endsFlow(vx_IrOp *op);
 /** false for nop and label   true for everything else */
-bool vx_IrOpType_has_effect(vx_IrOpType type);
+bool vx_IrOpType_hasEffect(vx_IrOpType type);
 void vx_IrOp_undeclare(vx_IrOp *op);
-bool vx_IrOp_var_used(const vx_IrOp *op, vx_IrVar var);
-bool vx_IrOp_var_inOuts(const vx_IrOp *op, vx_IrVar var);
+bool vx_IrOp_varUsed(const vx_IrOp *op, vx_IrVar var);
+bool vx_IrOp_varInOuts(const vx_IrOp *op, vx_IrVar var);
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1);
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent);
 vx_IrValue *vx_IrOp_param(const vx_IrOp *op, vx_IrName name);
 void vx_IrOp_init(vx_IrOp *op, vx_IrOpType type, vx_IrBlock *parent);
-void vx_IrOp_add_out(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
-void vx_IrOp_add_param_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
-void vx_IrOp_add_param(vx_IrOp *op, vx_IrNamedValue p);
-void vx_IrOp_add_arg(vx_IrOp *op, vx_IrValue val);
-static void vx_IrOp_steal_param(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
+void vx_IrOp_addOut(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
+void vx_IrOp_addParam_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
+void vx_IrOp_addParam(vx_IrOp *op, vx_IrNamedValue p);
+void vx_IrOp_addArg(vx_IrOp *op, vx_IrValue val);
+static void vx_IrOp_stealParam(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
     vx_IrValue* val = vx_IrOp_param(src, param);
     assert(val);
-    vx_IrOp_add_param_s(dest, param, *val);
+    vx_IrOp_addParam_s(dest, param, *val);
 }
-void vx_IrOp_remove_params(vx_IrOp *op);
-void vx_IrOp_remove_out_at(vx_IrOp *op, size_t id);
-void vx_IrOp_remove_param_at(vx_IrOp *op, size_t id);
-void vx_IrOp_remove_param(vx_IrOp *op, vx_IrName name);
-void vx_IrOp_steal_outs(vx_IrOp *dest, const vx_IrOp *src);
+void vx_IrOp_removeParams(vx_IrOp *op);
+void vx_IrOp_removeOutAt(vx_IrOp *op, size_t id);
+void vx_IrOp_removeParamAt(vx_IrOp *op, size_t id);
+void vx_IrOp_removeParam(vx_IrOp *op, vx_IrName name);
+void vx_IrOp_stealOuts(vx_IrOp *dest, const vx_IrOp *src);
 void vx_IrOp_destroy(vx_IrOp *op);
-// TODO: rename states to args 
-void vx_IrOp_remove_state_at(vx_IrOp *op, size_t id);
-bool vx_IrOp_is_volatile(vx_IrOp *op);
-size_t vx_IrOp_inline_cost(vx_IrOp *op);
-void vx_IrOp_steal_states(vx_IrOp *dest, const vx_IrOp *src);
-bool vx_IrOp_is_tail(vx_IrOp *op);
+void vx_IrOp_removeArgAt(vx_IrOp *op, size_t id);
+bool vx_IrOp_isVolatile(vx_IrOp *op);
+size_t vx_IrOp_inlineCost(vx_IrOp *op);
+void vx_IrOp_stealArgs(vx_IrOp *dest, const vx_IrOp *src);
+bool vx_IrOp_isTail(vx_IrOp *op);
 bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after);
 bool vx_IrOp_followingNoEffect(vx_IrOp* op);
 vx_IrOp* vx_IrOp_nextWithEffect(vx_IrOp* op);
@@ -593,7 +608,7 @@ struct IrStaticIncrement {
     vx_IrVar var;
     long long by;
 };
-struct IrStaticIncrement vx_IrOp_detect_static_increment(vx_IrOp *op);
+struct IrStaticIncrement vx_IrOp_detectStaticIncrement(vx_IrOp *op);
 
 typedef struct {
     vx_IrType *ptr;
@@ -611,18 +626,17 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block);
 // null if depends on context or has no type 
 vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value);
 
-static vx_IrTypeRef vx_ptrtype(vx_IrBlock* root) {
+static vx_IrTypeRef vx_ptrType(vx_IrBlock* root) {
     vx_IrType* type = vx_IrType_heap();
     type->kind = VX_IR_TYPE_KIND_BASE;
     type->debugName = "ptr";
-    type->base.pad = 0;
-    type->base.size = PTRSIZE;
-    type->base.align = 0;
+    type->base.size = 8; // TODO 
+    type->base.align = 0; //  ^^^ 
     type->base.isfloat = false;
     type->base.sizeless = false;
     return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
 }
 
-bool vx_IrBlock_ll_isleaf(vx_IrBlock* block);
+bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
 
 #endif //IR_H

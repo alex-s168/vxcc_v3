@@ -44,7 +44,7 @@ vx_Errors vx_IrBlock_verify(vx_IrBlock *block) {
             struct verify_vardecls_deeptraverse__data dat;
             dat.var = i;
             dat.declcount = 0;
-            vx_IrBlock_deep_traverse(block, verify_vardecls_deeptraverse, &dat);
+            vx_IrBlock_deepTraverse(block, verify_vardecls_deeptraverse, &dat);
             // TODO: NEED TO SEARCH FROM ROOT
 
             // TODO: ?

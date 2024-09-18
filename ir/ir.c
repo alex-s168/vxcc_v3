@@ -23,13 +23,14 @@ void vx_IrBlock_llir_compact(vx_IrBlock *root) {
             if (idx + 1 >= root->as_root.vars_len) break;
             for (vx_IrVar after = idx + 1; after < root->as_root.vars_len; after ++) {
                 assert(root != NULL && root->is_root);
-                vx_IrBlock_rename_var(root, after, after - 1);
+                vx_IrBlock_renameVar(root, after, after - 1);
             }
         }
     }
 }
 
-// TODO: remove cir checks and make sure fn called after cir type expand & MAKE TYPE EXPAND AWARE OF MEMBER ALIGN FOR UNIONS
+// TODO: remove cir checks and make sure fn called after cir type expand
+
 size_t vx_IrType_size(vx_IrType *ty) {
     assert(ty != NULL);
 
@@ -46,7 +47,7 @@ size_t vx_IrType_size(vx_IrType *ty) {
         return total;
 
     case VX_IR_TYPE_FUNC:
-        return PTRSIZE;
+        return 8; // TODO
 
     default:
 	fprintf(stderr, "type %u doesn't have size\n", ty->kind);
@@ -84,7 +85,7 @@ vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
             return (vx_IrTypeRef) { .ptr = value.no_read_rt_type, .shouldFree = false };
 
         case VX_IR_VAL_ID:
-            return vx_ptrtype(root);
+            return vx_ptrType(root);
 
 	default:
 	    assert(false);
@@ -96,7 +97,7 @@ vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
             return vx_IrBlock_type(value.block);
 
         case VX_IR_VAL_VAR:
-            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeof_var(root, value.var), .shouldFree = false };
+            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeofVar(root, value.var), .shouldFree = false };
     }
 }
 
@@ -110,9 +111,10 @@ void vx_CIrBlock_fix(vx_IrBlock* block) {
         for (size_t i = 0; i < op->outs_len; i ++)
             vx_IrBlock_putVar(root, op->outs[i].var, op);
 
-        for (size_t i = 0; i < op->params_len; i ++)
-            if (op->params[i].val.type == VX_IR_VAL_BLOCK)
-                vx_CIrBlock_fix(op->params[i].val.block);
+        FOR_INPUTS(op, inp, {
+           if (inp.type == VX_IR_VAL_BLOCK)
+                vx_CIrBlock_fix(inp.block);
+        });
     }
 }
 
@@ -161,17 +163,13 @@ void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
     }
 }
 
-bool vx_IrBlock_deep_traverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data) {
+bool vx_IrBlock_deepTraverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data) {
     for (vx_IrOp *op = block->first; op; op = op->next) {
-        for (size_t j = 0; j < op->params_len; j ++)
-            if (op->params[j].val.type == VX_IR_VAL_BLOCK)
-                if (vx_IrBlock_deep_traverse(op->params[j].val.block, callback, data))
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK)
+                if (vx_IrBlock_deepTraverse(inp.block, callback, data))
                     return true;
-
-        for (size_t j = 0; j < op->args_len; j ++)
-            if (op->args[j].type == VX_IR_VAL_BLOCK)
-                if (vx_IrBlock_deep_traverse(op->args[j].block, callback, data))
-                    return true;
+        });
 
         if (callback(op, data))
             return true;
@@ -189,7 +187,7 @@ vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block) {
     return block;
 }
 
-void vx_IrBlock_swap_in_at(vx_IrBlock *block, const size_t a, const size_t b) {
+void vx_IrBlock_swapInAt(vx_IrBlock *block, const size_t a, const size_t b) {
     if (a == b)
         return;
 
@@ -198,7 +196,7 @@ void vx_IrBlock_swap_in_at(vx_IrBlock *block, const size_t a, const size_t b) {
     block->ins[b].var = va;
 }
 
-void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b) {
+void vx_IrBlock_swapOutAt(vx_IrBlock *block, size_t a, size_t b) {
     if (a == b)
         return;
 
@@ -207,7 +205,7 @@ void vx_IrBlock_swap_out_at(vx_IrBlock *block, size_t a, size_t b) {
     block->outs[b] = va;
 }
 
-vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
+vx_IrVar vx_IrBlock_newVar(vx_IrBlock *block, vx_IrOp *decl) {
     assert(block != NULL);
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
@@ -219,7 +217,7 @@ vx_IrVar vx_IrBlock_new_var(vx_IrBlock *block, vx_IrOp *decl) {
     return new;
 }
 
-size_t vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl) {
+size_t vx_IrBlock_newLabel(vx_IrBlock *block, vx_IrOp *decl) {
     assert(block != NULL);
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
@@ -230,25 +228,25 @@ size_t vx_IrBlock_new_label(vx_IrBlock *block, vx_IrOp *decl) {
     return new;
 }
 
-size_t vx_IrBlock_append_label_op(vx_IrBlock *block) {
-    vx_IrOp *label_decl = vx_IrBlock_add_op_building(block);
+size_t vx_IrBlock_appendLabelOp(vx_IrBlock *block) {
+    vx_IrOp *label_decl = vx_IrBlock_addOpBuilding(block);
     vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
-    size_t label_id = vx_IrBlock_new_label(block, label_decl);
-    vx_IrOp_add_param_s(label_decl, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
+    size_t label_id = vx_IrBlock_newLabel(block, label_decl);
+    vx_IrOp_addParam_s(label_decl, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_id));
     return label_id;
 }
 
-void vx_IrBlock_append_label_op_predefined(vx_IrBlock *block, size_t label_id) {
-    vx_IrOp *label_decl = vx_IrBlock_add_op_building(block);
+void vx_IrBlock_appendLabelOpPredefined(vx_IrBlock *block, size_t label_id) {
+    vx_IrOp *label_decl = vx_IrBlock_addOpBuilding(block);
     vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
-    vx_IrOp_add_param_s(label_decl, VX_IR_NAME_ID, (vx_IrValue) { .type = VX_IR_VAL_ID, .id = label_id });
+    vx_IrOp_addParam_s(label_decl, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_id));
 
     vx_IrBlock* root = vx_IrBlock_root(block);
     root->as_root.labels[label_id].decl = label_decl;
 }
 
 /** false for nop and label   true for everything else */
-bool vx_IrOpType_has_effect(vx_IrOpType type) {
+bool vx_IrOpType_hasEffect(vx_IrOpType type) {
     switch (type) {
     case VX_LIR_OP_LABEL:
         return false;
@@ -260,7 +258,7 @@ bool vx_IrOpType_has_effect(vx_IrOpType type) {
 
 vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
     // TODO: multiple rets
-    vx_IrType *ret = block->outs_len == 1 ? vx_IrBlock_typeof_var(block, block->outs[0])
+    vx_IrType *ret = block->outs_len == 1 ? vx_IrBlock_typeofVar(block, block->outs[0])
                                           : NULL;
 
     vx_IrType **args = malloc(sizeof(vx_IrType*) * block->ins_len);
