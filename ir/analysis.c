@@ -243,6 +243,12 @@ bool vx_IrOpType_hasEffect(vx_IrOpType type)
 
 bool vx_IrOp_endsFlow(vx_IrOp *op)
 {
+    if (op->id == VX_IR_OP_IF)
+    {
+        vx_IrBlock* pthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN)->block;
+        vx_IrBlock* pelse = vx_IrOp_param(op, VX_IR_NAME_COND_ELSE)->block;
+        return vx_IrBlock_endsFlow(pthen) && vx_IrBlock_endsFlow(pelse);
+    }
     return vx_IrOpType__entries[op->id].endsFlow.a;
 }
 

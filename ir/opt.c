@@ -39,6 +39,7 @@ void opt(vx_IrBlock *block) {
     vx_opt_join_compute(block);
     if (vx_g_optconfig.if_eval) {
         vx_opt_reduce_if(block);
+        vx_opt_if_opts(block);
     }
     vx_opt_cmov(block);
     opt_pre(block);
