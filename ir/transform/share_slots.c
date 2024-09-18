@@ -59,6 +59,21 @@ static void boolArrOrAssign(bool* dest, bool* src, size_t len)
     }
 }
 
+static size_t calcPriority(vx_IrBlock* block, vx_IrVar var)
+{
+    lifetime lt = block->as_root.vars[var].ll_lifetime;
+    size_t heat = boolArrCount(lt.used_in_op, vx_IrBlock_countOps(block));
+    
+    for (vx_IrOp* op = block->first; op; op = op->next)
+    {
+        // TODO: change for 3 operand archs
+        if (op->outs_len > 0 && op->outs[0].var == var && op->args_len > 0 && op->args[0].var == var)
+            heat += 5;
+    }
+
+    return heat;
+}
+
 // merge lifetimes based on when and their type (are compatible)
 // block needs to be 100% flat, decl of vars must be known, decl won't be known after this fn anymore
 
@@ -81,7 +96,8 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
             continue;
 
         lifetime lt = block->as_root.vars[var].ll_lifetime;
-        size_t heat1 = boolArrCount(lt.used_in_op, blkInstLen);
+
+        size_t heat1 = calcPriority(block, var);
 
         vx_IrType* type1 = vx_IrBlock_typeofVar(block, var);
         if (type1 == NULL)
@@ -122,7 +138,7 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
             if (!canMerge)
                 continue;
 
-            size_t heat2 = boolArrCount(lt.used_in_op, blkInstLen);
+            size_t heat2 = calcPriority(block, var2);
 
             if (heat1 > heat2)
             {

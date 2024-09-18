@@ -74,6 +74,12 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
 static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent) {
     for (vx_IrOp *op = old->first; op; op = op->next) {
         op->parent = newParent;
+
+        FOR_INPUTS_REF(op, inp, {
+            if (inp->type == VX_IR_VAL_UNINIT)
+                *inp = VX_IR_VALUE_IMM_INT(69); // we can do whatever we want to do lol
+        });
+
         if (op->id == VX_IR_OP_IF) {
             vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
             

@@ -1080,6 +1080,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
         case VX_IR_OP_BITIWSE_OR:  // "a", "b"
         case VX_IR_OP_SHL: // "a", "b"
         case VX_IR_OP_SHR: // "a", "b"
+        case VX_IR_OP_ASHR: // "a", "b"
             {
                 Location* o = varData[op->outs[0].var].location;
                 assert(o);
@@ -1100,6 +1101,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     case VX_IR_OP_BITIWSE_OR: bin = "orr"; break;
                     case VX_IR_OP_SHL: bin = "shl"; break;
                     case VX_IR_OP_SHR: bin = "shr"; break;
+                    case VX_IR_OP_ASHR: bin = "sar"; break;
 
                     default: assert(false); break;
                 }

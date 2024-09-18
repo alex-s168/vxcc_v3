@@ -72,26 +72,30 @@ void vx_opt_constant_eval(vx_IrBlock *block)
                 break;
 
             case VX_IR_OP_AND:
-                BINARY(signed long long, &&);
+                BINARY(unsigned long long, &&);
                 break;
 
             case VX_IR_OP_OR:
-                BINARY(signed long long, ||);
+                BINARY(unsigned long long, ||);
                 break;
 
             case VX_IR_OP_BITWISE_AND:
-                BINARY(signed long long, &);
+                BINARY(unsigned long long, &);
                 break;
 
             case VX_IR_OP_BITIWSE_OR:
-                BINARY(signed long long, |);
+                BINARY(unsigned long long, |);
                 break;
 
             case VX_IR_OP_SHL:
-                BINARY(signed long long, <<);
+                BINARY(unsigned long long, <<);
                 break;
 
             case VX_IR_OP_SHR:
+                BINARY(unsigned long long, >>);
+                break;
+
+            case VX_IR_OP_ASHR:
                 BINARY(signed long long, >>);
                 break;
 

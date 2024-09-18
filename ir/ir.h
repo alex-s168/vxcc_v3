@@ -397,16 +397,18 @@ vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type);
     } \
 }
 
-#define FOR_INPUTS(op,inp,fn) { \
+#define FOR_INPUTS_REF(op,inp,fn) { \
     for (size_t __it = 0; __it < op->args_len; __it ++) {\
-        vx_IrValue inp = op->args[__it]; \
+        vx_IrValue* inp = &op->args[__it]; \
         fn; \
     } \
     for (size_t __it = 0; __it < op->params_len; __it ++) { \
-        vx_IrValue inp = op->params[__it].val; \
+        vx_IrValue* inp = &op->params[__it].val; \
         fn; \
     } \
 }
+
+#define FOR_INPUTS(op,inp,fn) FOR_INPUTS_REF(op, __ref, { vx_IrValue inp = *__ref; fn; });
 
 size_t vx_IrOp_countSuccessors(vx_IrOp *op);
 static size_t vx_IrBlock_countOps(vx_IrBlock *block) {

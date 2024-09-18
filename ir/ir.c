@@ -294,6 +294,7 @@ int vx_CU_compile(vx_CU * cu,
         vx_CIrBlock_normalize(block);
         vx_CIrBlock_mksa_states(block);
         vx_CIrBlock_mksa_final(block);
+        vx_CIrBlock_fix(block); // TODO: why...
 
         if (vx_ir_verify(block) != 0)
             return 1;
