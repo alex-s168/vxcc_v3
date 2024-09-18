@@ -143,7 +143,7 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
             }
         }
 
-        if (op->id == VX_LIR_OP_LABEL) {
+        if (op->id == VX_IR_OP_LABEL) {
             size_t id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
             assert(id < root->as_root.labels_len);
             vx_IrOp **decl = &root->as_root.labels[id].decl;
@@ -230,7 +230,7 @@ size_t vx_IrBlock_newLabel(vx_IrBlock *block, vx_IrOp *decl) {
 
 size_t vx_IrBlock_appendLabelOp(vx_IrBlock *block) {
     vx_IrOp *label_decl = vx_IrBlock_addOpBuilding(block);
-    vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
+    vx_IrOp_init(label_decl, VX_IR_OP_LABEL, block);
     size_t label_id = vx_IrBlock_newLabel(block, label_decl);
     vx_IrOp_addParam_s(label_decl, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_id));
     return label_id;
@@ -238,22 +238,11 @@ size_t vx_IrBlock_appendLabelOp(vx_IrBlock *block) {
 
 void vx_IrBlock_appendLabelOpPredefined(vx_IrBlock *block, size_t label_id) {
     vx_IrOp *label_decl = vx_IrBlock_addOpBuilding(block);
-    vx_IrOp_init(label_decl, VX_LIR_OP_LABEL, block);
+    vx_IrOp_init(label_decl, VX_IR_OP_LABEL, block);
     vx_IrOp_addParam_s(label_decl, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_id));
 
     vx_IrBlock* root = vx_IrBlock_root(block);
     root->as_root.labels[label_id].decl = label_decl;
-}
-
-/** false for nop and label   true for everything else */
-bool vx_IrOpType_hasEffect(vx_IrOpType type) {
-    switch (type) {
-    case VX_LIR_OP_LABEL:
-        return false;
-
-    default:
-        return true;
-    }
 }
 
 vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {

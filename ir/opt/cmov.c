@@ -51,12 +51,12 @@ void vx_opt_cmov(vx_IrBlock *block)
 
         assert(pthen->type == VX_IR_VAL_BLOCK);
         vx_IrBlock *then = pthen->block;
-        if (vx_IrBlock_isVolatile(then))
+        if (vx_IrBlock_isVolatile(then) || vx_IrBlock_hasSideEffect(then))
             continue;
 
         assert(pelse->type == VX_IR_VAL_BLOCK);
         vx_IrBlock *els = pelse->block;
-        if (vx_IrBlock_isVolatile(els))
+        if (vx_IrBlock_isVolatile(els) || vx_IrBlock_hasSideEffect(els))
             continue;
 
         size_t total_cost = vx_IrBlock_inlineCost(then) + vx_IrBlock_inlineCost(els);

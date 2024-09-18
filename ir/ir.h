@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #include "../common/common.h"
+#include "../build/ir/ops.cdef.h"
 
 // TODO: use kollektions
 // TODO: add allocator similar to this to kallok (allibs) and use allocators here
@@ -318,8 +319,6 @@ void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v);
 /** ret val: did rename any? **/
 bool vx_IrBlock_renameVar(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
 bool vx_IrBlock_deepTraverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data);
-bool vx_IrBlock_isVolatile(vx_IrBlock *block);
-size_t vx_IrBlock_inlineCost(vx_IrBlock *block);
 bool vx_IrBlock_vardeclIsInIns(vx_IrBlock *block, vx_IrVar var);
 
 typedef enum {
@@ -366,113 +365,6 @@ static vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
     };
 }
 void vx_IrNamedValue_destroy(vx_IrNamedValue v);
-
-// TODO: replace with .cdef file
-
-typedef enum {
-    VX_IR_OP_IMM = 0,        // "val"
-    VX_IR_OP_FLATTEN_PLEASE, // "block"
-    
-    // convert
-    /** for pointers only! */
-    VX_IR_OP_REINTERPRET, // "val"
-    VX_IR_OP_ZEROEXT,     // "val"
-    VX_IR_OP_SIGNEXT,     // "val"
-    VX_IR_OP_TOFLT,       // "val"
-    VX_IR_OP_FROMFLT,     // "val"
-    VX_IR_OP_BITCAST,     // "val"
-
-    // mem
-    VX_IR_OP_LOAD,            // "addr"
-    VX_IR_OP_LOAD_VOLATILE,   // "addr"
-    VX_IR_OP_STORE,           // "addr", "val"
-    VX_IR_OP_STORE_VOLATILE,  // "addr", "val"
-    VX_IR_OP_PLACE,           // "var"
-    VX_IR_OP_LOAD_EA,         // "ptr", "idx", "elsize"       base + elsize * idx
-    VX_IR_OP_STORE_EA,        // "val", "ptr", "idx", "elsize"       base + elsize * idx
-
-    // arithm
-    VX_IR_OP_ADD,  // "a", "b"
-    VX_IR_OP_SUB,  // "a", "b"
-    VX_IR_OP_MUL,  // "a", "b"
-    VX_IR_OP_UDIV, // "a", "b"
-    VX_IR_OP_SDIV, // "a", "b"
-    VX_IR_OP_MOD,  // "a", "b"
-    VX_IR_OP_NEG,  // "val"
-    VX_IR_OP_EA,   // "ptr", "idx", "elsize"       base + elsize * idx
-
-    // compare
-    VX_IR_OP_UGT,  // "a", "b"
-    VX_IR_OP_UGTE, // "a", "b"
-    VX_IR_OP_ULT,  // "a", "b"
-    VX_IR_OP_ULTE, // "a", "b"
-    VX_IR_OP_SGT,  // "a", "b"
-    VX_IR_OP_SGTE, // "a", "b"
-    VX_IR_OP_SLT,  // "a", "b"
-    VX_IR_OP_SLTE, // "a", "b"
-    VX_IR_OP_EQ,  // "a", "b"
-    VX_IR_OP_NEQ, // "a", "b"
-
-    // boolean
-    VX_IR_OP_NOT, // "val"
-    VX_IR_OP_AND, // "a", "b"
-    VX_IR_OP_OR,  // "a", "b"
-
-    // bitwise boolean
-    VX_IR_OP_BITWISE_NOT, // "val"
-    VX_IR_OP_BITWISE_AND, // "a", "b"
-    VX_IR_OP_BITIWSE_OR,  // "a", "b"
-
-    // bit 
-    VX_IR_OP_BITMASK, // "idx"             1 << idx 
-    VX_IR_OP_BITEXTRACT, // "idx", "val"   val & (1 << idx)
-    VX_IR_OP_BITPOPCNT, // "val" 
-    VX_IR_OP_BITTZCNT, // "val" 
-    VX_IR_OP_BITLZCNT, // "val"
-
-    // misc
-    VX_IR_OP_SHL, // "a", "b"
-    VX_IR_OP_SHR, // "a", "b"  // TODO: ASHR
-
-    // basic loop
-    VX_IR_OP_FOR,      // "start": counter, "cond": (counter,States)->continue?, "stride": int, "do": (counter, States)->States, States
-    VX_IR_OP_INFINITE, // "start": counter, "stride": int, "do": (counter, States)->States, States
-    VX_IR_OP_WHILE,    // "cond": (States)->bool, "do": (counter)->States, States
-    VX_IR_OP_CONTINUE,
-    VX_IR_OP_BREAK,
-
-    // advanced loop
-    VX_IR_OP_FOREACH,        // "arr": array[T], "start": counter, "endEx": counter, "stride": int, "do": (T, States)->States, States
-    VX_IR_OP_FOREACH_UNTIL,  // "arr": array[T], "start": counter, "cond": (T,States)->break?, "stride": int, "do": (T, States)->States, States
-    VX_IR_OP_REPEAT,         // "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
-    VX_CIR_OP_CFOR,          // "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->. 
-
-    // various
-    VX_IR_OP_GETELEM,        // "struct": struct var, "idx": index of member
-    VX_IR_OP_SETELEM,        // "struct": old struct var, "idx": index of member, "val": new value of member
-    VX_IR_OP_ELEMPTR,        // "type": struct type, "idx": index of member, "val": pointer to struct
-
-    // conditional
-    VX_IR_OP_IF,            // "cond": ()->bool, "then": ()->R, ("else": ()->R)
-    VX_IR_OP_CMOV,          // "cond": ()->bool, "then": value, "else": value 
-    VX_IR_OP_RETURN,        // args = early return values (need to be same len as block outs)
-
-    VX_LIR_OP_LABEL,        // "id"
-    VX_LIR_OP_GOTO,            // "id"
-    VX_LIR_OP_COND,            // "id", "cond": bool
-
-    VX_IR_OP_CALL,          // "addr": int / fnref
-    VX_IR_OP_TAILCALL,      // "addr": int / fnref
-    VX_IR_OP_CONDTAILCALL,  // "addr": int / fnref, "cond": bool
-
-    VX_IR_OP_VSCALE,        // "len": int, "fn": (vscale)->Rets   -> Rets 
-
-    VX_IR_OP____END,
-} vx_IrOpType;
-
-#define SSAOPTYPE_LEN (VX_IR_OP____END - VX_IR_OP_IMM)
-
-extern const char *vx_IrOpType_names[SSAOPTYPE_LEN];
 
 struct vx_IrOp_s {
     vx_IrOp *next;
@@ -525,9 +417,21 @@ vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op);
 void vx_IrOp_removeSuccessor(vx_IrOp *op);
 /** should use remove_successor whenever possible! */
 void vx_IrOp_remove(vx_IrOp *op);
-bool vx_IrOp_endsFlow(vx_IrOp *op);
+
 /** false for nop and label   true for everything else */
 bool vx_IrOpType_hasEffect(vx_IrOpType type);
+bool vx_IrOp_endsFlow(vx_IrOp *op);
+bool vx_IrOp_isVolatile(vx_IrOp *op);
+bool vx_IrOp_hasSideEffect(vx_IrOp *op);
+size_t vx_IrOp_inlineCost(vx_IrOp *op);
+size_t vx_IrOp_execCost(vx_IrOp *op);
+
+bool vx_IrBlock_endsFlow(vx_IrBlock *block);
+bool vx_IrBlock_isVolatile(vx_IrBlock *block);
+bool vx_IrBlock_hasSideEffect(vx_IrBlock *block);
+size_t vx_IrBlock_inlineCost(vx_IrBlock *block);
+size_t vx_IrBlock_execCost(vx_IrBlock *block);
+
 void vx_IrOp_undeclare(vx_IrOp *op);
 bool vx_IrOp_varUsed(const vx_IrOp *op, vx_IrVar var);
 bool vx_IrOp_varInOuts(const vx_IrOp *op, vx_IrVar var);
@@ -551,8 +455,6 @@ void vx_IrOp_removeParam(vx_IrOp *op, vx_IrName name);
 void vx_IrOp_stealOuts(vx_IrOp *dest, const vx_IrOp *src);
 void vx_IrOp_destroy(vx_IrOp *op);
 void vx_IrOp_removeArgAt(vx_IrOp *op, size_t id);
-bool vx_IrOp_isVolatile(vx_IrOp *op);
-size_t vx_IrOp_inlineCost(vx_IrOp *op);
 void vx_IrOp_stealArgs(vx_IrOp *dest, const vx_IrOp *src);
 bool vx_IrOp_isTail(vx_IrOp *op);
 bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after);

@@ -1,5 +1,3 @@
-# TODO: in cmov opt : check if blocks no sideEffect
-
 table vx_IrOpType (
     debug      str  ;
     args       str  ;
@@ -145,6 +143,28 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  false 
                          volatile   false
                          sideEffect false
+                         ;
+
+    entry LOAD_EA        args       "ptr, idx, elsize"
+                         debug      "load-ea"
+                         descr      "combined ea and load"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false
+                         hasEffect  true 
+                         volatile   false
+                         sideEffect false 
+                         ;
+
+    entry STORE_EA       args       "val, ptr, idx, elsize"
+                         debug      "store-ea"
+                         descr      "combined ea and store"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect true 
                          ;
 
     entry ADD            args       "a: value, b: value"
@@ -499,9 +519,9 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect false
                          ;
 
-    entry EA             args       "base: value, (optional) offset: value, idx: value, elsize: value"
+    entry EA             args       "ptr: value, value, idx: value, elsize: value"
                          debug      "ea"
-                         descr      "base + offset + elsize * idx ; types can be different ; used for computing addresses ; not supported on some architectures -> should not be used by frontend"
+                         descr      "ptr + elsize * idx ; types can be different ; used for computing addresses ; not supported on some architectures -> should not be used by frontend"
                          inlineCost 3
                          execCost   2
                          endsFlow   false 
@@ -526,7 +546,7 @@ enum_entry_prefix "VX_IR_OP_"
                          descr      "repeat forever ; can contain break and continue ; stride can be negative ; states are initialized at begin ; every iter states passed into do block and output of do block overwrites states"
                          inlineCost 3
                          execCost   3
-                         endsFlow   false 
+                         endsFlow   true 
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
@@ -562,22 +582,161 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   true 
                          hasEffect  true 
                          volatile   false
+                         sideEffect true 
+                         ;
+
+    entry WHILE          args       "cond: (States)->bool, do: (counter, States)->States, States"
+                         debug      "while"
+                         descr      "while loop"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
                          sideEffect false 
                          ;
 
-    entry WHILE          args "cond": (States)->bool, "do": (counter)->States, States 
-    entry REPEAT         args "start": counter, "endEx": counter, "stride": int, "do": (counter, States)->States, States
-    entry CFOR           args "start": ()->., "cond": ()->bool, "end": ()->., "do": (counter)->. 
-    entry GETELEM        args "struct": struct var, "idx": index of member
-    entry SETELEM        args "struct": old struct var, "idx": index of member, "val": new value of member
-    entry ELEMPTR        args "type": struct type, "idx": index of member, "val": pointer to struct
-    entry IF             args "cond": ()->bool, "then": ()->R, ("else": ()->R)
-    entry CMOV           args "cond": ()->bool, "then": value, "else": value
-    entry LABEL          args "id"
-    entry GOTO           args "id"
-    entry COND           args "id", "cond": bool
-    entry CALL           args "addr": int / fnref
-    entry TAILCALL       args "addr": int / fnref
-    entry CONDTAILCALL   args "addr": int / fnref, "cond": bool
+    entry REPEAT         args       "start: counter, endEx: counter, stride: int, do: (counter, States)->States, States"
+                         debug      "repeat"
+                         descr      "for range loop"
+                         inlineCost 4
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry CFOR           args       "start: ()->., cond: ()->bool, end: ()->., do: (counter)->."
+                         debug      "cfor"
+                         descr      "C-like for-loop (only in CIR)"
+                         inlineCost 4
+                         execCost   3
+                         endsFlow   false
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false
+                         ;
+
+    entry GETELEM        args       "struct: struct var, idx: index of member"
+                         debug      "getelem"
+                         descr      "get element from struct"
+                         inlineCost 2
+                         execCost   2
+                         endsFlow   false
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry SETELEM        args       "struct: old struct var, idx: index of member, val: new value of member"
+                         debug      "setelem"
+                         descr      "set element from struct by returning a struct with the modified values"
+                         inlineCost 2
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false
+                         sideEffect false 
+                         ;
+
+    entry ELEMPTR        args       "type: struct type, idx: index of member, val: pointer to struct"
+                         debug      "elemptr"
+                         descr      "get pointer to member of struct"
+                         inlineCost 2
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry IF             args       "cond: ()->bool, then: ()->R, (else: ()->R)"
+                         debug      "if"
+                         descr      "if"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry CMOV           args       "cond: ()->bool, then: value, else: value"
+                         debug      "cmov"
+                         descr      "conditional move"
+                         inlineCost 2
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry LABEL          args       "id"
+                         debug      "$"
+                         descr      "LLIR label"
+                         inlineCost 0 
+                         execCost   0 
+                         endsFlow   false 
+                         hasEffect  false 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry GOTO           args       "id"
+                         debug      "goto"
+                         descr      "LLIR goto label"
+                         inlineCost 1
+                         execCost   2
+                         endsFlow   true 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry COND           args       "id, cond: bool"
+                         debug      "cond"
+                         descr      "LLIR conditional goto label"
+                         inlineCost 1 
+                         execCost   2
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry CALL           args       "addr: int / fnref, args..."
+                         debug      "call"
+                         descr      "call function"
+                         inlineCost 3
+                         execCost   3
+                         endsFlow   false
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect true 
+                         ;
+
+    entry TAILCALL       args       "addr: int / fnref, args..."
+                         debug      "tailcall"
+                         descr      "call function at end of this fn"
+                         inlineCost 2
+                         execCost   3
+                         endsFlow   true 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect true 
+                         ;
+
+    entry CONDTAILCALL   args       "addr: int / fnref, cond: bool, args..."
+                         debug      "condtailcall"
+                         descr      "conditionally call function at end of this fn"
+                         inlineCost 2
+                         execCost   3
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect true 
+                         ;
 
 }

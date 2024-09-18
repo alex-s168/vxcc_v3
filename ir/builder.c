@@ -126,7 +126,7 @@ static bool add_op__trav(vx_IrOp *op, void *dataIn) {
         vx_IrBlock_putVar(data->root, vv.var, op);
     }
 
-    if (op->id == VX_LIR_OP_LABEL) {
+    if (op->id == VX_IR_OP_LABEL) {
         size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
         vx_IrBlock_putLabel(data->root, label, op);
     }
@@ -282,7 +282,7 @@ void vx_IrOp_undeclare(vx_IrOp *op)
             }
         }
 
-        if (op->id == VX_LIR_OP_LABEL) {
+        if (op->id == VX_IR_OP_LABEL) {
             size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
             if (label < root->as_root.labels_len && root->as_root.labels[label].decl == op) {
                 root->as_root.labels[label].decl = NULL;

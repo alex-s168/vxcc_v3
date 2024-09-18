@@ -8,7 +8,7 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
     assert(block->is_root);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (op->id == VX_CIR_OP_CFOR) {
+        if (op->id == VX_IR_OP_CFOR) {
             vx_IrBlock *new = vx_IrBlock_initHeap(block, op);
 
             vx_IrBlock *b_init = vx_IrOp_param(op, VX_IR_NAME_LOOP_START)->block;

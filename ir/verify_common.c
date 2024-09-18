@@ -145,8 +145,6 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
         // TODO: implement for more ops
         switch (op->id) {
         case VX_IR_OP_FOR:
-        case VX_IR_OP_FOREACH:
-        case VX_IR_OP_FOREACH_UNTIL:
         case VX_IR_OP_REPEAT:
         case VX_IR_OP_INFINITE:
         case VX_IR_OP_WHILE:
@@ -157,8 +155,8 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             (void) analyze_if(dest, op);
             break;
 
-        case VX_LIR_OP_GOTO:
-        case VX_LIR_OP_COND: {
+        case VX_IR_OP_GOTO:
+        case VX_IR_OP_COND: {
             size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
             if (label >= root->as_root.labels_len || root->as_root.labels[label].decl == NULL) {
                 static char buf[256];

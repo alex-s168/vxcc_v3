@@ -2,7 +2,7 @@
 
 static void rmcode_before_label(vx_IrOp *op) {
     for (; op; op = op->next) {
-        if (op->id == VX_LIR_OP_LABEL)
+        if (op->id == VX_IR_OP_LABEL)
             break;
 
         vx_IrOp_remove(op);

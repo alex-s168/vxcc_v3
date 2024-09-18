@@ -7,7 +7,7 @@ static void part1(vx_IrBlock *block) {
     vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (!(op->id == VX_LIR_OP_GOTO || op->id == VX_LIR_OP_COND))
+        if (!(op->id == VX_IR_OP_GOTO || op->id == VX_IR_OP_COND))
             continue;
 
         size_t label_id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
@@ -42,7 +42,7 @@ static void part2(vx_IrBlock *block) {
     vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (!(op->id == VX_LIR_OP_GOTO || op->id == VX_LIR_OP_COND))
+        if (!(op->id == VX_IR_OP_GOTO || op->id == VX_IR_OP_COND))
             continue;
 
         size_t label_id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
@@ -54,7 +54,7 @@ static void part2(vx_IrBlock *block) {
         if (decl->next) {
             vx_IrOp *following = decl->next;
 
-            if (following->id == VX_LIR_OP_GOTO) {
+            if (following->id == VX_IR_OP_GOTO) {
                 label_id = vx_IrOp_param(following, VX_IR_NAME_ID)->id;
                 vx_IrOp_param(op, VX_IR_NAME_ID)->id = label_id;
             }

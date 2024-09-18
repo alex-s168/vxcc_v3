@@ -38,7 +38,7 @@ bool VX_IR_OPFILTER_CONDITIONAL__impl(vx_IrOp* op, void* ign1) {
     switch (op->id)
     {
         case VX_IR_OP_CONDTAILCALL:
-        case VX_LIR_OP_COND:
+        case VX_IR_OP_COND:
         case VX_IR_OP_CMOV:
             return true;
 
@@ -235,18 +235,108 @@ vx_IrOp *vx_IrBlock_vardeclOutBefore(vx_IrBlock *block, vx_IrVar var, vx_IrOp *b
     return vx_IrBlock_vardeclOutBefore(block->parent, var, block->parent_op);
 }
 
-bool vx_IrOp_endsFlow(vx_IrOp *op) {
-    switch (op->id) {
-    case VX_IR_OP_BREAK:
-    case VX_IR_OP_CONTINUE:
-    case VX_IR_OP_TAILCALL:
-    case VX_IR_OP_CONDTAILCALL:
-    case VX_IR_OP_RETURN:
+/** false for nop and label   true for everything else */
+bool vx_IrOpType_hasEffect(vx_IrOpType type)
+{
+    return vx_IrOpType__entries[type].hasEffect.a;
+}
+
+bool vx_IrOp_endsFlow(vx_IrOp *op)
+{
+    return vx_IrOpType__entries[op->id].endsFlow.a;
+}
+
+bool vx_IrOp_isVolatile(vx_IrOp *op)
+{
+    if (vx_IrOpType__entries[op->id]._volatile.a)
         return true;
 
-    default:
-        return false;
+    FOR_INPUTS(op, inp, {
+        if (inp.type == VX_IR_VAL_BLOCK)
+            if (vx_IrBlock_isVolatile(inp.block))
+                return true;
+    });
+
+    return false;
+}
+
+bool vx_IrOp_hasSideEffect(vx_IrOp *op)
+{
+    if (vx_IrOpType__entries[op->id].sideEffect.a)
+        return true;
+
+    FOR_INPUTS(op, inp, {
+        if (inp.type == VX_IR_VAL_BLOCK)
+            if (vx_IrBlock_hasSideEffect(inp.block))
+                return true;
+    });
+
+    return false;
+}
+
+size_t vx_IrOp_inlineCost(vx_IrOp *op)
+{
+    size_t sum = vx_IrOpType__entries[op->id].inlineCost.a;
+    FOR_INPUTS(op, inp, {
+        if (inp.type == VX_IR_VAL_BLOCK)
+            sum += vx_IrBlock_inlineCost(inp.block);
+    });
+    return sum;
+}
+
+size_t vx_IrOp_execCost(vx_IrOp *op)
+{
+    size_t sum = vx_IrOpType__entries[op->id].execCost.a;
+    FOR_INPUTS(op, inp, {
+        if (inp.type == VX_IR_VAL_BLOCK)
+            sum += vx_IrBlock_execCost(inp.block);
+    });
+    return sum;
+}
+
+
+bool vx_IrBlock_endsFlow(vx_IrBlock *block)
+{
+    for (vx_IrOp *op = block->first; op; op = op->next)
+        if (vx_IrOp_endsFlow(op))
+            return true;
+    return false;
+}
+
+bool vx_IrBlock_isVolatile(vx_IrBlock *block)
+{
+    for (vx_IrOp *op = block->first; op; op = op->next)
+        if (vx_IrOp_isVolatile(op))
+            return true;
+    return false;
+}
+
+bool vx_IrBlock_hasSideEffect(vx_IrBlock *block)
+{
+    for (vx_IrOp *op = block->first; op; op = op->next)
+        if (vx_IrOp_hasSideEffect(op))
+            return true;
+    return false;
+}
+
+size_t vx_IrBlock_inlineCost(vx_IrBlock *block)
+{
+    size_t total = 0;
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
+        total += vx_IrOp_inlineCost(op);
     }
+    return total;
+}
+
+size_t vx_IrBlock_execCost(vx_IrBlock *block)
+{
+    size_t total = 0;
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
+        total += vx_IrOp_execCost(op);
+    }
+    return total;
 }
 
 bool vx_IrOp_varInOuts(const vx_IrOp *op, vx_IrVar var) {
@@ -287,108 +377,6 @@ bool vx_IrBlock_varUsed(vx_IrBlock *block, vx_IrVar var)
             return true;
     }
 
-    return false;
-}
-
-bool vx_IrOp_isVolatile(vx_IrOp *op)
-{
-    switch (op->id) {
-        case VX_IR_OP_IMM:
-        case VX_IR_OP_REINTERPRET:
-        case VX_IR_OP_ZEROEXT:
-        case VX_IR_OP_SIGNEXT:
-        case VX_IR_OP_TOFLT:
-        case VX_IR_OP_FROMFLT:
-        case VX_IR_OP_BITCAST:
-        case VX_IR_OP_ADD:
-        case VX_IR_OP_SUB:
-        case VX_IR_OP_MUL:
-        case VX_IR_OP_UDIV:
-        case VX_IR_OP_SDIV:
-        case VX_IR_OP_MOD:
-        case VX_IR_OP_UGT:
-        case VX_IR_OP_UGTE:
-        case VX_IR_OP_ULT:
-        case VX_IR_OP_ULTE:
-        case VX_IR_OP_SGT:
-        case VX_IR_OP_SGTE:
-        case VX_IR_OP_SLT:
-        case VX_IR_OP_SLTE:
-        case VX_IR_OP_EQ:
-        case VX_IR_OP_NEQ:
-        case VX_IR_OP_NOT:
-        case VX_IR_OP_AND:
-        case VX_IR_OP_OR:
-        case VX_IR_OP_BITWISE_NOT:
-        case VX_IR_OP_BITWISE_AND:
-        case VX_IR_OP_BITIWSE_OR:
-        case VX_IR_OP_SHL:
-        case VX_IR_OP_SHR:
-        case VX_IR_OP_FOR:
-        case VX_IR_OP_LOAD:
-        case VX_IR_OP_LOAD_EA:
-        case VX_IR_OP_CMOV:
-        case VX_IR_OP_BITMASK:
-        case VX_IR_OP_BITEXTRACT:
-        case VX_IR_OP_BITPOPCNT: 
-        case VX_IR_OP_BITTZCNT:
-        case VX_IR_OP_BITLZCNT:
-        case VX_IR_OP_EA:
-        case VX_IR_OP_NEG:
-        case VX_IR_OP_GETELEM:
-        case VX_IR_OP_SETELEM:
-        case VX_IR_OP_ELEMPTR:
-            return false;
-
-        case VX_IR_OP_BREAK:
-        case VX_IR_OP_CONTINUE:
-        case VX_IR_OP_CALL:
-        case VX_IR_OP_TAILCALL:
-        case VX_IR_OP_CONDTAILCALL:
-        case VX_IR_OP_RETURN:
-            return true;
-
-        case VX_IR_OP_STORE:
-        case VX_IR_OP_STORE_EA:
-        case VX_IR_OP_PLACE: 
-            return true;
-
-        case VX_IR_OP_LOAD_VOLATILE:
-        case VX_IR_OP_STORE_VOLATILE:
-            return true;
-        
-        case VX_IR_OP_REPEAT:
-        case VX_CIR_OP_CFOR:
-        case VX_IR_OP_IF:
-        case VX_IR_OP_FLATTEN_PLEASE:
-        case VX_IR_OP_INFINITE:
-        case VX_IR_OP_WHILE:
-        case VX_IR_OP_FOREACH:
-        case VX_IR_OP_FOREACH_UNTIL:
-        case VX_IR_OP_VSCALE:
-            for (size_t i = 0; i < op->params_len; i ++)
-                if (op->params[i].val.type == VX_IR_VAL_BLOCK)
-                    if (vx_IrBlock_isVolatile(op->params[i].val.block))
-                        return true;
-            return false;
-
-        case VX_LIR_OP_COND:
-        case VX_LIR_OP_GOTO:
-        case VX_LIR_OP_LABEL:
-            return true;
-
-        case VX_IR_OP____END:
-	default:
-	    assert(false);
-            return false;
-    }
-}
-
-bool vx_IrBlock_isVolatile(vx_IrBlock *block)
-{
-    for (vx_IrOp *op = block->first; op; op = op->next)
-        if (vx_IrOp_isVolatile(op))
-            return true;
     return false;
 }
 
@@ -435,100 +423,6 @@ vx_IrType *vx_IrBlock_typeofVar(vx_IrBlock *block, vx_IrVar var) {
     return typeofvar(root, var);
 }
 
-static size_t cost_lut[VX_IR_OP____END] = {
-    [VX_IR_OP_RETURN] = 0,
-    [VX_IR_OP_IMM] = 0,
-    [VX_IR_OP_FLATTEN_PLEASE] = 0,
-    [VX_IR_OP_REINTERPRET] = 0,
-    [VX_IR_OP_ZEROEXT] = 1,
-    [VX_IR_OP_SIGNEXT] = 1,
-    [VX_IR_OP_TOFLT] = 1,
-    [VX_IR_OP_FROMFLT] = 1,
-    [VX_IR_OP_BITCAST] = 0,
-    [VX_IR_OP_LOAD] = 1,
-    [VX_IR_OP_LOAD_VOLATILE] = 1,
-    [VX_IR_OP_STORE] = 1,
-    [VX_IR_OP_STORE_VOLATILE] = 1,
-    [VX_IR_OP_PLACE] = 0,
-    [VX_IR_OP_ADD] = 1,
-    [VX_IR_OP_SUB] = 1,
-    [VX_IR_OP_MUL] = 1,
-    [VX_IR_OP_UDIV] = 1,
-    [VX_IR_OP_SDIV] = 1,
-    [VX_IR_OP_MOD] = 1,
-    [VX_IR_OP_UGT] = 1,
-    [VX_IR_OP_UGTE] = 1,
-    [VX_IR_OP_ULT] = 1,
-    [VX_IR_OP_ULTE] = 1,
-    [VX_IR_OP_SGT] = 1,
-    [VX_IR_OP_SGTE] = 1,
-    [VX_IR_OP_SLT] = 1,
-    [VX_IR_OP_SLTE] = 1,
-    [VX_IR_OP_EQ] = 1,
-    [VX_IR_OP_NEQ] = 1,
-    [VX_IR_OP_NOT] = 1,
-    [VX_IR_OP_AND] = 1,
-    [VX_IR_OP_OR] = 1,
-    [VX_IR_OP_BITWISE_NOT] = 1,
-    [VX_IR_OP_BITWISE_AND] = 1,
-    [VX_IR_OP_BITIWSE_OR] = 1,
-    [VX_IR_OP_SHL] = 1,
-    [VX_IR_OP_FOR] = 1,
-    [VX_IR_OP_INFINITE] = 1,
-    [VX_IR_OP_WHILE] = 1,
-    [VX_IR_OP_CONTINUE] = 1,
-    [VX_IR_OP_BREAK] = 1,
-    [VX_IR_OP_FOREACH] = 2,
-    [VX_IR_OP_FOREACH_UNTIL] = 2,
-    [VX_IR_OP_REPEAT] = 1,
-    [VX_CIR_OP_CFOR] = 2,
-    [VX_IR_OP_IF] = 1,
-    [VX_IR_OP_CMOV] = 1,
-    [VX_LIR_OP_LABEL] = 1,
-    [VX_LIR_OP_GOTO] = 1,
-    [VX_LIR_OP_COND] = 1,
-    [VX_IR_OP_CALL] = 1,
-    [VX_IR_OP_TAILCALL] = 1,
-    [VX_IR_OP_CONDTAILCALL] = 1,
-    [VX_IR_OP_VSCALE] = 0,
-    [VX_IR_OP_BITMASK] = 1,
-    [VX_IR_OP_BITEXTRACT] = 1,
-    [VX_IR_OP_BITPOPCNT] = 1, 
-    [VX_IR_OP_BITTZCNT] = 1,
-    [VX_IR_OP_BITLZCNT] = 1,
-    [VX_IR_OP_EA] = 2,
-    [VX_IR_OP_LOAD_EA] = 2,
-    [VX_IR_OP_STORE_EA] = 2,
-    [VX_IR_OP_NEG] = 1,
-    [VX_IR_OP_ELEMPTR] = 0,
-    [VX_IR_OP_SETELEM] = 0,
-    [VX_IR_OP_GETELEM] = 0,
-};
-
-size_t vx_IrOp_inlineCost(vx_IrOp *op) {
-    size_t total = 0;
-
-    for (size_t i = 0; i < op->params_len; i ++)
-        if (op->params[i].val.type == VX_IR_VAL_BLOCK)
-            total += vx_IrBlock_inlineCost(op->params[i].val.block);
-
-    for (size_t i = 0; i < op->args_len; i ++)
-        if (op->args[i].type == VX_IR_VAL_BLOCK)
-            total += vx_IrBlock_inlineCost(op->args[i].block);
-
-    total += cost_lut[op->id];
-
-    return total;
-}
-
-size_t vx_IrBlock_inlineCost(vx_IrBlock *block) {
-    size_t total = 0;
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        total += vx_IrOp_inlineCost(op);
-    }
-    return total;
-}
-
 vx_IrOp* vx_IrOp_nextWithEffect(vx_IrOp* op) {
     for (op = op->next; op; op = op->next)
         if (vx_IrOpType_hasEffect(op->id))
@@ -563,7 +457,7 @@ bool vx_IrOp_isTail(vx_IrOp *op) {
     vx_IrBlock* root = vx_IrBlock_root(op->parent);
     assert(root);
 
-    if (effect->id == VX_LIR_OP_GOTO) {
+    if (effect->id == VX_IR_OP_GOTO) {
         size_t label = vx_IrOp_param(effect, VX_IR_NAME_ID)->id;
         vx_IrOp* dest = root->as_root.labels[label].decl;
         return vx_IrOp_isTail(dest);

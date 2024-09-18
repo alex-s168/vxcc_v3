@@ -6,8 +6,12 @@
 
 struct CompileData target_gen_files[] = {
     DIR("build"),
+
     DIR("build/common"),
     SP(CT_CDEF, "common/targets.cdef"),
+
+    DIR("build/ir"),
+    SP(CT_CDEF, "ir/ops.cdef"),
 };
 
 enum CompileResult target_gen() {
@@ -20,6 +24,7 @@ enum CompileResult target_gen() {
 
 struct CompileData target_lib_files[] = {
     DEP("build/common/targets.cdef.o"),
+    DEP("build/ir/ops.cdef.o"),
 
     DIR("build"),
 

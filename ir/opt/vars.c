@@ -5,7 +5,7 @@ void vx_opt_vars(vx_IrBlock *block) {
     assert(root != NULL);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (vx_IrOp_isVolatile(op))
+        if (vx_IrOp_isVolatile(op) || vx_IrOp_hasSideEffect(op))
             continue;
 
         bool can_rem = true;

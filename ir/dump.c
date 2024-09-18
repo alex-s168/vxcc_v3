@@ -1,90 +1,5 @@
 #include "ir.h"
 
-const char *vx_IrOpType_names[SSAOPTYPE_LEN] = {
-    [VX_IR_OP_RETURN] = "return",
-    [VX_IR_OP_IMM] = "imm",
-    [VX_IR_OP_FLATTEN_PLEASE] = ".",
-    
-    [VX_IR_OP_REINTERPRET] = "reinterpret",
-    [VX_IR_OP_ZEROEXT] = "zext",
-    [VX_IR_OP_SIGNEXT] = "sext",
-    [VX_IR_OP_TOFLT] = "toflt",
-    [VX_IR_OP_FROMFLT] = "fromflt",
-    [VX_IR_OP_BITCAST] = "bitcast",
-
-    [VX_IR_OP_LOAD] = "load",
-    [VX_IR_OP_LOAD_VOLATILE] = "load-v",
-    [VX_IR_OP_LOAD_EA] = "load-ea",
-    [VX_IR_OP_STORE] = "store",
-    [VX_IR_OP_STORE_VOLATILE] = "store-v",
-    [VX_IR_OP_STORE_EA] = "store-ea",
-    [VX_IR_OP_PLACE] = "place",
-    
-    [VX_IR_OP_ADD] = "add",
-    [VX_IR_OP_SUB] = "sub",
-    [VX_IR_OP_MUL] = "mul",
-    [VX_IR_OP_UDIV] = "udiv",
-    [VX_IR_OP_SDIV] = "sdiv",
-    [VX_IR_OP_MOD] = "mod",
-    [VX_IR_OP_NEG] = "neg",
-
-    [VX_IR_OP_UGT] = "ugt",
-    [VX_IR_OP_UGTE] = "ugte",
-    [VX_IR_OP_ULT] = "ult",
-    [VX_IR_OP_ULTE] = "ulte",
-    [VX_IR_OP_SGT] = "sgt",
-    [VX_IR_OP_SGTE] = "sgte",
-    [VX_IR_OP_SLT] = "slt",
-    [VX_IR_OP_SLTE] = "slte",
-    [VX_IR_OP_EQ] = "eq",
-    [VX_IR_OP_NEQ] = "neq",
-
-    [VX_IR_OP_NOT] = "not",
-    [VX_IR_OP_AND] = "and",
-    [VX_IR_OP_OR] = "or",
-
-    [VX_IR_OP_BITWISE_NOT] = "bwnot",
-    [VX_IR_OP_BITWISE_AND] = "bwand",
-    [VX_IR_OP_BITIWSE_OR] = "bwor",
-
-    [VX_IR_OP_SHL] = "shl",
-    [VX_IR_OP_SHR] = "shr",
-
-    [VX_IR_OP_FOR] = "for",
-    [VX_IR_OP_INFINITE] = "infinite",
-    [VX_IR_OP_WHILE] = "while",
-    [VX_IR_OP_CONTINUE] = "continue",
-    [VX_IR_OP_BREAK] = "break",
-
-    [VX_IR_OP_FOREACH] = "foreach",
-    [VX_IR_OP_FOREACH_UNTIL] = "foreach_until",
-    [VX_IR_OP_REPEAT] = "repeat",
-    [VX_CIR_OP_CFOR] = "cfor",
-
-    [VX_IR_OP_IF] = "if",
-    [VX_IR_OP_CMOV] = "cmov",
-
-    [VX_LIR_OP_LABEL] = "label",
-    [VX_LIR_OP_GOTO] = "goto",
-    [VX_LIR_OP_COND] = "cond",
-
-    [VX_IR_OP_CALL] = "call",
-    [VX_IR_OP_TAILCALL] = "tail-call",
-    [VX_IR_OP_CONDTAILCALL] = "cond-tail-call",
-
-    [VX_IR_OP_BITMASK] = "bit-mask",
-    [VX_IR_OP_BITEXTRACT] = "bit-extract",
-    [VX_IR_OP_BITPOPCNT] = "bit-popcnt", 
-    [VX_IR_OP_BITTZCNT] = "bit-tzcnt",
-    [VX_IR_OP_BITLZCNT] = "bit-lzcnt",
-    [VX_IR_OP_EA] = "ea",
-    [VX_IR_OP_VSCALE] = "vscale",
-
-    [VX_IR_OP_ELEMPTR] = "elemptr",
-    [VX_IR_OP_GETELEM] = "getelem",
-    [VX_IR_OP_SETELEM] = "setelem",
-};
-
 const char *vx_IrName_str[] = {
     [VX_IR_NAME_OPERAND_A] = "a",
     [VX_IR_NAME_OPERAND_B] = "b",
@@ -214,7 +129,7 @@ void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
     if (op->outs_len > 0)
         fputs(" = ", out);
 
-    fprintf(out, "%s ", vx_IrOpType_names[op->id]);
+    fprintf(out, "%s ", vx_IrOpType__entries[op->id].debug.a);
 
     for (size_t i = 0; i < op->args_len; i ++) {
         const vx_IrValue val = op->args[i];
@@ -240,7 +155,7 @@ void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, const size_t indent) {
     for (size_t i = 0; i < indent; i ++)
         fputs("  ", out);
 
-    fputs("BLOCK", out);
+    fprintf(out, "BLOCK(%s)", block->name);
     for (size_t i = 0; i < block->ins_len; i ++) {
         if (i > 0)
             fputc(',', out);
@@ -256,7 +171,7 @@ void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, const size_t indent) {
     for (size_t i = 0; i < indent; i ++)
         fputs("  ", out);
 
-    fputs("return", out);
+    fputs("end", out);
     for (size_t i = 0; i < block->outs_len; i ++) {
         const vx_IrVar var = block->outs[i];
         fprintf(out, " %%%zu", var);

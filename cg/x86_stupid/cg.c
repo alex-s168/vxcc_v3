@@ -666,33 +666,33 @@ static Location* as_loc(size_t width, vx_IrValue val) {
             return gen_imm_var(width, val.imm_int);
 
         case VX_IR_VAL_IMM_FLT: {
-                                    int64_t bits = *(int64_t*)&val.imm_flt;
-                                    return gen_imm_var(width, bits);
-                                }
+            int64_t bits = *(int64_t*)&val.imm_flt;
+            return gen_imm_var(width, bits);
+        }
 
         case VX_IR_VAL_ID: {
-                               Location* loc = fastalloc(sizeof(Location));
-                               static char str[16];
-                               sprintf(str, ".l%zu", val.id);
-                               *loc = LocLabel(faststrdup(str));
-                               return loc;
-                           }
+            Location* loc = fastalloc(sizeof(Location));
+            static char str[16];
+            sprintf(str, ".l%zu", val.id);
+            *loc = LocLabel(faststrdup(str));
+            return loc;
+        }
 
         case VX_IR_VAL_BLOCKREF: {
-                                     Location* loc = fastalloc(sizeof(Location));
-                                     *loc = LocLabel(val.block->name);
-                                     return loc;
-                                 }
+            Location* loc = fastalloc(sizeof(Location));
+            *loc = LocLabel(val.block->name);
+            return loc;
+        }
 
         case VX_IR_VAL_UNINIT: {
-                                   Location* loc = fastalloc(sizeof(Location));
-                                   loc->type = LOC_INVALID;
-                                   return loc;
-                               }
+            Location* loc = fastalloc(sizeof(Location));
+            loc->type = LOC_INVALID;
+            return loc;
+        }
 
         default:
-                               assert(false);
-                               return NULL;
+            assert(false);
+            return NULL;
     }
 }
 
@@ -876,7 +876,6 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 emiti_int_to_flt(as_loc(outLoc->bytesWidth, val), outLoc, file);
             } break;
 
-        case VX_IR_OP_REINTERPRET: // "val"
         case VX_IR_OP_BITCAST:     // "val"
         case VX_IR_OP_IMM: // "val"
         case VX_IR_OP_ZEROEXT:     // "val"
@@ -1175,7 +1174,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         }
                     }
 
-                    if (ty == VX_LIR_OP_COND) {
+                    if (ty == VX_IR_OP_COND) {
                         vx_IrValue id = *vx_IrOp_param(op->next, VX_IR_NAME_ID);
                         vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
                         if (v.type == VX_IR_VAL_VAR && v.var == ov) {
@@ -1201,7 +1200,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
             } break;
 
 
-        case VX_LIR_OP_COND:         // "id", "cond": bool
+        case VX_IR_OP_COND:         // "id", "cond": bool
             {
                 vx_IrValue id = *vx_IrOp_param(op, VX_IR_NAME_ID);
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
@@ -1229,13 +1228,13 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 emit_condmove(op, "nz", file);
             } break;
 
-        case VX_LIR_OP_LABEL:        // "id"
+        case VX_IR_OP_LABEL:        // "id"
             {
                 vx_IrValue id = *vx_IrOp_param(op, VX_IR_NAME_ID);
                 fprintf(file, ".l%zu:\n", id.id);
             } break;
 
-        case VX_LIR_OP_GOTO:         // "id"
+        case VX_IR_OP_GOTO:         // "id"
             {
                 Location* tg = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_ID));
                 emiti_jump(tg, file);
