@@ -681,7 +681,7 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false 
                          hasEffect  false 
                          volatile   false 
-                         sideEffect false 
+                         sideEffect true   # so that it doesn't get removed by rem unused ops 
                          ;
 
     entry GOTO           args       "id"
@@ -692,7 +692,7 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   true 
                          hasEffect  true 
                          volatile   false 
-                         sideEffect false 
+                         sideEffect true 
                          ;
 
     entry COND           args       "id, cond: bool"
@@ -703,7 +703,7 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false 
                          hasEffect  true 
                          volatile   false 
-                         sideEffect false 
+                         sideEffect true 
                          ;
 
     entry CALL           args       "addr: int / fnref, args..."
