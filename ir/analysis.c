@@ -3,6 +3,72 @@
 #include "ir.h"
 
 
+static size_t numDeclaredVarsRec(vx_IrBlock *block)
+{
+    size_t num = 0;
+    for (vx_IrOp* op = block->first; op; op = op->next)
+    {
+        num += op->outs_len;
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK)
+                num += numDeclaredVarsRec(inp.block);
+        });
+    }
+    return num;
+}
+
+static void listDeclaredVarsRec(vx_IrBlock* block, vx_IrVar* list, size_t* writer)
+{
+    for (vx_IrOp* op = block->first; op; op = op->next)
+    {
+        for (size_t i = 0; i < op->outs_len; i ++)
+        {
+            list[(*writer)++] = op->outs[i].var;
+        }
+
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK)
+                listDeclaredVarsRec(inp.block, list, writer);
+        });
+    }
+}
+
+vx_IrVar* vx_IrBlock_listDeclaredVarsRec(vx_IrBlock *block, size_t * listLenOut)
+{
+    *listLenOut = numDeclaredVarsRec(block);
+    vx_IrVar* list = malloc(sizeof(vx_IrVar) * (*listLenOut));
+    size_t writer = 0;
+    listDeclaredVarsRec(block, list, &writer);
+    assert(writer == *listLenOut);
+    return list;
+}
+
+vx_IrOp* vx_IrBlock_varDeclNoRec(vx_IrBlock *block, vx_IrVar var)
+{
+    for (vx_IrOp* op = block->first; op; op = op->next)
+        if (vx_IrOp_varInOuts(op, var))
+            return op;
+    return NULL;
+}
+
+vx_IrOp* vx_IrBlock_varDeclRec(vx_IrBlock *block, vx_IrVar var)
+{
+    for (vx_IrOp* op = block->first; op; op = op->next)
+    {
+        if (vx_IrOp_varInOuts(op, var))
+            return op;
+
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK) {
+                vx_IrOp* decl = vx_IrBlock_varDeclRec(inp.block, var);
+                if (decl) return decl;
+            }
+        });
+    }
+
+    return NULL;
+}
+
 size_t vx_IrOp_countSuccessors(vx_IrOp *op)
 {
     size_t count = 0;
@@ -198,12 +264,13 @@ bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after) {
 }
 
 bool vx_IrBlock_vardeclIsInIns(vx_IrBlock *block, vx_IrVar var) {
-    vx_IrBlock *root = vx_IrBlock_root(block);
-    for (size_t k = 0; k < root->ins_len; k ++) {
-        if (root->ins[k].var == var) {
+    for (size_t k = 0; k < block->ins_len; k ++) {
+        if (block->ins[k].var == var) {
             return true;
         }
     }
+    if (block->parent)
+        return vx_IrBlock_vardeclIsInIns(block->parent, var);
     return false;
 }
 
@@ -227,6 +294,13 @@ vx_IrOp *vx_IrBlock_vardeclOutBefore(vx_IrBlock *block, vx_IrVar var, vx_IrOp *b
         for (size_t i = 0; i < op->outs_len; i ++)
             if (op->outs[i].var == var)
                 return op;
+
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK) {
+                vx_IrOp* d = vx_IrBlock_varDeclRec(inp.block, var);
+                if (d) return d;
+            }
+        });
     }
 
     if (block->parent == NULL)

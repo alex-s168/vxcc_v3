@@ -41,16 +41,16 @@ static vx_IrVar megic(vx_IrBlock *outer,
     }
 
     vx_IrVar thenVar = vx_IrBlock_newVar(then, NULL);
-    vx_IrBlock_renameVar(then, var, thenVar);
+    vx_IrBlock_renameVar(then, var, thenVar, VX_RENAME_VAR_BOTH);
 
     vx_IrVar elseVar = vx_IrBlock_newVar(els, NULL);
-    vx_IrBlock_renameVar(els, var, elseVar);
+    vx_IrBlock_renameVar(els, var, elseVar, VX_RENAME_VAR_BOTH);
 
     const vx_IrVar manipulate = vx_IrBlock_newVar(outer, ifOp);
     {
         vx_IrOp *oldstart = outer->first;
         outer->first = ifOp->next;
-        vx_IrBlock_renameVar(outer, var, manipulate);
+        vx_IrBlock_renameVar(outer, var, manipulate, VX_RENAME_VAR_BOTH);
         outer->first = oldstart;
     }
 
@@ -61,34 +61,75 @@ static vx_IrVar megic(vx_IrBlock *outer,
     return manipulate;
 }
 
+// TODO: I don't think we need manip 
+
 // call megic somehow
 // detect the patter from the inside out!!
 vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
 {
+    vx_IrBlock* root = vx_IrBlock_root(block); assert(root);
     vx_OptIrVar rvar = VX_IRVAR_OPT_NONE;
 
-    for (vx_IrOp *ifOp = block->first; ifOp; ifOp = ifOp->next) {
-        if (ifOp->id != VX_IR_OP_IF)
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        if (op->id == VX_IR_OP_IF) {
+            // inside out:
+            FOR_PARAMS(op, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
+                vx_IrBlock *conditional = param.block;
+                vx_OptIrVar manip = vx_CIrBlock_mksa_states(conditional);
+
+                // are we assigning any variable directly in that block that we also assign on the outside before the inst?
+                for (vx_IrOp *condAssignOp = conditional->first; condAssignOp; condAssignOp = condAssignOp->next) {
+                    for (size_t l = 0; l < condAssignOp->outs_len; l ++) {
+                        vx_IrVar var = condAssignOp->outs[l].var;
+
+                        vx_IrOp *alwaysAssignOp = vx_IrBlock_vardeclOutBefore(block, var, op);
+                        if (alwaysAssignOp == NULL)
+                            continue;
+                        rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, op, var, manip));
+                    }
+                }
+            });
             continue;
+        }
 
-        // inside out:
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK)
+                (void) vx_CIrBlock_mksa_states(inp.block);
+        });
+        
+        if (op->id == VX_IR_OP_WHILE) {
+            vx_IrBlock* cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
+            vx_IrBlock* body = vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block;
 
-        FOR_PARAMS(ifOp, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
-            vx_IrBlock *conditional = param.block;
-            vx_OptIrVar manip = vx_CIrBlock_mksa_states(conditional);
+            size_t declVars_len;
+            vx_IrVar* declVars = vx_IrBlock_listDeclaredVarsRec(body, &declVars_len);
 
-            // are we assigning any variable directly in that block that we also assign on the outside before the inst?
-            for (vx_IrOp *condAssignOp = conditional->first; condAssignOp; condAssignOp = condAssignOp->next) {
-                for (size_t l = 0; l < condAssignOp->outs_len; l ++) {
-                    vx_IrVar var = condAssignOp->outs[l].var;
+            for (size_t i = 0; i < declVars_len; i ++)
+            {
+                vx_IrVar var = declVars[i];
 
-                    vx_IrOp *alwaysAssignOp = vx_IrBlock_vardeclOutBefore(block, var, ifOp);
-                    if (alwaysAssignOp == NULL)
-                        continue;
-                    rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, ifOp, var, manip));
+                if (vx_IrBlock_varDeclRec(body, var) != NULL && vx_IrBlock_vardeclOutBefore(block, var, op) != NULL)
+                {
+                    vx_IrType* ty = vx_IrBlock_typeofVar(block, var);
+
+                    {
+                    vx_IrVar nameInCond = vx_IrBlock_newVar(block, op);
+                    vx_IrBlock_addIn(cond, nameInCond, ty);
+                    vx_IrBlock_renameVar(cond, var, nameInCond, VX_RENAME_VAR_BOTH);
+                    }
+
+                    {
+                    vx_IrVar nameInBody = vx_IrBlock_newVar(block, op);
+                    vx_IrBlock_addIn(body, nameInBody, ty);
+                    vx_IrBlock_renameVar(body, var, nameInBody, VX_RENAME_VAR_BOTH);
+                    vx_IrBlock_addOut(body, nameInBody);
+                    }
+
+                    vx_IrOp_addArg(op, VX_IR_VALUE_VAR(var));
+                    vx_IrOp_addOut(op, var, ty);
                 }
             }
-        });
+        }
     }
 
     return rvar;

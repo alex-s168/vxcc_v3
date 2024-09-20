@@ -24,7 +24,8 @@ void vx_Errors_print(vx_Errors errors, FILE *dest);
 #define TRANSFORM_PASS  /* transform: */
 #define ANALYSIS_PASS   /* analysis: */
 
-#include "../build/common/targets.cdef.h"
+#include "../build/common/target_etca.cdef.h"
+#include "../build/common/target_x86.cdef.h"
 
 #define TARGET_FLAGS_GEN(tg) \
 typedef bool vx_Target_##tg##__flags [vx_Target_##tg##__len]; \
@@ -55,6 +56,7 @@ static void vx_Target_##tg##__parseAdditionalFlags(vx_Target_##tg##__flags * des
 }
 
 TARGET_FLAGS_GEN(ETCA)
+TARGET_FLAGS_GEN(X86)
 
 typedef enum {
     VX_BIN_ELF,
@@ -71,6 +73,7 @@ typedef struct {
     vx_TargetArch arch;
     union {
         vx_Target_ETCA__flags etca;
+        vx_Target_X86__flags x86;
     } flags;
 } vx_Target;
 

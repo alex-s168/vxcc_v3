@@ -316,10 +316,17 @@ bool vx_IrBlock_evalVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest);
 bool vx_Irblock_mightbeVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
 bool vx_Irblock_alwaysIsVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
 void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v);
+
+/** can be ored together */ 
+typedef enum { VX_RENAME_VAR_OUTPUTS = 0b1, VX_RENAME_VAR_INPUTS = 0b10, VX_RENAME_VAR_BOTH = 0b11 } vx_RenameVarCfg;
 /** ret val: did rename any? **/
-bool vx_IrBlock_renameVar(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv);
+bool vx_IrBlock_renameVar(vx_IrBlock *block, vx_IrVar old, vx_IrVar newv, vx_RenameVarCfg cfg);
 bool vx_IrBlock_deepTraverse(vx_IrBlock *block, bool (*callback)(vx_IrOp *op, void *data), void *data);
 bool vx_IrBlock_vardeclIsInIns(vx_IrBlock *block, vx_IrVar var);
+vx_IrOp* vx_IrBlock_varDeclRec(vx_IrBlock *block, vx_IrVar var);
+vx_IrOp* vx_IrBlock_varDeclNoRec(vx_IrBlock *block, vx_IrVar var);
+/** might not contain unique elemes */
+vx_IrVar* vx_IrBlock_listDeclaredVarsRec(vx_IrBlock *block, size_t * listLenOut);
 
 typedef enum {
     VX_IR_NAME_OPERAND_A,
@@ -540,6 +547,8 @@ static vx_IrTypeRef vx_ptrType(vx_IrBlock* root) {
     type->base.sizeless = false;
     return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
 }
+
+void vx_IrBlock_flattenFlattenPleaseRec(vx_IrBlock* block);
 
 bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
 

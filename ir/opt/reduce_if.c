@@ -27,7 +27,7 @@ void vx_opt_reduce_if(vx_IrBlock *block)
             if (!vx_Irblock_mightbeVar(cond, condVar, VX_IR_VALUE_IMM_INT(0))) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
                     const vx_IrVar out = op->outs[i].var;
-                    vx_IrBlock_renameVar(block, out, then->outs[i]); // does all the bookkeeping for us
+                    vx_IrBlock_renameVar(block, out, then->outs[i], VX_RENAME_VAR_BOTH); // does all the bookkeeping for us
                 }
 
                 vx_IrOp_removeParam(op, VX_IR_NAME_COND_THEN); // don't want to delete that block
@@ -43,7 +43,7 @@ void vx_opt_reduce_if(vx_IrBlock *block)
             if (vx_Irblock_alwaysIsVar(cond, condVar, VX_IR_VALUE_IMM_INT(0))) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
                     const vx_IrVar out = op->outs[i].var;
-                    vx_IrBlock_renameVar(block, out, els->outs[i]); // does all the bookkeeping for us
+                    vx_IrBlock_renameVar(block, out, els->outs[i], VX_RENAME_VAR_BOTH); // does all the bookkeeping for us
                 }
 
                 vx_IrOp_removeParam(op, VX_IR_NAME_COND_ELSE); // don't want to delete that block

@@ -118,7 +118,7 @@ static void analyze_loops(vx_Errors *dest,
 }
 
 void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
-    const vx_IrBlock *root = vx_IrBlock_root(block);
+    vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->parent != block) {
@@ -144,73 +144,69 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
 
         // TODO: implement for more ops
         switch (op->id) {
-        case VX_IR_OP_FOR:
-        case VX_IR_OP_REPEAT:
-        case VX_IR_OP_INFINITE:
-        case VX_IR_OP_WHILE:
-            analyze_loops(dest, op);
-            break;
+            case VX_IR_OP_FOR:
+            case VX_IR_OP_REPEAT:
+            case VX_IR_OP_INFINITE:
+            case VX_IR_OP_WHILE:
+                analyze_loops(dest, op);
+                break;
 
-        case VX_IR_OP_IF:
-            (void) analyze_if(dest, op);
-            break;
+            case VX_IR_OP_IF:
+                (void) analyze_if(dest, op);
+                break;
 
-        case VX_IR_OP_GOTO:
-        case VX_IR_OP_COND: {
-            size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
-            if (label >= root->as_root.labels_len || root->as_root.labels[label].decl == NULL) {
-                static char buf[256];
-                sprintf(buf, "Label %%%zu is never declared!", label);
-                vx_Error error = {
-                    .error = "Undeclared label",
-                    .additional = buf
-                };
-                vx_Errors_add(dest, &error);
-            }
-        } break;
+            case VX_IR_OP_GOTO:
+            case VX_IR_OP_COND: {
+                size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
+                if (label >= root->as_root.labels_len || root->as_root.labels[label].decl == NULL) {
+                    static char buf[256];
+                    sprintf(buf, "Label %%%zu is never declared!", label);
+                    vx_Error error = {
+                        .error = "Undeclared label",
+                        .additional = buf
+                    };
+                    vx_Errors_add(dest, &error);
+                }
+            } break;
 
-        case VX_IR_OP_CALL:
-        case VX_IR_OP_CONDTAILCALL: {
-            vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
-            vx_IrTypeRef ty = vx_IrValue_type((vx_IrBlock*) root, addr);
-            assert(ty.ptr);
-            assert(ty.ptr->kind == VX_IR_TYPE_FUNC);
-            vx_IrTypeRef_drop(ty);
-        } break;
+            case VX_IR_OP_CALL:
+            case VX_IR_OP_CONDTAILCALL: {
+                vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
+                vx_IrTypeRef ty = vx_IrValue_type((vx_IrBlock*) root, addr);
+                assert(ty.ptr);
+                assert(ty.ptr->kind == VX_IR_TYPE_FUNC);
+                vx_IrTypeRef_drop(ty);
+            } break;
 
-        default:
-            break;
+            default:
+                break;
         }
 
-        for (size_t j = 0; j < op->params_len; j ++) {
-            const vx_IrValue val = op->params[j].val;
-
+        FOR_INPUTS(op, val, ({
             if (val.type == VX_IR_VAL_BLOCK) {
+                if (val.block->parent != block) {
+                    const vx_Error error = {
+                        .error = "Invalid parent",
+                        .additional = "Block has different parent"
+                    };
+                    vx_Errors_add(dest, &error);
+                }
                 vx_Errors errs = vx_IrBlock_verify(val.block);
                 vx_Errors_add_all_and_free(dest, &errs);
             }
             else if (val.type == VX_IR_VAL_VAR) {
                 const vx_IrVar var = val.var;
-                if (var >= root->as_root.vars_len) {
+                bool found = vx_IrBlock_varDeclRec(root, var) || vx_IrBlock_vardeclIsInIns(block, var);
+                if (!found) {
                     static char buf[256];
-                    sprintf(buf, "Variable %%%zu id is bigger than root block variable count - 1!", var);
+                    sprintf(buf, "Variable %%%zu is never declared!", var);
                     vx_Error error = {
-                        .error = "Variable out of bounds",
+                        .error = "Undeclared variable",
                         .additional = buf
                     };
                     vx_Errors_add(dest, &error);
-                } else if (root->as_root.vars[var].decl == NULL) {
-                    if (!vx_IrBlock_vardeclIsInIns(block, var)) {
-                        static char buf[256];
-                        sprintf(buf, "Variable %%%zu is never declared!", var);
-                        vx_Error error = {
-                            .error = "Undeclared variable",
-                            .additional = buf
-                        };
-                        vx_Errors_add(dest, &error);
-                    }
                 }
             }
-        }
+        }))
     }
 }

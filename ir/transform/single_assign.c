@@ -1,30 +1,5 @@
 #include "../cir.h"
 
-// returns last var that was originally onVar 
-vx_IrVar vx_CIrBlock_partial_mksaFinal_norec(vx_IrBlock* block, vx_IrVar onVar)
-{
-    vx_IrVar lastWithSame = onVar;
-    for (vx_IrOp* op = block->first; op; op = op->next)
-    {
-        for (size_t i = 0; i < op->outs_len; i ++)
-        {
-            vx_IrVar* v = &op->outs[i].var;
-            if (*v == onVar)
-            {
-                vx_IrVar new = vx_IrBlock_newVar(block, op);
-
-                vx_IrOp *oldstart = block->first;
-                    block->first = op->next;
-                    vx_IrBlock_renameVar(block, *v, new);
-                block->first = oldstart;
-
-                lastWithSame = new;
-            }
-        }
-    }
-    return lastWithSame;
-}
-
 /**
  * Go trough every unconditional assignement in the block,
  * change the id of the vars to new,
@@ -47,7 +22,7 @@ void vx_CIrBlock_mksa_final(vx_IrBlock *block)
 
             vx_IrOp *oldstart = block->first;
                 block->first = op->next;
-                vx_IrBlock_renameVar(block, old, new);
+                vx_IrBlock_renameVar(block, old, new, VX_RENAME_VAR_OUTPUTS);
             block->first = oldstart;
         }
     }

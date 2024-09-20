@@ -142,14 +142,14 @@ void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
 
             if (heat1 > heat2)
             {
-                vx_IrBlock_renameVar(block, var2, var);
+                vx_IrBlock_renameVar(block, var2, var, VX_RENAME_VAR_BOTH);
                 renamed[var2] = true;
                 boolArrOrAssign(lt.used_in_op, lt2.used_in_op, blkInstLen);
                 goto recheck;
             }
             else 
             {
-                vx_IrBlock_renameVar(block, var, var2);
+                vx_IrBlock_renameVar(block, var, var2, VX_RENAME_VAR_BOTH);
                 renamed[var] = true;
                 boolArrOrAssign(lt2.used_in_op, lt.used_in_op, blkInstLen);
                 break; // don't want to continue finding matches for this var since we renamed it 

@@ -49,7 +49,7 @@ void vx_opt_if_opts(vx_IrBlock* block)
         }
 
         for (size_t i = 0; i < op->outs_len; i ++)
-            vx_IrBlock_renameVar(notEndingBlk, op->outs[i].var, notEndingBlk->outs[i]);
+            vx_IrBlock_renameVar(notEndingBlk, op->outs[i].var, notEndingBlk->outs[i], VX_RENAME_VAR_BOTH);
 
         break; // there is no next anymore 
     }

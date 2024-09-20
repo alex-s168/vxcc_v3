@@ -12,9 +12,6 @@ void vx_CIrBlock_fix(vx_IrBlock*);
 
 vx_Errors vx_CIrBlock_verify(vx_IrBlock *block);
 
-// returns last var that was originally onVar 
-vx_IrVar vx_CIrBlock_partial_mksaFinal_norec(vx_IrBlock* block, vx_IrVar onVar);
-
 static int vx_cir_verify(vx_IrBlock *block) {
     const vx_Errors errs = vx_CIrBlock_verify(block);
     vx_Errors_print(errs, stderr);

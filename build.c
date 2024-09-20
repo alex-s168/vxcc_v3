@@ -8,7 +8,8 @@ struct CompileData target_gen_files[] = {
     DIR("build"),
 
     DIR("build/common"),
-    SP(CT_CDEF, "common/targets.cdef"),
+    SP(CT_CDEF, "common/target_etca.cdef"),
+    SP(CT_CDEF, "common/target_x86.cdef"),
 
     DIR("build/ir"),
     SP(CT_CDEF, "ir/ops.cdef"),
@@ -16,14 +17,15 @@ struct CompileData target_gen_files[] = {
 
 enum CompileResult target_gen() {
     START;
-    DO(compile(LI(target_gen_files)));
+        DO(compile(LI(target_gen_files)));
     END;
 }
 
 /* ========================================================================= */
 
 struct CompileData target_lib_files[] = {
-    DEP("build/common/targets.cdef.o"),
+    DEP("build/common/target_etca.cdef.o"),
+    DEP("build/common/target_x86.cdef.o"),
     DEP("build/ir/ops.cdef.o"),
 
     DIR("build"),

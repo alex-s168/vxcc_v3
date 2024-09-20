@@ -23,7 +23,7 @@ void vx_IrBlock_llir_compact(vx_IrBlock *root) {
             if (idx + 1 >= root->as_root.vars_len) break;
             for (vx_IrVar after = idx + 1; after < root->as_root.vars_len; after ++) {
                 assert(root != NULL && root->is_root);
-                vx_IrBlock_renameVar(root, after, after - 1);
+                vx_IrBlock_renameVar(root, after, after - 1, VX_RENAME_VAR_BOTH);
             }
         }
     }
@@ -285,17 +285,19 @@ int vx_CU_compile(vx_CU * cu,
     FOR_BLOCK({
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
-        if (vx_cir_verify(block) != 0)
-            return 1;
     });
 
     FOR_BLOCK({
         vx_CIrBlock_fix(block); // TODO: why...
         vx_CIrBlock_normalize(block);
+        vx_IrBlock_flattenFlattenPleaseRec(block);
         vx_CIrBlock_mksa_states(block);
         vx_CIrBlock_mksa_final(block);
         vx_CIrBlock_fix(block); // TODO: why...
 
+        vx_IrBlock_dump(block, stdout, 0);
+
+        puts("post CIR lower:");
         if (vx_ir_verify(block) != 0)
             return 1;
     });
@@ -306,6 +308,7 @@ int vx_CU_compile(vx_CU * cu,
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
 
+        puts("post SSA IR opt:");
         if (vx_ir_verify(block) != 0)
             return 1;
     });
