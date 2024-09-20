@@ -5,8 +5,6 @@
 
 void vx_CIrBlock_normalize(vx_IrBlock *block)
 {
-    assert(block->is_root);
-
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id == VX_IR_OP_CFOR) {
             vx_IrBlock *new = vx_IrBlock_initHeap(block, op);
@@ -47,5 +45,10 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
             op->id = VX_IR_OP_FLATTEN_PLEASE;
             vx_IrOp_addParam_s(op, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(new));
         }
+
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK)
+                vx_CIrBlock_normalize(inp.block);
+        });
     }
 }

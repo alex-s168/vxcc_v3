@@ -985,8 +985,12 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     default: break;
                 }
 
+                size_t multiplicationNumNotImm = 0;
+                if (idx_loc && idx_loc->type != LOC_IMM) multiplicationNumNotImm ++;
+                if (elsize_loc && elsize_loc->type != LOC_IMM) multiplicationNumNotImm ++;
+
                 // branch always taken if loadea or storeea
-                if (numMemOrEa < 2)
+                if (numMemOrEa < 2 && multiplicationNumNotImm < 2)
                 {
                     Location* base_prim_loc = base_loc ? start_as_primitive(base_loc, file) : NULL;
                     Location* idx_prim_loc = idx_loc ? start_as_primitive(idx_loc, file) : NULL;
