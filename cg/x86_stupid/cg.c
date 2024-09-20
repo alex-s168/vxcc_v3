@@ -950,7 +950,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
             {
                 Location* o = op->outs_len > 0 ? varData[op->outs[0].var].location : NULL;
 
-                size_t eaBytesWidth = o->bytesWidth;
+                size_t eaBytesWidth = o ? o->bytesWidth : 0;
                 switch (op->id)
                 {
                     case VX_IR_OP_LOAD_EA:
@@ -1498,6 +1498,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             vx_IrTypedVar var = block->ins[i];
             assert(var.type->kind == VX_IR_TYPE_KIND_BASE);
             size_t size = vx_IrType_size(var.type);
+            assert(size != 0);
 
             if (var.type->base.isfloat) {
                 Location* loc;

@@ -14,10 +14,22 @@ void vx_IrBlock_flattenFlattenPleaseRec(vx_IrBlock* block)
         if (op->id == VX_IR_OP_FLATTEN_PLEASE)
         {
             vx_IrBlock* blk = vx_IrOp_param(op, VX_IR_NAME_BLOCK)->block;
-            vx_IrBlock_tail(blk)->next = op->next;
+            vx_IrOp* blkTail = vx_IrBlock_tail(blk); assert(blkTail);
             
-            op->next = blk->first; // so that we continue with the first op
-            
+            for (size_t i = 0; i < op->outs_len; i ++) 
+            {
+                vx_IrOp* imm = vx_IrBlock_insertOpBuildingAfter(blkTail);
+                vx_IrOp_init(imm, VX_IR_OP_IMM, blk);
+                vx_IrOp_addOut(imm, op->outs[i].var, op->outs[i].type);
+                vx_IrOp_addParam_s(imm, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(blk->outs[i]));
+            }
+
+            blkTail = vx_IrBlock_tail(blk);
+
+            blkTail->next = op->next;
+
+            op->next = blk->first; // so that we continue with the first op 
+
             if (last == NULL) block->first = blk->first;
             else last->next = blk->first;
 

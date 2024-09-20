@@ -1,29 +1,27 @@
 #include "../opt.h"
 
-void vx_opt_ll_sched(vx_IrBlock *block) {
-    assert(block->is_root);
+struct Move {
+    vx_IrOp* what;
+    vx_IrOp* before;
+};
 
-    vx_IrBlock_dump(block, stdout, 0);
-
-    struct Move {
-        vx_IrOp* what;
-        vx_IrOp* before;
-    };
-
-    struct Move* to_move = NULL;
-    size_t       to_move_len = 0;
-
+static void runSched(vx_IrBlock* block, struct Move **to_move, size_t *to_move_len,
+        vx_IrOpFilter matchBegin, void *data0,
+        vx_IrOpFilter matchEnd, void *data1)
+{
     vx_IrOp* first = NULL;
     vx_IrOp* last = NULL;
     while (vx_IrBlock_nextOpListBetween(block, &first, &last,
-                                        VX_IR_OPFILTER_COMPARISION,
-                                        VX_IR_OPFILTER_CONDITIONAL))
+                                        matchBegin, data0,
+                                        matchEnd, data1))
     {
         assert(first); assert(last);
 
-        if (!vx_IrBlock_allMatch(first, last, VX_IR_OPFILTER_PURE)) {
+        if (!vx_IrBlock_allMatch(first, last, VX_IR_OPFILTER_PURE))
             continue;
-        }
+
+        if (!vx_IrBlock_noneMatch(first, last, VX_IR_OPFILTER_ID(VX_IR_OP_LABEL)))
+            continue;
 
         for (vx_IrOp* op = first->next; op; op = op->next)
         {
@@ -31,17 +29,43 @@ void vx_opt_ll_sched(vx_IrBlock *block) {
 
             vx_IrOp* beforeFirst = vx_IrOp_predecessor(first);
             if (beforeFirst == NULL) beforeFirst = block->first;
-            if (vx_IrOp_allDepsInRangeOrArgs(block, op, block->first, beforeFirst))
+
+            bool ok = true;
+            for (vx_IrOp* o = first->next; o && o != last; o = o->next) {
+                FOR_INPUTS(op, inp, {
+                    if (inp.type == VX_IR_VAL_VAR) {
+                        if (vx_IrOp_varInOuts(o, inp.var)) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                });
+            }
+
+            if (ok && vx_IrOp_allDepsInRangeOrArgs(block, op, block->first, beforeFirst))
             {
-                to_move = realloc(to_move, (to_move_len + 1) * sizeof(struct Move));
-                to_move[to_move_len++] = (struct Move) {
+                *to_move = realloc(*to_move, (*to_move_len + 1) * sizeof(struct Move));
+                (*to_move)[(*to_move_len)++] = (struct Move) {
                     .what = op,
                     .before = first,
                 };
             }
         }
     }
-    
+}
+
+void vx_opt_ll_sched(vx_IrBlock *block) {
+    assert(block->is_root);
+
+    vx_IrBlock_dump(block, stdout, 0);
+
+    struct Move* to_move = NULL;
+    size_t       to_move_len = 0;
+
+    // TODO: this thing is broken af,
+    runSched(block, &to_move, &to_move_len, VX_IR_OPFILTER_COMPARISION, VX_IR_OPFILTER_CONDITIONAL);
+    // runSched(block, &to_move, &to_move_len, VX_IR_OPFILTER_PURE, VX_IR_OPFILTER_ID(VX_IR_OP_IMM)); // move imm ops as far up as possible
+
     for (size_t i = 0; i < to_move_len; i ++)
     {
         vx_IrOp* op = to_move[i].what;
@@ -53,7 +77,6 @@ void vx_opt_ll_sched(vx_IrBlock *block) {
         vx_IrOp_predecessor(op)->next = op->next;
 
         vx_IrOp* beforeBefore = vx_IrOp_predecessor(before);
-        vx_IrOp_dump(beforeBefore, stdout, 0);
         if (beforeBefore != NULL) {
             beforeBefore->next = op;
         } else {
@@ -66,6 +89,5 @@ void vx_opt_ll_sched(vx_IrBlock *block) {
     free(to_move);
 
     vx_IrBlock_dump(block, stdout, 0);
-
 
 }

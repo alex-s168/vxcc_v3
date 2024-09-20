@@ -115,6 +115,7 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
 
 void vx_IrOp_dump(const vx_IrOp *op, FILE *out, size_t indent) {
     assert(out);
+    assert(op);
 
     for (size_t j = 0; j < indent; j ++)
         fputs("  ", out);

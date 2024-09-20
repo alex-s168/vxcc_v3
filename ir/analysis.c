@@ -76,6 +76,10 @@ size_t vx_IrOp_countSuccessors(vx_IrOp *op)
     return count;
 }
 
+bool VX_IR_OPFILTER_ID__impl(vx_IrOp* op, void* idi) {
+    return op->id == (vx_IrOpType) (intptr_t) idi;
+}
+
 bool VX_IR_OPFILTER_COMPARISION__impl(vx_IrOp* op, void* ign0) {
     (void) ign0;
 
@@ -133,6 +137,16 @@ bool vx_IrBlock_allMatch(vx_IrOp* first, vx_IrOp* last,
 {
     for (; first; first = first->next) {
         if (!fil(first, data)) return false;
+        if (first == last) break;
+    }
+    return true;
+}
+
+bool vx_IrBlock_noneMatch(vx_IrOp* first, vx_IrOp* last,
+                          vx_IrOpFilter fil, void* data)
+{
+    for (; first; first = first->next) {
+        if (fil(first, data)) return false;
         if (first == last) break;
     }
     return true;

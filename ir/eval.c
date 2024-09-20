@@ -40,8 +40,7 @@ bool vx_Irblock_alwaysIsVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
 }
 
 void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v) {
-    if (v->type == VX_IR_VAL_VAR)
-        while (vx_IrBlock_eval_var(block, v->var, v)) {}
+    while (v->type == VX_IR_VAL_VAR && vx_IrBlock_eval_var(block, v->var, v)) {}
 }
 
 

@@ -2,9 +2,9 @@
 
 #include "../llir.h"
 
-static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock* newParent);
+static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock* newParent, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP);
 
-static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
+static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP) {
     bool *usedarr = malloc(sizeof(bool) * parent->outs_len);
     assert(usedarr);
     for (size_t outid = 0; outid < parent->outs_len; outid ++) {
@@ -50,7 +50,7 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
         }
     }
     
-    lower_into(src, dest, dest);
+    lower_into(src, dest, dest, continueLabel, breakLabel, loopOP);
 
     for (size_t outid = 0; outid < parent->outs_len; outid ++) {
         if (usedarr[outid]) {
@@ -71,7 +71,10 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest) {
     free(usedarr);
 }
 
-static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent) {
+static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP) {
+    // TODO: remove 
+    vx_IrBlock_dump(old, stdout, 0);
+
     for (vx_IrOp *op = old->first; op; op = op->next) {
         op->parent = newParent;
 
@@ -102,7 +105,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent)
 
             vx_IrVar cond_var = cond->outs[0];
 
-            lower_into(cond, dest, newParent);
+            lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
 
             if (els && then) {
                 //   cond .then COND
@@ -116,7 +119,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent)
                 vx_IrOp_init(jmp_cond, VX_IR_OP_COND, dest);
                 vx_IrOp_addParam_s(jmp_cond, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));
 
-                into(els, op, dest);
+                into(els, op, dest, continueLabel, breakLabel, loopOP);
 
                 vx_IrOp *jmp_end = vx_IrBlock_addOpBuilding(dest);
                 vx_IrOp_init(jmp_end, VX_IR_OP_GOTO, dest);
@@ -125,7 +128,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent)
 
                 vx_IrOp_addParam_s(jmp_cond, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_then));
 
-                into(then, op, dest);
+                into(then, op, dest, continueLabel, breakLabel, loopOP);
 
                 size_t label_end = vx_IrBlock_appendLabelOp(dest);
 
@@ -160,7 +163,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent)
                 vx_IrOp_init(jump, VX_IR_OP_COND, dest);
                 vx_IrOp_addParam_s(jump, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));
 
-                into(els, op, dest);
+                into(els, op, dest, continueLabel, breakLabel, loopOP);
 
                 size_t label_id = vx_IrBlock_appendLabelOp(dest);
 
@@ -169,7 +172,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent)
         }
         else if (op->id == VX_IR_OP_FLATTEN_PLEASE) {
             vx_IrBlock *body = vx_IrOp_param(op, VX_IR_NAME_BLOCK)->block;
-            into(body, op, dest);    
+            into(body, op, dest, continueLabel, breakLabel, loopOP);    
         }
         else if (op->id == VX_IR_OP_CMOV) {
 
@@ -178,14 +181,77 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent)
 
             vx_IrVar cond_var = cond->outs[0];
 
-            lower_into(cond, dest, newParent);
+            lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
 
             pcond->type = VX_IR_VAL_VAR;
             pcond->var = cond_var;
 
             vx_IrBlock_addOp(dest, op);
         }
-        // TODO: lower loops
+        else if (op->id == VX_IR_OP_INFINITE) {
+
+            // states are stored in op->outs
+
+            vx_IrBlock* body = vx_IrOp_param(op, VX_IR_NAME_LOOP_DO)->block;
+
+            for (size_t i = 0; i < op->outs_len; i ++) {
+                vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
+                vx_IrOp_init(mov, VX_IR_OP_IMM, dest);
+                vx_IrOp_addOut(mov, op->outs[i].var, op->outs[i].type);
+                vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, op->args[i]);
+            }
+
+            for (size_t i = 0; i < op->outs_len; i ++) {
+                vx_IrBlock_renameVar(body, body->ins[i].var, op->outs[i].var, VX_RENAME_VAR_BOTH);
+            }
+
+            size_t newContinueLabel = vx_IrBlock_appendLabelOp(dest);
+            size_t newBreakLabel = vx_IrBlock_newLabel(dest, NULL);
+
+            lower_into(body, dest, newParent, newContinueLabel, newBreakLabel, op);
+
+            for (size_t i = 0; i < op->outs_len; i ++) {
+                vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
+                vx_IrOp_init(mov, VX_IR_OP_IMM, dest);
+                vx_IrOp_addOut(mov, op->outs[i].var, op->outs[i].type);
+                vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(body->outs[i]));
+            }
+
+            vx_IrOp* jmp = vx_IrBlock_addOpBuilding(dest);
+            vx_IrOp_init(jmp, VX_IR_OP_GOTO, dest);
+            vx_IrOp_addParam_s(jmp, VX_IR_NAME_ID, VX_IR_VALUE_ID(newContinueLabel));
+
+            vx_IrBlock_appendLabelOpPredefined(dest, newBreakLabel);
+
+        }
+        else if (op->id == VX_IR_OP_CONTINUE) {
+
+            for (size_t i = 0; i < old->outs_len; i ++) {
+                vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
+                vx_IrOp_init(mov, VX_IR_OP_IMM, dest);
+                vx_IrOp_addOut(mov, loopOP->outs[i].var, loopOP->outs[i].type);
+                vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, op->args[i]);
+            }
+
+            vx_IrOp* jmp = vx_IrBlock_addOpBuilding(dest);
+            vx_IrOp_init(jmp, VX_IR_OP_GOTO, dest);
+            vx_IrOp_addParam_s(jmp, VX_IR_NAME_ID, VX_IR_VALUE_ID(continueLabel));
+
+        }
+        else if (op->id == VX_IR_OP_BREAK) {
+
+            for (size_t i = 0; i < old->outs_len; i ++) {
+                vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
+                vx_IrOp_init(mov, VX_IR_OP_IMM, dest);
+                vx_IrOp_addOut(mov, loopOP->outs[i].var, loopOP->outs[i].type);
+                vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, op->args[i]);
+            }
+
+            vx_IrOp* jmp = vx_IrBlock_addOpBuilding(dest);
+            vx_IrOp_init(jmp, VX_IR_OP_GOTO, dest);
+            vx_IrOp_addParam_s(jmp, VX_IR_NAME_ID, VX_IR_VALUE_ID(breakLabel));
+
+        }
         else {
             // TODO: lower block params
             vx_IrBlock_addOp(dest, op); 
@@ -214,5 +280,8 @@ void vx_IrBlock_llir_lower(vx_IrBlock *block) {
     static vx_IrBlock copy;
     copy = *block;
     block->first = NULL;
-    lower_into(&copy, block, block);
+    lower_into(&copy, block, block, 0, 0, NULL);
+
+    for (vx_IrOp* op = block->first; op; op = op->next)
+        op->parent = block;
 }

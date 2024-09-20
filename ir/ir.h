@@ -472,6 +472,11 @@ vx_IrOp* vx_IrOp_nextWithEffect(vx_IrOp* op);
 
 typedef bool (*vx_IrOpFilter)(vx_IrOp* op, void* userdata);
 
+bool VX_IR_OPFILTER_ID__impl(vx_IrOp*,void*);
+#define VX_IR_OPFILTER_ID(id) \
+    VX_IR_OPFILTER_ID__impl, \
+    (void*) (intptr_t) id
+
 bool VX_IR_OPFILTER_COMPARISION__impl(vx_IrOp*,void*);
 #define VX_IR_OPFILTER_COMPARISION \
     VX_IR_OPFILTER_COMPARISION__impl, \
@@ -505,8 +510,20 @@ static vx_IrOp* vx_IrOp_nextWhile(vx_IrOp* op, vx_IrOpFilter match, void *data0)
     return op;
 }
 
+static void vx_IrOp_earlierFirst(vx_IrOp** earlier, vx_IrOp** later)
+{
+    if (vx_IrOp_after(*earlier, *later)) {
+        vx_IrOp* temp = *earlier;
+        *earlier = *later;
+        *later = temp;
+    }
+}
+
 bool vx_IrBlock_allMatch(vx_IrOp* first, vx_IrOp* last,
                          vx_IrOpFilter fil, void* data);
+
+bool vx_IrBlock_noneMatch(vx_IrOp* first, vx_IrOp* last,
+                          vx_IrOpFilter fil, void* data);
 
 bool vx_IrOp_inRange(vx_IrOp* op,
                      vx_IrOp* first, vx_IrOp* last);

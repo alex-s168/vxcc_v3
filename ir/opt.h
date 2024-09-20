@@ -25,6 +25,7 @@ OPT_PASS void vx_opt_ll_jumps(vx_IrBlock *block);
 OPT_PASS void vx_opt_simple_patterns(vx_IrBlock* block);
 OPT_PASS void vx_opt_if_opts(vx_IrBlock* block);
 
+OPT_PASS void vx_opt_ll_inlineVars(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_dce(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_condtailcall(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_sched(vx_IrBlock *block);

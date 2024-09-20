@@ -70,6 +70,7 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/transform/ssair_llir_lower.c"),
     SP(CT_C, "ir/transform/cmov_expand.c"),
     SP(CT_C, "ir/transform/ll_finalize.c"),
+    SP(CT_C, "ir/transform/lower_loops.c"),
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),

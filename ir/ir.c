@@ -135,6 +135,10 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
     for (vx_IrOp *op = root->first; op; op = op->next) {
         for (size_t j = 0; j < op->outs_len; j ++) {
             vx_IrTypedVar out = op->outs[j];
+            if (vx_IrType_size(out.type) == 0) {
+                fprintf(stderr, "size of type %s in 0", out.type->debugName);
+                exit(1);
+            }
             assert(out.var < root->as_root.vars_len);
             vx_IrOp **decl = &root->as_root.vars[out.var].decl;
             if (*decl == NULL) {
@@ -295,9 +299,9 @@ int vx_CU_compile(vx_CU * cu,
         vx_CIrBlock_mksa_final(block);
         vx_CIrBlock_fix(block); // TODO: why...
 
+        puts("post CIR lower:");
         vx_IrBlock_dump(block, stdout, 0);
 
-        puts("post CIR lower:");
         if (vx_ir_verify(block) != 0)
             return 1;
     });
@@ -305,17 +309,21 @@ int vx_CU_compile(vx_CU * cu,
     FOR_BLOCK({
         opt(block);
 
+        puts("post SSA IR opt:");
+        vx_IrBlock_dump(block, stdout, 0); // TODO remove 
+
+        vx_IrBlock_flattenFlattenPleaseRec(block);
+
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
 
-        puts("post SSA IR opt:");
         if (vx_ir_verify(block) != 0)
             return 1;
     });
 
     FOR_BLOCK({
+        vx_IrBlock_llir_preLower_loops(block);
         vx_IrBlock_llir_lower(block);
-
         vx_IrBlock_llir_fix_decl(block);
     });
 
