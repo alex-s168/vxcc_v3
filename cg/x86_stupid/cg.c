@@ -648,6 +648,8 @@ static void emiti_unary(Location* v, Location* o, const char * unary, FILE* out)
 
 static size_t SCRATCH_REG;
 static size_t SCRATCH_REG2;
+static size_t XMM_SCRATCH_REG1;
+static size_t XMM_SCRATCH_REG2;
 
 typedef struct {
     vx_IrType* type;
@@ -874,6 +876,57 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 vx_IrVar out = op->outs[0].var;
                 Location* outLoc = varData[out].location;
                 emiti_int_to_flt(as_loc(outLoc->bytesWidth, val), outLoc, file);
+            } break;
+
+        case VX_IR_OP_FLTCAST: // "val"
+            {
+                vx_IrValue val = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
+                vx_IrVar out = op->outs[0].var;
+                Location* outLoc = varData[out].location;
+
+                Location* dest = outLoc;
+                if (outLoc->type != LOC_REG) {
+                    Location temp; dest = &temp;
+                    *dest = LocReg(dest->bytesWidth, XMM_SCRATCH_REG1);
+                }
+
+                vx_IrTypeRef ty = vx_IrValue_type(block, val);
+                Location* val_loc = as_loc(vx_IrType_size(ty.ptr), val);
+                vx_IrTypeRef_drop(ty);
+
+                Location* src = val_loc;
+                if (val_loc->type != LOC_REG) {
+                    Location temp = LocReg(dest->bytesWidth, XMM_SCRATCH_REG2);
+                    emiti_move(src, &temp, false, file);
+                    src = &temp;
+                }
+
+                // have src & dest now
+
+                if (src->bytesWidth == 8 && dest->bytesWidth == 8) {
+                } else if (src->bytesWidth == 8) {
+                    assert(dest->bytesWidth == 4);
+
+                    fputs("cvtsd2ss ", file);
+                    emit(dest, file);
+                    fputs(", ", file);
+                    emit(src, file);
+                    fputc('\n', file);
+                } 
+                else {
+                    assert(dest->bytesWidth == 8);
+                    assert(src->bytesWidth == 4);
+
+                    fputs("cvtss2sd ", file);
+                    emit(dest, file);
+                    fputs(", ", file);
+                    emit(src, file);
+                    fputc('\n', file);
+                }
+
+                if (outLoc->type != LOC_REG) {
+                    emiti_move(dest, outLoc, false, file);
+                }
             } break;
 
         case VX_IR_OP_BITCAST:     // "val"
@@ -1369,6 +1422,9 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             vx_IrTypeRef_drop(ty);
         }
     }
+    XMM_SCRATCH_REG1 = anyCalledXmmArgsCount;
+    XMM_SCRATCH_REG2 = anyCalledXmmArgsCount + 1;
+
     if (anyCalledIntArgsCount > anyIntArgsCount)
         anyIntArgsCount = anyCalledIntArgsCount;
 

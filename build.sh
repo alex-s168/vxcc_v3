@@ -5,7 +5,7 @@ set -e
 : ${CFLAGS:="-Wall -Wextra -Wno-unused -Wno-comment -Wno-format -Wno-sign-compare -Wno-analyzer-malloc-leak -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Wno-analyzer-deref-before-check -Werror -std=c11"}
 : ${CC:=clang}
 
-FILES="test.c ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c"
+FILES="ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c"
 
 # shellcheck disable=SC2086
 
@@ -57,11 +57,8 @@ elif [[ $1 == "build" ]]; then
   prepare  
   echo "# lib.a"
   ./build.exe lib.a 
-elif [[ $1 == "test" ]]; then 
-  echo "# tests"
-  ./build.exe tests
-else 
-  echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build|test]"
+else
+  echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build]"
 fi
 
 # shellcheck enable=SC2086

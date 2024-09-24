@@ -79,6 +79,17 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect false 
                          ;
 
+    entry FLTCAST        args       "val: value"
+                         debug      "fltcast"
+                         descr      "converts between two different floating point formats / sizes"
+                         inlineCost 1
+                         execCost   4
+                         endsFlow   false 
+                         hasEffect  true 
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
     entry BITCAST        args       "val: value"
                          debug      "bitcast"
                          descr      "reinterpret the bits of the given value as a different type"
@@ -637,17 +648,6 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false 
                          hasEffect  true 
                          volatile   false
-                         sideEffect false 
-                         ;
-
-    entry ELEMPTR        args       "type: struct type, idx: index of member, val: pointer to struct"
-                         debug      "elemptr"
-                         descr      "get pointer to member of struct"
-                         inlineCost 2
-                         execCost   2
-                         endsFlow   false 
-                         hasEffect  true 
-                         volatile   false 
                          sideEffect false 
                          ;
 
