@@ -156,6 +156,14 @@ void vx_IrBlock_llir_fix_decl(vx_IrBlock *root) {
             }
         }
     }
+
+    for (vx_IrOp* op = root->first; op; op = op->next) {
+        if (op->id == VX_IR_OP_PLACE) {
+            vx_IrValue val = *vx_IrOp_param(op, VX_IR_NAME_VAR);
+            assert(val.type == VX_IR_VAL_VAR && "inliner fucked up (VX_IR_OP_PLACE)");
+            root->as_root.vars[val.var].ever_placed = true;
+        }
+    }
 }
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {

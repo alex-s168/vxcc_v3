@@ -931,12 +931,14 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
 
         case VX_IR_OP_PLACE:           // "var"
             {
-                vx_IrValue valV = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
-                // TODO: stop imm inliner from inlining val and make it move in var if in var in input
-                assert(valV.type == VX_IR_VAL_VAR);
+                vx_IrValue valV = *vx_IrOp_param(op, VX_IR_NAME_VAR);
+                // TODO: make it move in var if in var in input
+                assert(valV.type == VX_IR_VAL_VAR && "inliner fucked up (VX_IR_OP_PLACE)");
+
+                assert(block->as_root.vars[valV.var].ever_placed);
 
                 Location* loc = varData[valV.var].location;
-                assert(loc->type == LOC_MEM);
+                assert(loc->type == LOC_MEM && "register allocator fucked up (VX_IR_OP_PLACE)");
 
                 vx_IrVar out = op->outs[0].var;
                 Location* outLoc = varData[out].location;
@@ -1421,160 +1423,174 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     size_t stackOff = 0;
 
     /* ======================== VAR ALLOC ===================== */ 
-    {
-        signed long long highestHeat = 0;
+    signed long long highestHeat = 0;
+    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        size_t heat = varData[var].heat;
+        if (heat > highestHeat) {
+            highestHeat = heat;
+        }
+    }
+
+    vx_IrVar* varsHotFirst = calloc(block->as_root.vars_len, sizeof(vx_IrVar));
+    size_t varsHotFirstLen = 0;
+
+    char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
+    if (use_rax) {
+        varsSorted[optLastRetFirstArg.var] = true;
+    }
+    for (size_t i = anyCalledIntArgsCount; i < block->ins_len; i ++) {
+        vx_IrVar var = block->ins[i].var;
+        varsSorted[var] = true;
+    }
+    for (; highestHeat >= 0; highestHeat --) {
         for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-            size_t heat = varData[var].heat;
-            if (heat > highestHeat) {
-                highestHeat = heat;
+            if (varsSorted[var]) continue;
+
+            if (varData[var].heat == highestHeat) {
+                varsHotFirst[varsHotFirstLen ++] = var;
+                varsSorted[var] = true;
             }
         }
+    }
+    free(varsSorted);
 
-        vx_IrVar* varsHotFirst = calloc(block->as_root.vars_len, sizeof(vx_IrVar));
-        size_t varsHotFirstLen = 0;
+    size_t varId = 0;
+    for (size_t i = 0; i < availableRegistersCount; i ++) {
+        char reg = availableRegisters[i];
 
-        char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
-        if (use_rax) {
-            varsSorted[optLastRetFirstArg.var] = true;
-        }
-        for (size_t i = anyCalledIntArgsCount; i < block->ins_len; i ++) {
-            vx_IrVar var = block->ins[i].var;
-            varsSorted[var] = true;
-        }
-        for (; highestHeat >= 0; highestHeat --) {
-            for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-                if (varsSorted[var]) continue;
+        if (varId >= varsHotFirstLen) break;
 
-                if (varData[var].heat == highestHeat) {
-                    varsHotFirst[varsHotFirstLen ++] = var;
-                    varsSorted[var] = true;
-                }
-            }
-        }
-        free(varsSorted);
+        for (; varId < varsHotFirstLen; varId ++) {
+            vx_IrVar var = varsHotFirst[varId];
 
-        size_t varId = 0;
-        for (size_t i = 0; i < availableRegistersCount; i ++) {
-            char reg = availableRegisters[i];
-
-            if (varId >= varsHotFirstLen) break;
-
-            for (; varId < varsHotFirstLen; varId ++) {
-                vx_IrVar var = varsHotFirst[varId];
-
-                if (varData[var].heat == 0) {
-                    varData[var].location = NULL;
-                    continue;
-                }
-
-                vx_IrType* type = varData[var].type;
-                if (type == NULL) continue;
-
-                size_t size = vx_IrType_size(type);
-                if (size > 8) continue;
-
-                if (block->as_root.vars[var].ever_placed) continue; 
-
-                size = widthToWidthWidth(size);
-                varData[var].location = gen_reg_var(size, reg);
-                break;
-            }
-            varId ++;
-        }
-
-        if (optLastRetFirstArg.present) {
-            size_t size = vx_IrType_size(varData[optLastRetFirstArg.var].type);
-            size = widthToWidthWidth(size);
-            varData[optLastRetFirstArg.var].location = gen_reg_var(size, REG_RAX.id);
-        }
-
-        char intArgRegs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
-
-        size_t id_i = 0;
-        size_t id_f = 0;
-        struct VarD {
-            vx_IrVar var;
-            Location* argLoc;
-        };
-        struct VarD * toMove = NULL;
-        size_t toMoveLen = 0;
-        for (size_t i = 0; i < block->ins_len; i ++) {
-            vx_IrTypedVar var = block->ins[i];
-            assert(var.type->kind == VX_IR_TYPE_KIND_BASE);
-            size_t size = vx_IrType_size(var.type);
-            assert(size != 0);
-
-            if (var.type->base.isfloat) {
-                Location* loc;
-                if (id_f >= 8) {
-                    loc = gen_stack_var(size, stackOff);
-                    stackOff += size;
-                    anyPlaced = true;
-                } else {
-                    size = widthToWidthWidth(size);
-                    loc = gen_reg_var(size, IntRegCount + id_f);
-                }
-
-                if (id_f >= anyCalledXmmArgsCount) {
-                    varData[var.var].location = loc;
-                } else {
-                    toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
-                    toMove[toMoveLen ++] = (struct VarD) {
-                        .var = var.var,
-                            .argLoc = loc
-                    };
-                }
-
-                id_f ++;
-            } else {
-                Location* loc;
-                if (id_i >= 6) {
-                    loc = gen_stack_var(size, stackOff);
-                    stackOff += size;
-                    anyPlaced = true;
-                } else {
-                    size = widthToWidthWidth(size);
-                    loc = gen_reg_var(size, intArgRegs[id_i]);
-                }
-
-                if (id_i >= anyCalledIntArgsCount) {
-                    varData[var.var].location = loc;
-                } else {
-                    toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
-                    toMove[toMoveLen ++] = (struct VarD) {
-                        .var = var.var,
-                            .argLoc = loc
-                    };
-                } 
-
-                id_i ++;
-            }
-        }
-
-        free(varsHotFirst);
-
-        for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
             if (varData[var].heat == 0) {
                 varData[var].location = NULL;
                 continue;
             }
 
-            if (varData[var].location) continue;
-            if (varData[var].type == NULL) continue;
+            vx_IrType* type = varData[var].type;
+            if (type == NULL) continue;
 
-            size_t size = vx_IrType_size(varData[var].type);
-            varData[var].location = gen_stack_var(size, stackOff);
+            size_t size = vx_IrType_size(type);
+            if (size > 8) continue;
+
+            if (block->as_root.vars[var].ever_placed) continue; 
+
+            size = widthToWidthWidth(size);
+            varData[var].location = gen_reg_var(size, reg);
+            break;
+        }
+        varId ++;
+    }
+
+    if (optLastRetFirstArg.present) {
+        size_t size = vx_IrType_size(varData[optLastRetFirstArg.var].type);
+        size = widthToWidthWidth(size);
+        varData[optLastRetFirstArg.var].location = gen_reg_var(size, REG_RAX.id);
+    }
+
+    char intArgRegs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
+
+    size_t id_i = 0;
+    size_t id_f = 0;
+    struct VarD {
+        vx_IrVar var;
+        Location* argLoc;
+    };
+    struct VarD * toMove = NULL;
+    size_t toMoveLen = 0;
+    for (size_t i = 0; i < block->ins_len; i ++) {
+        vx_IrTypedVar var = block->ins[i];
+        assert(var.type->kind == VX_IR_TYPE_KIND_BASE);
+        size_t size = vx_IrType_size(var.type);
+        assert(size != 0);
+
+        bool move_into_stack = block->as_root.vars[var.var].ever_placed;
+        move_into_stack = move_into_stack && (var.type->base.isfloat ? id_f < 8 : id_i < 6);
+        if (move_into_stack) {
+            size = widthToWidthWidth(size);
+            Location* src;
+            if (var.type->base.isfloat) {
+                src = gen_reg_var(size, IntRegCount + id_f);
+            } else {
+                src = gen_reg_var(size, intArgRegs[id_i]);
+            }
+
+            Location* loc = gen_stack_var(size, stackOff);
             stackOff += size;
             anyPlaced = true;
+
+            // opposite from cases below
+            toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
+            toMove[toMoveLen ++] = (struct VarD) {
+                .var = var.var,
+                .argLoc = src,
+            };
+            varData[var.var].location = loc;
+        }
+        else if (var.type->base.isfloat) {
+            Location* loc;
+            if (id_f >= 8) {
+                loc = gen_stack_var(size, stackOff);
+                stackOff += size;
+                anyPlaced = true;
+            } else {
+                size = widthToWidthWidth(size);
+                loc = gen_reg_var(size, IntRegCount + id_f);
+            }
+
+            if (id_f >= anyCalledXmmArgsCount) {
+                varData[var.var].location = loc;
+            } else {
+                toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
+                toMove[toMoveLen ++] = (struct VarD) {
+                    .var = var.var,
+                    .argLoc = loc
+                };
+            }
+
+            id_f ++;
+        }
+        else {
+            Location* loc;
+            if (id_i >= 6) {
+                loc = gen_stack_var(size, stackOff);
+                stackOff += size;
+                anyPlaced = true;
+            } else {
+                size = widthToWidthWidth(size);
+                loc = gen_reg_var(size, intArgRegs[id_i]);
+            }
+
+            if (id_i >= anyCalledIntArgsCount) {
+                varData[var.var].location = loc;
+            } else {
+                toMove = realloc(toMove, sizeof(struct VarD) * (toMoveLen + 1));
+                toMove[toMoveLen ++] = (struct VarD) {
+                    .var = var.var,
+                    .argLoc = loc
+                };
+            } 
+
+            id_i ++;
+        }
+    }
+
+    free(varsHotFirst);
+
+    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        if (varData[var].heat == 0) {
+            varData[var].location = NULL;
+            continue;
         }
 
-        for (size_t i = 0; i < toMoveLen; i ++) {
-            Location* dst = varData[toMove[i].var].location;
-            Location* src = toMove[i].argLoc;
-            emiti_move(src, dst, false, out);
-        }
+        if (varData[var].location) continue;
+        if (varData[var].type == NULL) continue;
 
-        free(toMove);
+        size_t size = vx_IrType_size(varData[var].type);
+        varData[var].location = gen_stack_var(size, stackOff);
+        stackOff += size;
+        anyPlaced = true;
     }
 
     bool needProlog = (stackOff > 0 && !is_leaf) ||
@@ -1597,6 +1613,13 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
             fprintf(out, "sub rsp, %zu\n", stackOff);
         }
     }
+
+    for (size_t i = 0; i < toMoveLen; i ++) {
+        Location* dst = varData[toMove[i].var].location;
+        Location* src = toMove[i].argLoc;
+        emiti_move(src, dst, false, out);
+    }
+    free(toMove);
 
     vx_IrOp* op = block->first;
     vx_IrOp* prev = NULL;
