@@ -32,7 +32,7 @@ static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
         }
     }
 
-    if (op->id != VX_IR_OP_PLACE)
+    if (op->id != VX_IR_OP_PLACE && op->id != VX_IR_OP_RETURN)
         for (size_t i = 0; i < op->params_len; i ++)
             if (op->params[i].val.type == VX_IR_VAL_VAR && op->params[i].val.var == data->old)
                 op->params[i].val = data->new;

@@ -72,9 +72,6 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest, size_t cont
 }
 
 static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP) {
-    // TODO: remove 
-    vx_IrBlock_dump(old, stdout, 0);
-
     for (vx_IrOp *op = old->first; op; op = op->next) {
         op->parent = newParent;
 

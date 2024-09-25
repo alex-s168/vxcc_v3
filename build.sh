@@ -8,11 +8,13 @@ if [ -z $EMPATH ]; then
         : ${CC:=clang}
         : ${BUILD_CC:=$CC}
         : ${EX_CFLAGS:=""}
+	: ${EX_LDFLAGS:=""}
         : ${AR:="ar"}
 else
         : ${CC:=$EMPATH/emcc}
         : ${BUILD_CC:=clang}
         : ${EX_CFLAGS:="-O3"}
+	: ${EX_LDFLAGS:=""}
         : ${AR:=$EMPATH/emar}
 fi
 
@@ -59,7 +61,7 @@ function prepare() {
   echo "# found python at: $python"
   $python -m pip install generic-lexer &>/dev/null
   echo "# pip generic-lexer installed"
-  $BUILD_CC build.c -lpthread -DVERBOSE=1 -DPYTHON="\"$python\"" -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DAR="\"$AR\"" -o build.exe
+  $BUILD_CC build.c -lpthread -DVERBOSE=1 -DPYTHON="\"$python\"" -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS\"" -DAR="\"$AR\"" -o build.exe
   echo "# build.exe compiled"
   echo "# gen cdef files"
   ./build.exe gen
@@ -91,7 +93,7 @@ elif [[ $1 == "build" ]]; then
   ./build.exe lib.a
 else
   echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build]"
-  echo "you can set CC, CFLAGS, BUILD_CC, python, EX_CFLAGS, AR"
+  echo "you can set CC, CFLAGS, BUILD_CC, python, EX_CFLAGS, AR, EX_LDFLAGS"
   echo "if you set EMPATH, these flags get added automatically (you can overwrite them manually): CC=\$EMPATH/emcc BUILD_CC=clang EX_CFLAGS="-O3" AR=\$EMPATH/emar"
 fi
 

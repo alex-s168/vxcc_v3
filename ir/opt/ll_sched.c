@@ -57,8 +57,6 @@ static void runSched(vx_IrBlock* block, struct Move **to_move, size_t *to_move_l
 void vx_opt_ll_sched(vx_IrBlock *block) {
     assert(block->is_root);
 
-    vx_IrBlock_dump(block, stdout, 0);
-
     struct Move* to_move = NULL;
     size_t       to_move_len = 0;
 
@@ -87,7 +85,4 @@ void vx_opt_ll_sched(vx_IrBlock *block) {
     }
 
     free(to_move);
-
-    vx_IrBlock_dump(block, stdout, 0);
-
 }

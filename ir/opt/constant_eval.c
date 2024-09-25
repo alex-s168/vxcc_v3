@@ -23,7 +23,7 @@ void vx_opt_constant_eval(vx_IrBlock *block)
             vx_IrOp_removeParams(op); \
             vx_IrOp_addParam_s(op, VX_IR_NAME_VALUE, (vx_IrValue) { \
                 .type = VX_IR_VAL_IMM_FLT, \
-                .imm_flt = ((typedest) a->imm_flt) + ((typedest) b->imm_flt) \
+                .imm_flt = ((typedest) a->imm_flt) what ((typedest) b->imm_flt) \
             }); \
         } \
         }

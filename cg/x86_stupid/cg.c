@@ -1330,8 +1330,6 @@ vx_cg_x86stupid vx_cg_x86stupid_options = (vx_cg_x86stupid) {
 };
 
 void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
-    vx_IrBlock_dump(block, stdout, 0);
-
     fprintf(out, "%s:\n", block->name);
 
     assert(block->is_root);
