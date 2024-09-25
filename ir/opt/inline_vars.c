@@ -32,10 +32,12 @@ static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
         }
     }
 
-    if (op->id != VX_IR_OP_PLACE && op->id != VX_IR_OP_RETURN)
-        for (size_t i = 0; i < op->params_len; i ++)
-            if (op->params[i].val.type == VX_IR_VAL_VAR && op->params[i].val.var == data->old)
-                op->params[i].val = data->new;
+    if (op->id != VX_IR_OP_PLACE && op->id != VX_IR_OP_RETURN) {
+        FOR_INPUTS_REF(op, inpp, {
+            if (inpp->type == VX_IR_VAL_VAR && inpp->var == data->old)
+                *inpp = data->new;
+        });
+    }
 
     return false;
 }
@@ -96,12 +98,13 @@ void vx_opt_ll_inlineVars(vx_IrBlock *block)
             if (next->id == VX_IR_OP_LABEL)
                 break;
 
-            FOR_INPUTS_REF(next, inpr, {
-                if (inpr->type == VX_IR_VAL_VAR && inpr->var == oVar) {
-                    *inpr = nVal;
-                }
-            });
-
+            if (next->id != VX_IR_OP_PLACE && next->id != VX_IR_OP_RETURN) {
+                FOR_INPUTS_REF(next, inpr, {
+                    if (inpr->type == VX_IR_VAL_VAR && inpr->var == oVar) {
+                        *inpr = nVal;
+                    }
+                });
+            }
 
             if (nVal.type == VX_IR_VAL_VAR) {
                 vx_IrVar nVar = nVal.var;
