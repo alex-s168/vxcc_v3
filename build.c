@@ -2,6 +2,19 @@
 
 /* ========================================================================= */
 
+enum CompileResult target_deps() {
+    START;
+    ss("allib", ({
+        ss_task("kallok.a");
+        ss_task("kollektions.a");
+        ss_task("kash.a");
+        ss_task("germanstr.a");
+    }));
+    END;
+}
+
+/* ========================================================================= */
+
 struct CompileData target_gen_files[] = {
     DIR("build"),
 
@@ -76,6 +89,9 @@ struct CompileData target_lib_files[] = {
     DIR("build/cg"),
     DIR("build/cg/x86_stupid"),
     SP(CT_C, "cg/x86_stupid/cg.c"),
+
+    DIR("build/irparser"),
+    SP(CT_C, "irparser/parser.c"),
 };
 
 enum CompileResult target_lib() {
@@ -85,7 +101,8 @@ enum CompileResult target_lib() {
         CHANGED("ir/opt/");
         CHANGED("ir/transform/");
         CHANGED("common/");
-        CHANGED("cg/x86_stupid");
+        CHANGED("cg/x86_stupid/");
+        CHANGED("irparser/");
     });
 
     START;
@@ -106,6 +123,7 @@ enum CompileResult target_tests() {
 /* ========================================================================= */
 
 struct Target targets[] = {
+    { .name = "deps",  .run = target_deps },
     { .name = "gen",   .run = target_gen },
     { .name = "lib.a", .run = target_lib },
     { .name = "tests", .run = target_tests },

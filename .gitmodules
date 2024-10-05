@@ -1,3 +1,6 @@
 [submodule "build_c"]
 	path = build_c
 	url = https://github.com/alex-s168/build.c.git
+[submodule "allib"]
+	path = allib
+	url = https://github.com/alex-s168/allib.git

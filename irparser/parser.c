@@ -153,52 +153,69 @@ static CompPattern compile(Pattern pat)
         CompOperation* cop = &res.items[i];
         Operation* op = &pat.operations.items[i];
 
-        bool found = false;
-        for (size_t i = 0; i < vx_IrOpType__len; i ++)
+        if (strcmp(op->name, "...") == 0)
         {
-            const char *cmp = vx_IrOpType__entries[i].debug.a;
-            if (strlen(cmp) != op->name_len) continue;
-            if (memcmp(cmp, op->name, op->name_len) == 0) {
-                found = true;
-                cop->op_type = i;
-                break;
-            }
+            cop->is_any = true;
+            assert(op->outputs.count == 0);
+            assert(op->operands.count == 0);
         }
-        assert(found);
-
-        cop->outputs.items = malloc(sizeof(size_t) * op->outputs.count);
-        cop->outputs.count = op->outputs.count;
-        for (size_t i = 0; i < op->outputs.count; i ++) 
+        else  
         {
-            cop->outputs.items[i] = placeholder(&all_placeholders, &all_placeholders_len, op->outputs.items[i]);
-            free(op->outputs.items[i]);
-        }
-        free(op->outputs.items);
+            cop->is_any = false;
 
-        cop->operands.items = malloc(sizeof(CompOperand) * op->operands.count);
-        cop->operands.count = op->operands.count;
-        for (size_t i = 0; i < op->operands.count; i ++)
-        {
-            if (op->operands.items[i].type == OPERAND_TYPE_IMM_FLT) {
-                double val = op->operands.items[i].v.imm_flt;
-                if (val - (long long int)val == 0) {
-                    cop->operands.items[i].type = OPERAND_TYPE_IMM_INT;
-                    cop->operands.items[i].v.imm_int = (long long int) val;
-                } else {
-                    cop->operands.items[i].type = OPERAND_TYPE_IMM_FLT;
-                    cop->operands.items[i].v.imm_flt = val;
+            bool found = false;
+            for (size_t i = 0; i < vx_IrOpType__len; i ++)
+            {
+                const char *cmp = vx_IrOpType__entries[i].debug.a;
+                if (strlen(cmp) != op->name_len) continue;
+                if (memcmp(cmp, op->name, op->name_len) == 0) {
+                    found = true;
+                    cop->specific.op_type = i;
+                    break;
                 }
-            } else {
-                cop->operands.items[i].type = OPERAND_TYPE_PLACEHOLDER;
-                cop->operands.items[i].v.placeholder = placeholder(&all_placeholders, &all_placeholders_len, op->operands.items[i].v.placeholder);
-                free(op->operands.items[i].v.placeholder);
             }
+            assert(found);
+
+            cop->specific.outputs.items = malloc(sizeof(size_t) * op->outputs.count);
+            cop->specific.outputs.count = op->outputs.count;
+            for (size_t i = 0; i < op->outputs.count; i ++) 
+            {
+                cop->specific.outputs.items[i] = placeholder(&all_placeholders, &all_placeholders_len, op->outputs.items[i]);
+                free(op->outputs.items[i]);
+            }
+            free(op->outputs.items);
+
+            cop->specific.operands.items = malloc(sizeof(CompOperand) * op->operands.count);
+            cop->specific.operands.count = op->operands.count;
+            for (size_t i = 0; i < op->operands.count; i ++)
+            {
+                if (op->operands.items[i].type == OPERAND_TYPE_IMM_FLT) {
+                    double val = op->operands.items[i].v.imm_flt;
+                    if (val - (long long int)val == 0) {
+                        cop->specific.operands.items[i].type = OPERAND_TYPE_IMM_INT;
+                        cop->specific.operands.items[i].v.imm_int = (long long int) val;
+                    } else {
+                        cop->specific.operands.items[i].type = OPERAND_TYPE_IMM_FLT;
+                        cop->specific.operands.items[i].v.imm_flt = val;
+                    }
+                } else {
+                    cop->specific.operands.items[i].type = OPERAND_TYPE_PLACEHOLDER;
+                    cop->specific.operands.items[i].v.placeholder = placeholder(&all_placeholders, &all_placeholders_len, op->operands.items[i].v.placeholder);
+                    free(op->operands.items[i].v.placeholder);
+                }
+            }
+            free(op->operands.items);
         }
-        free(op->operands.items);
     }
     free(pat.operations.items);
 
-    res.num_placeholders = all_placeholders_len;
+    res.placeholders_count = all_placeholders_len;
+    res.placeholders = malloc(sizeof(germanstr) * res.placeholders_count);
+
+    for (size_t i = 0; i < res.placeholders_count; i ++)
+        res.placeholders[i] = germanstr_fromc(strdup(all_placeholders[i]));
+
+    free(all_placeholders);
     return res;
 }
 
@@ -252,9 +269,23 @@ void Pattern_free(CompPattern p)
 {
     for (size_t i = 0; i < p.count; i ++)
     {
-        free(p.items[i].operands.items);
-        free(p.items[i].outputs.items);
+        if (!p.items[i].is_any)
+        {
+            free(p.items[i].specific.operands.items);
+            free(p.items[i].specific.outputs.items);
+        }
     }
     free(p.items);
+    for (size_t i = 0; i < p.placeholders_count; i ++)
+        germanstr_libcfree(p.placeholders[i]);
+    free(p.placeholders);
 }
 
+size_t Pattern_placeholderId(CompPattern pat, const char * name)
+{
+    germanstr gname = germanstr_fromc((char*) name);
+    for (size_t i = 0; i < pat.placeholders_count; i ++)
+        if (germanstr_eq(pat.placeholders[i], gname))
+            return i;
+    assert(false); return 0;
+}
