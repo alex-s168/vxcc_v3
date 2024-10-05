@@ -3,8 +3,16 @@
 /* ========================================================================= */
 
 enum CompileResult target_deps() {
+    ONLY_IF({
+        CHANGED("allib/");
+        NOT_FILE("allib/build/kallok.a");
+        NOT_FILE("allib/build/kollektions.a");
+        NOT_FILE("allib/build/kash.a");
+        NOT_FILE("allib/build/germanstr.a");
+    });
+
     START;
-    ss("allib", ({
+    ss("allib/", ({
         ss_task("kallok.a");
         ss_task("kollektions.a");
         ss_task("kash.a");

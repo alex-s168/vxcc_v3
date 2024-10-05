@@ -337,6 +337,7 @@ typedef enum {
     VX_IR_NAME_ADDR,
     VX_IR_NAME_COND,
     VX_IR_NAME_VAR,
+    VX_IR_NAME_SIZE,
 
     VX_IR_NAME_COND_THEN,
     VX_IR_NAME_COND_ELSE,

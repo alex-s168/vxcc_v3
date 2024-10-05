@@ -9,6 +9,7 @@ const char *vx_IrName_str[] = {
     [VX_IR_NAME_ADDR] = "addr",
     [VX_IR_NAME_COND] = "cond",
     [VX_IR_NAME_VAR] = "var",
+    [VX_IR_NAME_SIZE] = "size",
 
     [VX_IR_NAME_COND_THEN] = "then",
     [VX_IR_NAME_COND_ELSE] = "else",
