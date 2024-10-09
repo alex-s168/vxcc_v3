@@ -132,7 +132,7 @@ enum CompileResult target_lib() {
 
     VaList comp = ASVAR(always_files);
 
-    if (all || file_changed("ir/*.c"))
+    if (all || source_changed(LI(ir_files)))
         comp = vaListConcat(comp, ASVAR(ir_files));
 
     if (all || file_changed("ir/opt/"))
