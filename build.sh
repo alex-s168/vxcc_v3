@@ -43,24 +43,6 @@ FILES="ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c irparser/
 # shellcheck disable=SC2086
 
 function prepare() {
-  if [ -z $python ]; then
-    echo \# detecting python...
-    if venv/bin/python3 --help &>/dev/null; then
-      python=venv/bin/python3
-    elif venv/Scripts/python --help &>/dev/null; then
-      python=venv/Scripts/python
-    elif python --help &>/dev/null; then
-      python=python
-    elif python3 --help &>/dev/null; then
-      python=python3
-    else
-      echo "python not found! tried \"python\" and \"python3\"! Set \"python\" variable or install python!"        
-      exit 1
-    fi
-  fi
-  echo "# found python at: $python"
-  $python -m pip install generic-lexer &>/dev/null
-  echo "# pip generic-lexer installed"
   $BUILD_CC build.c -lpthread -DVERBOSE=1 -DPYTHON="\"$python\"" -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS\"" -DAR="\"$AR\"" -o build.exe
   echo "# build.exe compiled"
   echo "# gen cdef files"

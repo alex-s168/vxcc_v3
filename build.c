@@ -29,6 +29,11 @@ struct CompileData target_gen_files[] = {
 };
 
 enum CompileResult target_gen() {
+    if (!withPipPackage("generic-lexer")) {
+        error("pip package generic-lexer required and could not be installted!");
+        return CR_FAIL;
+    }
+
     START;
         DO(compile(LI(target_gen_files)));
     END;
@@ -123,7 +128,7 @@ enum CompileResult target_lib() {
     START;
 
     bool all = !exists("build/lib.a") ||
-        source_changed(LI(always_files));
+        file_changed("ir/ir.h");
 
     VaList comp = ASVAR(always_files);
 
