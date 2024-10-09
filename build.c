@@ -5,18 +5,12 @@
 enum CompileResult target_deps() {
     ONLY_IF({
         CHANGED("allib/");
-        NOT_FILE("allib/build/kallok.a");
-        NOT_FILE("allib/build/kollektions.a");
-        NOT_FILE("allib/build/kash.a");
-        NOT_FILE("allib/build/germanstr.a");
+        NOT_FILE("allib/build/all.a");
     });
 
     START;
     ss("allib/", ({
-        ss_task("kallok.a");
-        ss_task("kollektions.a");
-        ss_task("kash.a");
-        ss_task("germanstr.a");
+        ss_task("all.a");
     }));
     END;
 }
@@ -42,25 +36,22 @@ enum CompileResult target_gen() {
 
 /* ========================================================================= */
 
-struct CompileData target_lib_files[] = {
-    DEP("build/common/target_etca.cdef.o"),
-    DEP("build/common/target_x86.cdef.o"),
-    DEP("build/ir/ops.cdef.o"),
-
+struct CompileData ir_files[] = {
     DIR("build"),
-
     DIR("build/ir"),
     SP(CT_C, "ir/fastalloc.c"),
     SP(CT_C, "ir/dump.c"),
-    SP(CT_C, "ir/verify_cir.c"),
     SP(CT_C, "ir/lifetimes.c"),
-    SP(CT_C, "ir/verify_common.c"),
-    SP(CT_C, "ir/verify_ssa.c"),
     SP(CT_C, "ir/transform.c"),
     SP(CT_C, "ir/builder.c"),
     SP(CT_C, "ir/ir.c"),
     SP(CT_C, "ir/eval.c"),
     SP(CT_C, "ir/analysis.c"),
+};
+
+struct CompileData ir_opt_files[] = {
+    DIR("build"),
+    DIR("build/ir"),
     SP(CT_C, "ir/opt.c"),
 
     DIR("build/ir/opt"),
@@ -80,7 +71,11 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/opt/simple_patterns.c"),
     SP(CT_C, "ir/opt/ll_sched.c"),
     SP(CT_C, "ir/opt/if_opts.c"),
+};
 
+struct CompileData ir_transform_files[] = {
+    DIR("build"),
+    DIR("build/ir"),
     DIR("build/ir/transform"),
     SP(CT_C, "ir/transform/single_assign_conditional.c"),
     SP(CT_C, "ir/transform/single_assign.c"),
@@ -90,32 +85,78 @@ struct CompileData target_lib_files[] = {
     SP(CT_C, "ir/transform/cmov_expand.c"),
     SP(CT_C, "ir/transform/ll_finalize.c"),
     SP(CT_C, "ir/transform/lower_loops.c"),
+};
+
+struct CompileData ir_verify_files[] = {
+    DIR("build"),
+    DIR("build/ir"),
+    SP(CT_C, "ir/verify_cir.c"),
+    SP(CT_C, "ir/verify_common.c"),
+    SP(CT_C, "ir/verify_ssa.c"),
 
     DIR("build/common"),
     SP(CT_C, "common/verify.c"),
+};
 
+struct CompileData cg_files[] = {
+    DIR("build"),
     DIR("build/cg"),
     DIR("build/cg/x86_stupid"),
     SP(CT_C, "cg/x86_stupid/cg.c"),
+};
 
+struct CompileData parser_files[] = {
+    DIR("build"),
     DIR("build/irparser"),
     SP(CT_C, "irparser/parser.c"),
+    SP(CT_C, "irparser/match.c"),
+};
+
+struct CompileData always_files[] = {
+    DEP("build/common/target_etca.cdef.o"),
+    DEP("build/common/target_x86.cdef.o"),
+    DEP("build/ir/ops.cdef.o"),
+    NOLD_DEP("ir/ir.h"),
 };
 
 enum CompileResult target_lib() {
-    ONLY_IF({
-        NOT_FILE("build/lib.a");
-        CHANGED("ir/");
-        CHANGED("ir/opt/");
-        CHANGED("ir/transform/");
-        CHANGED("common/");
-        CHANGED("cg/x86_stupid/");
-        CHANGED("irparser/");
-    });
-
     START;
-        DO(compile(LI(target_lib_files)));
-        DO(linkTask(LI(target_lib_files), "build/lib.a"));
+
+    bool all = !exists("build/lib.a") ||
+        source_changed(LI(always_files));
+
+    VaList comp = ASVAR(always_files);
+
+    if (all || file_changed("ir/*.c"))
+        comp = vaListConcat(comp, ASVAR(ir_files));
+
+    if (all || file_changed("ir/opt/"))
+        comp = vaListConcat(comp, ASVAR(ir_opt_files));
+
+    if (all || file_changed("ir/transform/"))
+        comp = vaListConcat(comp, ASVAR(ir_transform_files));
+
+    if (all || source_changed(LI(ir_verify_files)))
+        comp = vaListConcat(comp, ASVAR(ir_verify_files));
+
+    if (all || file_changed("cg/"))
+        comp = vaListConcat(comp, ASVAR(cg_files));
+
+    if (all || file_changed("irparser/"))
+        comp = vaListConcat(comp, ASVAR(parser_files));
+
+    DO(compile(VLI(comp)));
+
+    VaList link = ASVAR(always_files);
+    link = vaListConcat(link, ASVAR(ir_files));
+    link = vaListConcat(link, ASVAR(ir_opt_files));
+    link = vaListConcat(link, ASVAR(ir_transform_files));
+    link = vaListConcat(link, ASVAR(ir_verify_files));
+    link = vaListConcat(link, ASVAR(cg_files));
+    link = vaListConcat(link, ASVAR(parser_files));
+
+    DO(linkTask(VLI(link), "build/lib.a"));
+
     END;
 }
 
@@ -137,9 +178,4 @@ struct Target targets[] = {
     { .name = "tests", .run = target_tests },
 };
 
-#define TARGETS_LEN (sizeof(targets) / sizeof(targets[0]))
-
-int main(int argc, char **argv) {
-    return build_main(argc, argv, targets, TARGETS_LEN);
-}
-
+automain(targets);

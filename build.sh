@@ -96,7 +96,7 @@ elif [[ $1 == "build" ]]; then
 elif [[ $1 == "lsp" ]]; then 
   prepare
 elif [[ $1 == "libfiles" ]]; then
-  echo "build/lib.a;allib/build/kallok.a;allib/build/kollektions.a;allib/build/kash.a;allib/build/germanstr.a"
+  echo "build/lib.a allib/build/all.a"
 else
   echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build|lsp|libfiles]"
   echo "you can set CC, CFLAGS, BUILD_CC, python, EX_CFLAGS, AR, EX_LDFLAGS"

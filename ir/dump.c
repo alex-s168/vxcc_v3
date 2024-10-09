@@ -1,6 +1,6 @@
 #include "ir.h"
 
-const char *vx_IrName_str[] = {
+const char *vx_IrName_str[VX_IR_NAME__LAST] = {
     [VX_IR_NAME_OPERAND_A] = "a",
     [VX_IR_NAME_OPERAND_B] = "b",
 

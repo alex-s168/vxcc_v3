@@ -6,6 +6,7 @@
 
 
 typedef struct {
+    vx_IrName name;
     OperandType type;
     union {
         char * placeholder;
@@ -34,6 +35,21 @@ typedef struct {
         size_t count;
     } operations;
 } Pattern;
+
+static vx_IrName parse_name(const char * src, size_t srcLen)
+{
+    for (vx_IrName i = 0; i < VX_IR_NAME__LAST; i ++)
+    {
+        const char * nam = vx_IrName_str[i];
+        size_t nam_len = strlen(nam);
+        if (nam_len != srcLen) continue;
+        if (!memcmp(nam, src, nam_len)) {
+            return i;
+        }
+    }
+    assert(false && "could not parse ir instr param name");
+    return VX_IR_NAME__LAST; // unreachable
+}
 
 static Operation parse_op(char * line, size_t line_len) 
 {
@@ -93,6 +109,19 @@ static Operation parse_op(char * line, size_t line_len)
     {
         while (isspace(*line)) line ++;
 
+        vx_IrName opnam;
+        {
+            char * eqsign = strchr(line, '=');
+            assert(eqsign);
+            *eqsign = '\0';
+            char * space = strchr(line, ' ');
+            if (space) *space = '\0';
+            opnam = parse_name(line, strlen(line));
+            line = eqsign;
+
+        }
+        while (isspace(*line)) line ++;
+
         char * comma = strchr(line, ',');
         char * last = comma ? comma : (close - 1);
         size_t count = last - line;
@@ -102,6 +131,7 @@ static Operation parse_op(char * line, size_t line_len)
         buf[count] = '\0';
 
         Operand operand;
+        operand.name = opnam;
         if (isdigit(*buf)) {
             operand.type = OPERAND_TYPE_IMM_FLT;
             sscanf(buf, "%lf", &operand.v.imm_flt);
@@ -189,18 +219,20 @@ static CompPattern compile(Pattern pat)
             cop->specific.operands.count = op->operands.count;
             for (size_t i = 0; i < op->operands.count; i ++)
             {
+                CompOperand* co = &cop->specific.operands.items[i];
+                co->name = op->operands.items[i].name;
                 if (op->operands.items[i].type == OPERAND_TYPE_IMM_FLT) {
                     double val = op->operands.items[i].v.imm_flt;
                     if (val - (long long int)val == 0) {
-                        cop->specific.operands.items[i].type = OPERAND_TYPE_IMM_INT;
-                        cop->specific.operands.items[i].v.imm_int = (long long int) val;
+                        co->type = OPERAND_TYPE_IMM_INT;
+                        co->v.imm_int = (long long int) val;
                     } else {
-                        cop->specific.operands.items[i].type = OPERAND_TYPE_IMM_FLT;
-                        cop->specific.operands.items[i].v.imm_flt = val;
+                        co->type = OPERAND_TYPE_IMM_FLT;
+                        co->v.imm_flt = val;
                     }
                 } else {
-                    cop->specific.operands.items[i].type = OPERAND_TYPE_PLACEHOLDER;
-                    cop->specific.operands.items[i].v.placeholder = placeholder(&all_placeholders, &all_placeholders_len, op->operands.items[i].v.placeholder);
+                    co->type = OPERAND_TYPE_PLACEHOLDER;
+                    co->v.placeholder = placeholder(&all_placeholders, &all_placeholders_len, op->operands.items[i].v.placeholder);
                     free(op->operands.items[i].v.placeholder);
                 }
             }
@@ -213,7 +245,7 @@ static CompPattern compile(Pattern pat)
     res.placeholders = malloc(sizeof(germanstr) * res.placeholders_count);
 
     for (size_t i = 0; i < res.placeholders_count; i ++)
-        res.placeholders[i] = germanstr_fromc(strdup(all_placeholders[i]));
+        res.placeholders[i] = germanstr_cstrdup(all_placeholders[i]);
 
     free(all_placeholders);
     return res;

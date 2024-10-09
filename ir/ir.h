@@ -357,6 +357,8 @@ typedef enum {
     VX_IR_NAME_OFF,
 
     VX_IR_NAME_ID,
+
+    VX_IR_NAME__LAST,
 } vx_IrName;
 
 extern const char *vx_IrName_str[];

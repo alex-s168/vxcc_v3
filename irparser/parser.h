@@ -12,6 +12,7 @@ typedef enum {
 } OperandType;
 
 typedef struct {
+    vx_IrName name;
     OperandType type;
     union {
         size_t placeholder;
