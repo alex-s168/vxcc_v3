@@ -1057,6 +1057,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     switch (op->id)
                     {
                         case VX_IR_OP_LOAD_EA: {
+                            assert(o);
                             Location* mem = fastalloc(sizeof(Location));
                             *mem = LocMem(o->bytesWidth, ea);
                             emiti_move(mem, o, false, file);
@@ -1075,6 +1076,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         }
 
                         case VX_IR_OP_EA: {
+                            assert(o);
                             emiti_move(ea, o, false, file);
                             break;
                         }
@@ -1452,10 +1454,12 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     varData = block->as_root.vars_len == 0 ? NULL : calloc(block->as_root.vars_len, sizeof(VarData));
     for (size_t i = 0; i < block->ins_len; i ++) {
+        assert(varData);
         varData[block->ins[i].var].type = block->ins[i].type;
     }
     for (vx_IrOp *op = block->first; op != NULL; op = op->next) {
         for (size_t i = 0; i < op->outs_len; i ++) {
+            assert(varData);
             vx_IrVar v = op->outs[i].var;
             varData[v].type = op->outs[i].type;
             varData[v].heat ++;
@@ -1469,6 +1473,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         for (size_t i = 0; i < op->params_len; i ++) {
             vx_IrValue val = op->params[i].val;
             if (val.type == VX_IR_VAL_VAR) {
+                assert(varData);
                 varData[val.var].heat ++;
             }
         }
@@ -1479,6 +1484,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
     /* ======================== VAR ALLOC ===================== */ 
     signed long long highestHeat = 0;
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        assert(varData);
         size_t heat = varData[var].heat;
         if (heat > highestHeat) {
             highestHeat = heat;
@@ -1517,6 +1523,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         for (; varId < varsHotFirstLen; varId ++) {
             vx_IrVar var = varsHotFirst[varId];
 
+            assert(varData);
             if (varData[var].heat == 0) {
                 varData[var].location = NULL;
                 continue;
@@ -1558,6 +1565,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         assert(var.type->kind == VX_IR_TYPE_KIND_BASE);
         size_t size = vx_IrType_size(var.type);
         assert(size != 0);
+        assert(varData);
 
         bool move_into_stack = block->as_root.vars[var.var].ever_placed;
         move_into_stack = move_into_stack && (var.type->base.isfloat ? id_f < 8 : id_i < 6);

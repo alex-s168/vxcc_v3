@@ -284,7 +284,7 @@ CompPattern Pattern_compile(const char * source)
         const char * nt_ptr = strchr(source, '\n');
         if (nt_ptr == NULL) nt_ptr = source + strlen(source);
         size_t line_len = nt_ptr - source;
-        if (line_len + 1 > linebuf_len) 
+        if (line_len + 1 > linebuf_len || linebuf == NULL) 
         {
             linebuf_len = line_len;
             linebuf = realloc(linebuf, linebuf_len);
