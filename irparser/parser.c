@@ -70,7 +70,7 @@ static Operation parse_op(char * line, size_t line_len)
             while (isspace(*line)) line ++;
 
             char * comma = strchr(line, ',');
-            char * last = comma ? comma : (assign - 1);
+            char * last = comma ? comma : assign;
             size_t count = last - line;
 
             char* buf = malloc(count + 1);
@@ -78,6 +78,9 @@ static Operation parse_op(char * line, size_t line_len)
             buf[count] = '\0';
             op.outputs.items = realloc(op.outputs.items, (op.outputs.count + 1) * sizeof(char*));
             op.outputs.items[op.outputs.count ++] = buf;
+
+            if (comma > assign)
+                break;
 
             if (comma) 
                 line = comma + 1;
@@ -113,6 +116,7 @@ static Operation parse_op(char * line, size_t line_len)
         {
             char * eqsign = strchr(line, '=');
             assert(eqsign);
+            assert(eqsign < close);
             *eqsign = '\0';
             char * space = strchr(line, ' ');
             if (space) *space = '\0';
@@ -145,11 +149,12 @@ static Operation parse_op(char * line, size_t line_len)
         op.operands.items = realloc(op.operands.items, sizeof(Operand) * (op.operands.count + 1));
         op.operands.items[op.operands.count ++] = operand;
 
-        if (comma) 
-            line = comma + 1;
-        else  
+        line = last + 1;
+        if (!comma) 
             break;
     }
+
+    while (isspace(*line)) line ++;
 
     assert(*line == ')'); line ++; assert(*line == '\0');
 
@@ -281,12 +286,12 @@ CompPattern Pattern_compile(const char * source)
         size_t line_len = nt_ptr - source;
         if (line_len + 1 > linebuf_len) 
         {
-            linebuf_len = line_len + 1;
+            linebuf_len = line_len;
             linebuf = realloc(linebuf, linebuf_len);
-            memcpy(linebuf, source, line_len);
-            linebuf[line_len] = '\0';
         }
-        source += line_len;
+        memcpy(linebuf, source, line_len);
+        linebuf[line_len-1] = '\0';
+        source += line_len + 1;
         Operation op = parse_op(linebuf, line_len);
         out.operations.items = realloc(out.operations.items, (out.operations.count + 1) * sizeof(Operation));
         out.operations.items[out.operations.count ++] = op;
