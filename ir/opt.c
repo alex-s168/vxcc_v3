@@ -47,6 +47,7 @@ void opt(vx_IrBlock *block) {
         vx_opt_reduce_loops(block);
         vx_opt_loop_simplify(block);
     }
+    opt_pre(block);
 }
 
 void opt_ll(vx_IrBlock *block) {

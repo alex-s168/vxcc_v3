@@ -72,7 +72,6 @@ static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest, size_t cont
 }
 
 static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP) {
-    assert(loopOP);
     for (vx_IrOp *op = old->first; op; op = op->next) {
         op->parent = newParent;
 
@@ -224,6 +223,8 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
         }
         else if (op->id == VX_IR_OP_CONTINUE) {
 
+            assert(loopOP);
+
             for (size_t i = 0; i < old->outs_len; i ++) {
                 vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
                 vx_IrOp_init(mov, VX_IR_OP_IMM, dest);
@@ -237,6 +238,8 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
 
         }
         else if (op->id == VX_IR_OP_BREAK) {
+
+            assert(loopOP);
 
             for (size_t i = 0; i < old->outs_len; i ++) {
                 vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
