@@ -43,7 +43,7 @@ FILES="ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c irparser/
 # shellcheck disable=SC2086
 
 function prepare() {
-  $BUILD_CC build.c -lpthread -DVERBOSE=1 -DPYTHON="\"$python\"" -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS\"" -DAR="\"$AR\"" -o build.exe
+  $BUILD_CC build.c -lpthread -DVERBOSE=1 -DPYTHON="\"$python\"" -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS -lpthread\"" -DAR="\"$AR\"" -o build.exe
   echo "# build.exe compiled"
   echo "# gen cdef files"
   ./build.exe gen
