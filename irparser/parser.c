@@ -17,31 +17,31 @@ typedef struct {
 typedef struct {
     struct {
         char ** items;
-        size_t count;
+        uint32_t count;
     } outputs;
 
     const char * name;
-    size_t name_len;
+    uint32_t name_len;
 
     struct {
         Operand * items;
-        size_t    count;
+        uint32_t    count;
     } operands;
 } Operation;
 
 typedef struct {
     struct {
         Operation * items;
-        size_t count;
+        uint32_t count;
     } operations;
 } Pattern;
 
-static vx_IrName parse_name(const char * src, size_t srcLen)
+static vx_IrName parse_name(const char * src, uint32_t srcLen)
 {
     for (vx_IrName i = 0; i < VX_IR_NAME__LAST; i ++)
     {
         const char * nam = vx_IrName_str[i];
-        size_t nam_len = strlen(nam);
+        uint32_t nam_len = strlen(nam);
         if (nam_len != srcLen) continue;
         if (!memcmp(nam, src, nam_len)) {
             return i;
@@ -51,7 +51,7 @@ static vx_IrName parse_name(const char * src, size_t srcLen)
     return VX_IR_NAME__LAST; // unreachable
 }
 
-static Operation parse_op(char * line, size_t line_len) 
+static Operation parse_op(char * line, uint32_t line_len) 
 {
     Operation op = (Operation) {
         .outputs.items = NULL,
@@ -71,7 +71,7 @@ static Operation parse_op(char * line, size_t line_len)
 
             char * comma = strchr(line, ',');
             char * last = comma ? comma : assign;
-            size_t count = last - line;
+            uint32_t count = last - line;
 
             char* buf = malloc(count + 1);
             memcpy(buf, line, count);
@@ -94,7 +94,7 @@ static Operation parse_op(char * line, size_t line_len)
     while (isspace(*line)) line ++;
 
     const char * name_begin = line;
-    size_t name_len = 0;
+    uint32_t name_len = 0;
     while (isalnum(*line)) {
         name_len ++;
         line ++;
@@ -128,7 +128,7 @@ static Operation parse_op(char * line, size_t line_len)
 
         char * comma = strchr(line, ',');
         char * last = comma ? comma : (close - 1);
-        size_t count = last - line;
+        uint32_t count = last - line;
 
         char* buf = malloc(count + 1);
         memcpy(buf, line, count);
@@ -161,14 +161,14 @@ static Operation parse_op(char * line, size_t line_len)
     return op;
 }
 
-static size_t placeholder(const char *** all_placeholders, size_t * all_placeholders_len, const char * name)
+static uint32_t placeholder(const char *** all_placeholders, uint32_t * all_placeholders_len, const char * name)
 {
-    for (size_t i = 0; i < *all_placeholders_len; i ++) {
+    for (uint32_t i = 0; i < *all_placeholders_len; i ++) {
         if (strcmp((*all_placeholders)[i], name) == 0) {
             return i;
         }
     }
-    size_t plLen = *all_placeholders_len ++;
+    uint32_t plLen = *all_placeholders_len ++;
     *all_placeholders = realloc(*all_placeholders, sizeof(const char *) * (*all_placeholders_len));
     (*all_placeholders)[plLen] = name;
     return plLen;
@@ -177,13 +177,13 @@ static size_t placeholder(const char *** all_placeholders, size_t * all_placehol
 static CompPattern compile(Pattern pat)
 {
     const char ** all_placeholders = NULL;
-    size_t all_placeholders_len = 0;
+    uint32_t all_placeholders_len = 0;
 
     CompPattern res;
     res.items = malloc(sizeof(CompOperation) * pat.operations.count);
     res.count = pat.operations.count;
 
-    for (size_t i = 0; i < pat.operations.count; i ++) 
+    for (uint32_t i = 0; i < pat.operations.count; i ++) 
     {
         CompOperation* cop = &res.items[i];
         Operation* op = &pat.operations.items[i];
@@ -199,7 +199,7 @@ static CompPattern compile(Pattern pat)
             cop->is_any = false;
 
             bool found = false;
-            for (size_t i = 0; i < vx_IrOpType__len; i ++)
+            for (uint32_t i = 0; i < vx_IrOpType__len; i ++)
             {
                 const char *cmp = vx_IrOpType__entries[i].debug.a;
                 if (strlen(cmp) != op->name_len) continue;
@@ -209,11 +209,15 @@ static CompPattern compile(Pattern pat)
                     break;
                 }
             }
-            assert(found);
+            if (!found) {
+                ((char*) op->name)[op->name_len] = '\0';
+                fprintf(stderr, "No IrOpType \"%s\" found!\n", op->name);
+                exit(1);
+            }
 
-            cop->specific.outputs.items = malloc(sizeof(size_t) * op->outputs.count);
+            cop->specific.outputs.items = malloc(sizeof(uint32_t) * op->outputs.count);
             cop->specific.outputs.count = op->outputs.count;
-            for (size_t i = 0; i < op->outputs.count; i ++) 
+            for (uint32_t i = 0; i < op->outputs.count; i ++) 
             {
                 cop->specific.outputs.items[i] = placeholder(&all_placeholders, &all_placeholders_len, op->outputs.items[i]);
                 free(op->outputs.items[i]);
@@ -222,7 +226,7 @@ static CompPattern compile(Pattern pat)
 
             cop->specific.operands.items = malloc(sizeof(CompOperand) * op->operands.count);
             cop->specific.operands.count = op->operands.count;
-            for (size_t i = 0; i < op->operands.count; i ++)
+            for (uint32_t i = 0; i < op->operands.count; i ++)
             {
                 CompOperand* co = &cop->specific.operands.items[i];
                 co->name = op->operands.items[i].name;
@@ -249,7 +253,7 @@ static CompPattern compile(Pattern pat)
     res.placeholders_count = all_placeholders_len;
     res.placeholders = malloc(sizeof(germanstr) * res.placeholders_count);
 
-    for (size_t i = 0; i < res.placeholders_count; i ++)
+    for (uint32_t i = 0; i < res.placeholders_count; i ++)
         res.placeholders[i] = germanstr_cstrdup(all_placeholders[i]);
 
     free(all_placeholders);
@@ -272,39 +276,46 @@ static CompPattern compile(Pattern pat)
  */
 CompPattern Pattern_compile(const char * source)
 {
-    char * linebuf = NULL;
-    size_t linebuf_len = 0;
-
     Pattern out;
     out.operations.items = NULL;
     out.operations.count = 0;
+
+    char** linebufs = NULL;
 
     while (*source)
     {
         const char * nt_ptr = strchr(source, '\n');
         if (nt_ptr == NULL) nt_ptr = source + strlen(source);
-        size_t line_len = nt_ptr - source;
-        if (line_len + 1 > linebuf_len || linebuf == NULL) 
-        {
-            linebuf_len = line_len;
-            linebuf = realloc(linebuf, linebuf_len);
-        }
+        uint32_t line_len = nt_ptr - source;
+        char* linebuf = malloc(line_len + 1);
         memcpy(linebuf, source, line_len+1);
         linebuf[line_len] = '\0';
+        printf("%s\\n\n", linebuf);
         source += line_len + 1;
         Operation op = parse_op(linebuf, line_len);
         out.operations.items = realloc(out.operations.items, (out.operations.count + 1) * sizeof(Operation));
+        linebufs = realloc(linebufs, sizeof(char*) * (out.operations.count + 1));
+        linebufs[out.operations.count] = linebuf;
         out.operations.items[out.operations.count ++] = op;
+        if (line_len == 0) break;
     }
 
-    free(linebuf);
+    puts("finished parse");
 
-    return compile(out);
+    CompPattern c = compile(out);
+
+    puts("finished compile");
+
+    for (uint32_t i = 0; i < out.operations.count; i ++)
+        free(linebufs[i]);
+    free(linebufs);
+
+    return c;
 }
 
 void Pattern_free(CompPattern p)
 {
-    for (size_t i = 0; i < p.count; i ++)
+    for (uint32_t i = 0; i < p.count; i ++)
     {
         if (!p.items[i].is_any)
         {
@@ -313,15 +324,15 @@ void Pattern_free(CompPattern p)
         }
     }
     free(p.items);
-    for (size_t i = 0; i < p.placeholders_count; i ++)
+    for (uint32_t i = 0; i < p.placeholders_count; i ++)
         germanstr_libcfree(p.placeholders[i]);
     free(p.placeholders);
 }
 
-size_t Pattern_placeholderId(CompPattern pat, const char * name)
+uint32_t Pattern_placeholderId(CompPattern pat, const char * name)
 {
     germanstr gname = germanstr_fromc((char*) name);
-    for (size_t i = 0; i < pat.placeholders_count; i ++)
+    for (uint32_t i = 0; i < pat.placeholders_count; i ++)
         if (germanstr_eq(pat.placeholders[i], gname))
             return i;
     assert(false); return 0;

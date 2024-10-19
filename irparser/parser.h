@@ -5,21 +5,23 @@
 #include "../allib/germanstr/germanstr.h"
 
 
-typedef enum {
-    OPERAND_TYPE_PLACEHOLDER,
-    OPERAND_TYPE_IMM_INT,
-    OPERAND_TYPE_IMM_FLT,
+// serializable by memcpy
+typedef enum : uint8_t {
+    OPERAND_TYPE_PLACEHOLDER = 0,
+    OPERAND_TYPE_IMM_INT = 1,
+    OPERAND_TYPE_IMM_FLT = 2,
 } OperandType;
 
+// serializable by memcpy
 typedef struct {
     vx_IrName name;
     OperandType type;
     union {
-        size_t placeholder;
+        uint32_t placeholder;
         long long int imm_int;
         double imm_flt;
     } v;
-} CompOperand;
+} __attribute__((packed)) CompOperand;
 
 typedef struct {
     bool is_any;
@@ -31,29 +33,32 @@ typedef struct {
 
         struct {
             struct {
-                size_t * items;
-                size_t count;
+                uint32_t * items;
+                uint32_t count;
             } outputs;
 
             vx_IrOpType op_type;
 
             struct {
                 CompOperand * items;
-                size_t count;
+                uint32_t count;
             } operands;
         } specific;
     };
 } CompOperation;
 
 typedef struct {
-    size_t     placeholders_count;
+    uint32_t   placeholders_count;
     germanstr* placeholders;
 
     CompOperation * items;
-    size_t count;
+    uint32_t        count;
 } CompPattern;
 
-size_t Pattern_placeholderId(CompPattern pat, const char * name);
+/** if return 0, not enough space */
+size_t Pattern_serialize(CompPattern pat, void* dest, size_t destzu);
+
+uint32_t Pattern_placeholderId(CompPattern pat, const char * name);
 
 // TODO: NAMEDD ARGS
 

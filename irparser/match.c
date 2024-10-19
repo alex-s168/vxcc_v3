@@ -1,13 +1,13 @@
 #include "parser.h"
 
-static bool try_match_op(size_t i, OptPatternMatch* out, CompOperation* op, vx_IrOp* irop, bool *placeholders_matched)
+static bool try_match_op(uint32_t i, OptPatternMatch* out, CompOperation* op, vx_IrOp* irop, bool *placeholders_matched)
 {
     if (op->specific.op_type != irop->id)
         return false;
     if (op->specific.outputs.count != irop->outs_len)
         return false;
 
-    for (size_t i = 0; i < op->specific.operands.count; i ++)
+    for (uint32_t i = 0; i < op->specific.operands.count; i ++)
     {
         CompOperand* operand = &op->specific.operands.items[i];
 
@@ -18,7 +18,7 @@ static bool try_match_op(size_t i, OptPatternMatch* out, CompOperation* op, vx_I
         {
             case OPERAND_TYPE_PLACEHOLDER: {
                 if (val->type != VX_IR_VAL_VAR) return false;
-                size_t ph = operand->v.placeholder;
+                uint32_t ph = operand->v.placeholder;
                 if (placeholders_matched[ph]) {
                     if (out->matched_placeholders[ph] != val->var)
                         return false; 
@@ -45,7 +45,7 @@ static bool try_match_op(size_t i, OptPatternMatch* out, CompOperation* op, vx_I
 
 static bool try_match_at(OptPatternMatch* out, CompPattern pattern, vx_IrOp* irop, bool *placeholders_matched)
 {
-    for (size_t i = 0; i < pattern.count; i ++) {
+    for (uint32_t i = 0; i < pattern.count; i ++) {
         CompOperation* current = &pattern.items[i];
         CompOperation* next = i + 1 < pattern.count ? &pattern.items[i + 1] : NULL;
 
