@@ -290,21 +290,17 @@ CompPattern Pattern_compile(const char * source)
         char* linebuf = malloc(line_len + 1);
         memcpy(linebuf, source, line_len+1);
         linebuf[line_len] = '\0';
-        printf("%s\\n\n", linebuf);
-        source += line_len + 1;
         Operation op = parse_op(linebuf, line_len);
         out.operations.items = realloc(out.operations.items, (out.operations.count + 1) * sizeof(Operation));
         linebufs = realloc(linebufs, sizeof(char*) * (out.operations.count + 1));
         linebufs[out.operations.count] = linebuf;
         out.operations.items[out.operations.count ++] = op;
-        if (line_len == 0) break;
+        source += line_len;
+        if (!*source) break;
+        source ++;
     }
 
-    puts("finished parse");
-
     CompPattern c = compile(out);
-
-    puts("finished compile");
 
     for (uint32_t i = 0; i < out.operations.count; i ++)
         free(linebufs[i]);
