@@ -289,8 +289,8 @@ CompPattern Pattern_compile(const char * source)
             linebuf_len = line_len;
             linebuf = realloc(linebuf, linebuf_len);
         }
-        memcpy(linebuf, source, line_len);
-        linebuf[line_len-1] = '\0';
+        memcpy(linebuf, source, line_len+1);
+        linebuf[line_len] = '\0';
         source += line_len + 1;
         Operation op = parse_op(linebuf, line_len);
         out.operations.items = realloc(out.operations.items, (out.operations.count + 1) * sizeof(Operation));
