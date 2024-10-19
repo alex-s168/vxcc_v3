@@ -2,7 +2,7 @@
 
 set -e
 
-: ${CFLAGS:="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror -std=c11"}
+: ${CFLAGS:="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror"}
 
 if [ -z $EMPATH ]; then
         : ${CC:=clang}
