@@ -67,16 +67,20 @@ static bool try_match_at(OptPatternMatch* out, CompPattern pattern, vx_IrOp* iro
         else if (current->is_any) {
             out->matched_instrs[i].first = irop;
             for (; irop; irop = irop->next);
-            out->matched_instrs[i].last = irop;
+            out->matched_instrs[i].last = vx_IrOp_predecessor(irop);
             break; // no next
         }
         else {
             if (!try_match_op(i, out, current, irop, placeholders_matched))
                 return false;
+            out->matched_instrs[i].first = irop;
+            out->matched_instrs[i].last = irop;
             irop = irop->next;
         }
     }
 
+    out->found = true;
+    out->last = vx_IrOp_predecessor(irop);
     return true;
 }
 
@@ -90,9 +94,11 @@ OptPatternMatch Pattern_matchNext(vx_IrOp* first, CompPattern pattern)
     match.matched_instrs = malloc(pattern.count * sizeof(PatternInstMatch));
     bool *placeholders_matched = calloc(pattern.placeholders_count, sizeof(bool));
 
-    for (; first; first = first->next)
+    for (; first; first = first->next) {
+        memset(placeholders_matched, 0, pattern.placeholders_count * sizeof(bool));
         if (try_match_at(&match, pattern, first, placeholders_matched))
             break;
+    }
 
     free(placeholders_matched);
 
