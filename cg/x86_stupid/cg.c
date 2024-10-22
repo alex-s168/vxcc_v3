@@ -524,23 +524,16 @@ static void emiti_cmove(Location* src, Location* dest, const char *cc, FILE* out
 static void emiti_cmp(Location* a, Location* b, FILE* out);
 
 static void emiti_cmp0(Location* val, FILE* out) {
-    if (val->type == LOC_REG) {
-        fputs("test ", out); 
+    if (val->type == LOC_REG || val->type == LOC_MEM) {
+        fputs("cmp ", out);
         emit(val, out);
-        fputs(", ", out);
-        emit(val, out);
-        fputc('\n', out);
+        fputs(", 0\n", out);
     }
     else if (val->type == LOC_IMM || val->type == LOC_EA) {
         Location* scratch = start_scratch_reg(val->bytesWidth, out);
         emiti_move(val, scratch, false, out);
         emiti_cmp0(scratch, out);
         end_scratch_reg(scratch, out);
-    }
-    else if (val->type == LOC_MEM) {
-        fputs("cmp ", out);
-        emit(val, out);
-        fputs(", 0\n", out);
     }
     else {
         assert(false);
