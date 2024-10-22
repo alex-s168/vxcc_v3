@@ -9,6 +9,18 @@ vx_OptConfig vx_g_optconfig = {
     .if_eval = true,
 };
 
+static void RecCallInOut(void (*fn)(vx_IrBlock*), vx_IrBlock* block)
+{
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        FOR_INPUTS(op, input, ({
+            if (input.type == VX_IR_VAL_BLOCK)
+                RecCallInOut(fn, input.block);
+        }));
+    }
+
+    fn(block);
+}
+
 static void opt_pre(vx_IrBlock *block) {
     // place immediates into params
     vx_opt_inline_vars(block);
@@ -53,14 +65,9 @@ void opt(vx_IrBlock *block) {
 
 void opt_preLower(vx_IrBlock *block)
 {
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        FOR_INPUTS(op, input, ({
-            if (input.type == VX_IR_VAL_BLOCK)
-                opt_preLower(input.block);
-        }));
-    }
-
-    opt_pre(block);
+    RecCallInOut(opt_pre, block);
+    RecCallInOut(vx_opt_join_compute, block);
+    RecCallInOut(opt_pre, block);
 }
 
 void opt_ll(vx_IrBlock *block) {

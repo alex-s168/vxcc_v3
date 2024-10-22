@@ -571,7 +571,7 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   true
                          hasEffect  true
                          volatile   false 
-                         sideEffect false 
+                         sideEffect true 
                          ;
 
     entry BREAK          args       "states.."
@@ -582,7 +582,7 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   true
                          hasEffect  true
                          volatile   false 
-                         sideEffect false 
+                         sideEffect true 
                          ;
 
     entry RETURN         args       "returns.."

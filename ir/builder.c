@@ -155,6 +155,13 @@ void vx_IrBlock_addOp(vx_IrBlock *block,
     vx_IrBlock_deepTraverse(new->parent, add_op__trav, &data);
 }
 
+vx_IrOp *vx_IrBlock_addOpAtBeginBuilding(vx_IrBlock *block) {
+    vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
+    new->next = block->first;
+    block->first = new;
+    return new;
+}
+
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block) {
     vx_IrOp *new = fastalloc(sizeof(vx_IrOp));

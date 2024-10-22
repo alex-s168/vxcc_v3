@@ -20,6 +20,9 @@ void vx_IrBlock_llir_preLower_ifs(vx_IrBlock *block)
         *cond = VX_IR_VALUE_VAR(condbl->outs[0]);
 
         if (condbl->first) {
+            for (vx_IrOp* i = condbl->first; i; i = i->next)
+                vx_IrOp_updateParent(i, block);
+
             vx_IrOp* pred = vx_IrOp_predecessor(op);
             if (pred)
                 pred->next = condbl->first;

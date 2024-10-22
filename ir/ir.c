@@ -7,6 +7,39 @@
 #include <stdlib.h>
 
 
+bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b)
+{
+    if (a.type != b.type)
+        return false;
+
+    switch (a.type)
+    {
+        case VX_IR_VAL_IMM_INT:
+            return a.imm_int == b.imm_int;
+
+        case VX_IR_VAL_IMM_FLT:
+            return a.imm_flt == b.imm_flt;
+
+        case VX_IR_VAL_VAR:
+            return a.var == b.var;
+
+        case VX_IR_VAL_UNINIT:
+            return true;
+
+        case VX_IR_VAL_BLOCKREF:
+            return a.block == b.block;
+
+        case VX_IR_VAL_BLOCK:
+            return a.block == b.block;
+
+        case VX_IR_VAL_TYPE:
+            return a.ty == b.ty;
+
+        case VX_IR_VAL_ID:
+            return a.id == b.id;
+    }
+}
+
 vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
     vx_IrOp *op = block->first;
     while (op && op->next) {
@@ -276,6 +309,15 @@ vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
     type->func.args = args;
 
     return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
+}
+
+void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to)
+{
+    op->parent = to;
+    FOR_INPUTS(op, inp, ({
+        if (inp.type == VX_IR_VAL_BLOCK)
+            inp.block->parent = to;
+    }));
 }
 
 #include "opt.h"

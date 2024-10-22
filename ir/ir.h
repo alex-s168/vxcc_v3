@@ -252,6 +252,8 @@ typedef struct {
     };
 } vx_IrValue;
 
+bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b);
+
 #define VX_IR_VALUE_IMM_INT(varin) ((vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = varin })
 #define VX_IR_VALUE_IMM_FLT(varin) ((vx_IrValue) { .type = VX_IR_VAL_IMM_FLT, .imm_flt = varin })
 #define VX_IR_VALUE_VAR(varin)  ((vx_IrValue) { .type = VX_IR_VAL_VAR, .var = varin })
@@ -286,6 +288,7 @@ void vx_IrBlock_addIn(vx_IrBlock *block, vx_IrVar var, vx_IrType *type);
 void vx_IrBlock_addOp(vx_IrBlock *block, const vx_IrOp *op);
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block);
+vx_IrOp *vx_IrBlock_addOpAtBeginBuilding(vx_IrBlock *block);
 vx_IrOp *vx_IrBlock_insertOpBuildingAfter(vx_IrOp *after);
 void vx_IrBlock_addAllOp(vx_IrBlock *dest, const vx_IrBlock *src);
 void vx_IrBlock_addOut(vx_IrBlock *block, vx_IrVar out);
@@ -472,6 +475,7 @@ bool vx_IrOp_isTail(vx_IrOp *op);
 bool vx_IrOp_after(vx_IrOp *op, vx_IrOp *after);
 bool vx_IrOp_followingNoEffect(vx_IrOp* op);
 vx_IrOp* vx_IrOp_nextWithEffect(vx_IrOp* op);
+void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to);
 
 typedef bool (*vx_IrOpFilter)(vx_IrOp* op, void* userdata);
 

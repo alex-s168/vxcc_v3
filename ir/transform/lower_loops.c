@@ -41,12 +41,14 @@ void vx_IrBlock_llir_preLower_loops(vx_IrBlock *block)
         vx_IrOp* ifOp = vx_IrBlock_addOpBuilding(newBody);
         vx_IrOp_init(ifOp, VX_IR_OP_IF, newBody);
 
+        body->parent = ifOp->parent;
         vx_IrOp_addParam_s(ifOp, VX_IR_NAME_COND, VX_IR_VALUE_BLK(cond));
 
+        body->parent = ifOp->parent;
         vx_IrOp_addParam_s(ifOp, VX_IR_NAME_COND_THEN, VX_IR_VALUE_BLK(body));
 
         {
-            vx_IrBlock* els = vx_IrBlock_initHeap(newBody, ifOp);
+            vx_IrBlock* els = vx_IrBlock_initHeap(ifOp->parent, ifOp);
 
             vx_IrOp* brk = vx_IrBlock_addOpBuilding(els);
             vx_IrOp_init(brk, VX_IR_OP_BREAK, els);

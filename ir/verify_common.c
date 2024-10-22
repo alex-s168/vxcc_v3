@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "ir.h"
@@ -32,9 +33,6 @@ static bool analyze_if(vx_Errors *dest,
     if (vcond == NULL) {
         vx_error_param_missing(dest, "cond");
         err = true;
-    } else if (vcond->type != VX_IR_VAL_BLOCK) {
-        vx_error_param_type(dest, "block");
-        err = true;
     }
 
     const vx_IrValue *vthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
@@ -56,17 +54,8 @@ static bool analyze_if(vx_Errors *dest,
     }
 
     if (!err) {
-        vx_IrBlock *bcond = vcond->block;
         vx_IrBlock *bthen = vthen->block;
         vx_IrBlock *belse = velse->block;
-
-        if (bcond->outs_len != 1) {
-            vx_Error error = {
-                .error = "If block is missing a condition",
-                .additional = "If block is missing a condition! Example: `cond=(){ ^ 1 }`"
-            };
-            vx_Errors_add(dest, &error);
-        }
 
         if (!(bthen->outs_len == belse->outs_len && bthen->outs_len == op->outs_len)) {
             vx_Error error = {
@@ -122,9 +111,11 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->parent != block) {
+            char buf[256];
+            sprintf(buf, "OP (%s) has different parent", vx_IrOpType__entries[op->id].debug.a);
             const vx_Error error = {
                 .error = "Invalid parent",
-                .additional = "OP has different parent"
+                .additional = strdup(buf)
             };
             vx_Errors_add(dest, &error);
         }
@@ -159,11 +150,11 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             case VX_IR_OP_COND: {
                 size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
                 if (label >= root->as_root.labels_len || root->as_root.labels[label].decl == NULL) {
-                    static char buf[256];
+                    char buf[256];
                     sprintf(buf, "Label %%%zu is never declared!", label);
                     vx_Error error = {
                         .error = "Undeclared label",
-                        .additional = buf
+                        .additional = strdup(buf)
                     };
                     vx_Errors_add(dest, &error);
                 }
@@ -202,7 +193,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
                     sprintf(buf, "Variable %%%zu is never declared!", var);
                     vx_Error error = {
                         .error = "Undeclared variable",
-                        .additional = buf
+                        .additional = strdup(buf)
                     };
                     vx_Errors_add(dest, &error);
                 }
