@@ -449,18 +449,16 @@ static bool var_used_val(vx_IrValue val, vx_IrVar var) {
 }
 
 bool vx_IrOp_varUsed(const vx_IrOp *op, vx_IrVar var) {
-    for (size_t j = 0; j < op->params_len; j++) {
-        if (var_used_val(op->params[j].val, var)) return true;
-    }
-    for (size_t i = 0; i < op->args_len; i ++) {
-        if (var_used_val(op->args[i], var)) return true;
-    }
+    FOR_INPUTS(op, inp, ({
+        if (var_used_val(inp, var))
+            return true;
+    }));
     return false;
 }
 
 bool vx_IrBlock_varUsed(vx_IrBlock *block, vx_IrVar var)
 {
-    if (block == NULL) return false;
+    assert(block);
 
     for (size_t i = 0; i < block->outs_len; i++)
         if (block->outs[i] == var)

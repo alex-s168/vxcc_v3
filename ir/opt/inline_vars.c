@@ -8,6 +8,8 @@ struct vx_IrView_substitute_var__data {
     vx_IrOp* newSrc;
 };
 
+// TODO: fix this piece of shit (probably broken because both ops in diff blocks)
+
 static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
     struct vx_IrView_substitute_var__data *data = dataIn;
 

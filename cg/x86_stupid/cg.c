@@ -1460,6 +1460,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         for (size_t i = 0; i < op->args_len; i ++) {
             vx_IrValue val = op->args[i];
             if (val.type == VX_IR_VAL_VAR) {
+                assert(varData);
                 varData[val.var].heat ++;
             }
         }
