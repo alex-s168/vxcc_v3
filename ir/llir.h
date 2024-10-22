@@ -9,6 +9,7 @@ OPT_PASS void vx_opt_ll_binary(vx_IrBlock *block);
 OPT_PASS void vx_opt_ll_tailcall(vx_IrBlock *block);
 
 void vx_IrBlock_llir_preLower_loops(vx_IrBlock *block);
+void vx_IrBlock_llir_preLower_ifs(vx_IrBlock *block);
 
 void vx_IrBlock_llir_lower(vx_IrBlock *block);
 

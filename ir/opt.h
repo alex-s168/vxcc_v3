@@ -33,6 +33,7 @@ OPT_PASS void vx_opt_ll_sched(vx_IrBlock *block);
 // TODO: rename to vx_opt
 
 void opt(vx_IrBlock *block);
+void opt_preLower(vx_IrBlock *block);
 void opt_ll(vx_IrBlock *block);
 
 #endif //OPT_H

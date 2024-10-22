@@ -331,6 +331,8 @@ int vx_CU_compile(vx_CU * cu,
 
     FOR_BLOCK({
         vx_IrBlock_llir_preLower_loops(block);
+        vx_IrBlock_llir_preLower_ifs(block);
+        opt_preLower(block);
         vx_IrBlock_llir_lower(block);
         vx_IrBlock_llir_fix_decl(block);
     });

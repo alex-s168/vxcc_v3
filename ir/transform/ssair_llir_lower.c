@@ -2,6 +2,34 @@
 
 #include "../llir.h"
 
+void vx_IrBlock_llir_preLower_ifs(vx_IrBlock *block)
+{
+    for (vx_IrOp* op = block->first; op; op = op->next)
+    {
+        FOR_INPUTS(op, inp, {
+            if (inp.type == VX_IR_VAL_BLOCK)
+                vx_IrBlock_llir_preLower_ifs(inp.block);
+        });
+
+        if (op->id != VX_IR_OP_IF)
+            continue;
+
+        vx_IrValue* cond = vx_IrOp_param(op, VX_IR_NAME_COND);
+
+        vx_IrBlock* condbl = cond->block;
+        *cond = VX_IR_VALUE_VAR(condbl->outs[0]);
+
+        if (condbl->first) {
+            vx_IrOp* pred = vx_IrOp_predecessor(op);
+            if (pred)
+                pred->next = condbl->first;
+            else 
+                block->first = condbl->first;
+            vx_IrBlock_tail(condbl)->next = op;
+        }
+    }
+}
+
 static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock* newParent, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP);
 
 static void into(vx_IrBlock *src, vx_IrOp *parent, vx_IrBlock *dest, size_t continueLabel, size_t breakLabel, vx_IrOp* loopOP) {
@@ -81,8 +109,6 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
         });
 
         if (op->id == VX_IR_OP_IF) {
-            vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
-            
             vx_IrBlock *then = NULL; {
                 vx_IrValue *val = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
                 if (val)
@@ -100,9 +126,10 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
                 continue;
             }
 
-            vx_IrVar cond_var = cond->outs[0];
+            vx_IrVar cond_var = vx_IrOp_param(op, VX_IR_NAME_COND)->var;
+            vx_IrType* cond_var_ty = vx_IrBlock_typeofVar(op->parent, cond_var);
 
-            lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
+            // lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
 
             if (els && then) {
                 //   cond .then COND
@@ -143,7 +170,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
                     vx_IrOp *inv = vx_IrBlock_addOpBuilding(dest);
                     vx_IrVar new = vx_IrBlock_newVar(dest, inv);
                     vx_IrOp_init(inv, VX_IR_OP_NOT, dest);
-                    vx_IrOp_addOut(inv, new, vx_IrBlock_typeofVar(cond, cond_var));
+                    vx_IrOp_addOut(inv, new, cond_var_ty);
                     vx_IrOp_addParam_s(inv, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));
                     cond_var = new;
 
@@ -278,6 +305,9 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
 }
 
 void vx_IrBlock_llir_lower(vx_IrBlock *block) {
+    puts("pre lower:");
+    vx_IrBlock_dump(block, stdout, 0);
+
     static vx_IrBlock copy;
     copy = *block;
     block->first = NULL;
@@ -285,4 +315,7 @@ void vx_IrBlock_llir_lower(vx_IrBlock *block) {
 
     for (vx_IrOp* op = block->first; op; op = op->next)
         op->parent = block;
+
+    puts("post lower:");
+    vx_IrBlock_dump(block, stdout, 0);
 }

@@ -13,8 +13,7 @@ static void opt_pre(vx_IrBlock *block) {
     // place immediates into params
     vx_opt_inline_vars(block);
 
-    if (block->is_root)
-        vx_opt_vars(block);
+    vx_opt_vars(block);
 
     for (size_t i = 0; i < vx_g_optconfig.consteval_iterations; i ++) {
         // evaluate constants
@@ -30,10 +29,12 @@ static void opt_pre(vx_IrBlock *block) {
 void opt(vx_IrBlock *block) {
     assert(block != NULL);
 
-    for (vx_IrOp *op = block->first; op; op = op->next)
-         for (size_t i = 0; i < op->params_len; i ++)
-             if (op->params[i].val.type == VX_IR_VAL_BLOCK)
-                 opt(op->params[i].val.block);
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        FOR_INPUTS(op, input, ({
+            if (input.type == VX_IR_VAL_BLOCK)
+                opt(input.block);
+        }));
+    }
 
     opt_pre(block);
     vx_opt_join_compute(block);
@@ -47,6 +48,18 @@ void opt(vx_IrBlock *block) {
         vx_opt_reduce_loops(block);
         vx_opt_loop_simplify(block);
     }
+    opt_pre(block);
+}
+
+void opt_preLower(vx_IrBlock *block)
+{
+    for (vx_IrOp *op = block->first; op; op = op->next) {
+        FOR_INPUTS(op, input, ({
+            if (input.type == VX_IR_VAL_BLOCK)
+                opt_preLower(input.block);
+        }));
+    }
+
     opt_pre(block);
 }
 
