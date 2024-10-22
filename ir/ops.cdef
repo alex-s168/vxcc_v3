@@ -9,6 +9,8 @@ table vx_IrOpType (
     hasEffect  bool ;
     volatile   bool ;
     sideEffect bool ;
+
+    boolInv  ? str ;
 )
 enum_entry_prefix "VX_IR_OP_"
 {
@@ -264,6 +266,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         boolInv    "ulte"
                          ;
 
     entry UGTE           args       "a: value, b: value"
@@ -275,6 +278,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         boolInv    "ult"
                          ;
 
     entry ULT            args       "a: value, b: value"
@@ -285,7 +289,8 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false
                          hasEffect  true
                          volatile   false 
-                         sideEffect false 
+                         sideEffect false
+                         boolInv    "ugte"
                          ;
 
     entry ULTE           args       "a: value, b: value"
@@ -297,6 +302,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         boolInv    "ugt"
                          ;
 
     entry SGT            args       "a: value, b: value"
@@ -307,7 +313,8 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false
                          hasEffect  true
                          volatile   false 
-                         sideEffect false 
+                         sideEffect false
+                         boolInv    "slte"
                          ;
 
     entry SGTE           args       "a: value, b: value"
@@ -319,6 +326,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         boolInv    "slt"
                          ;
 
     entry SLT            args       "a: value, b: value"
@@ -329,7 +337,8 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false
                          hasEffect  true
                          volatile   false 
-                         sideEffect false 
+                         sideEffect false
+                         boolInv    "sgte"
                          ;
 
     entry SLTE           args       "a: value, b: value"
@@ -341,6 +350,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         boolInv    "sgt"
                          ;
 
     entry EQ             args       "a: value, b: value"
@@ -352,6 +362,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         boolInv    "neq"
                          ;
 
     entry NEQ            args       "a: value, b: value"
@@ -362,7 +373,8 @@ enum_entry_prefix "VX_IR_OP_"
                          endsFlow   false
                          hasEffect  true
                          volatile   false 
-                         sideEffect false 
+                         sideEffect false
+                         boolInv    "eq"
                          ;
 
     entry AND            args       "a: value, b: value"
@@ -462,6 +474,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
+                         boolInv    "imm"
                          ;
                          
     entry BITWISE_NOT    args       "val: value"

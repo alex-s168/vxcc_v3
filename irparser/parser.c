@@ -36,21 +36,6 @@ typedef struct {
     } operations;
 } Pattern;
 
-static vx_IrName parse_name(const char * src, uint32_t srcLen)
-{
-    for (vx_IrName i = 0; i < VX_IR_NAME__LAST; i ++)
-    {
-        const char * nam = vx_IrName_str[i];
-        uint32_t nam_len = strlen(nam);
-        if (nam_len != srcLen) continue;
-        if (!memcmp(nam, src, nam_len)) {
-            return i;
-        }
-    }
-    assert(false && "could not parse ir instr param name");
-    return VX_IR_NAME__LAST; // unreachable
-}
-
 static Operation parse_op(char * line, uint32_t line_len) 
 {
     Operation op = (Operation) {
@@ -120,7 +105,7 @@ static Operation parse_op(char * line, uint32_t line_len)
             *eqsign = '\0';
             char * space = strchr(line, ' ');
             if (space) *space = '\0';
-            opnam = parse_name(line, strlen(line));
+            opnam = vx_IrName_parsec(line);
             line = eqsign;
 
         }
@@ -198,17 +183,7 @@ static CompPattern compile(Pattern pat)
         {
             cop->is_any = false;
 
-            bool found = false;
-            for (uint32_t i = 0; i < vx_IrOpType__len; i ++)
-            {
-                const char *cmp = vx_IrOpType__entries[i].debug.a;
-                if (strlen(cmp) != op->name_len) continue;
-                if (memcmp(cmp, op->name, op->name_len) == 0) {
-                    found = true;
-                    cop->specific.op_type = i;
-                    break;
-                }
-            }
+            bool found = vx_IrOpType_parse(&cop->specific.op_type, op->name, op->name_len);
             if (!found) {
                 ((char*) op->name)[op->name_len] = '\0';
                 fprintf(stderr, "No IrOpType \"%s\" found!\n", op->name);

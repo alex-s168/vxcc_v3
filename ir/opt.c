@@ -67,6 +67,8 @@ void opt_preLower(vx_IrBlock *block)
 {
     RecCallInOut(opt_pre, block);
     RecCallInOut(vx_opt_join_compute, block);
+    RecCallInOut(vx_opt_if_swapCases, block);
+    RecCallInOut(vx_opt_comparisions, block);
     RecCallInOut(opt_pre, block);
 }
 
@@ -79,9 +81,12 @@ void opt_ll(vx_IrBlock *block) {
 
     vx_IrBlock_ll_cmov_expand(block); // this makes it non-ssa but ll_sched can handle it (but only because it's cmov!!!)
     vx_opt_ll_sched(block);
-    vx_opt_ll_jumps(block);
 
-    vx_opt_ll_dce(block);
+    for (size_t i = 0; i < 4; i ++) {
+        vx_opt_ll_jumps(block);
+        vx_opt_ll_dce(block);
+    }
+
     for (size_t i = 0; i < vx_g_optconfig.consteval_iterations; i ++) {
         vx_opt_ll_inlineVars(block);
         vx_opt_vars(block);

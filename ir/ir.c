@@ -7,6 +7,35 @@
 #include <stdlib.h>
 
 
+vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen)
+{
+    for (vx_IrName i = 0; i < VX_IR_NAME__LAST; i ++)
+    {
+        const char * nam = vx_IrName_str[i];
+        uint32_t nam_len = strlen(nam);
+        if (nam_len != srcLen) continue;
+        if (!memcmp(nam, src, nam_len)) {
+            return i;
+        }
+    }
+    assert(false && "could not parse ir instr param name");
+    return VX_IR_NAME__LAST; // unreachable
+}
+
+bool vx_IrOpType_parse(vx_IrOpType* dest, const char * name, size_t name_len)
+{
+    for (uint32_t i = 0; i < vx_IrOpType__len; i ++)
+    {
+        const char *cmp = vx_IrOpType__entries[i].debug.a;
+        if (strlen(cmp) != name_len) continue;
+        if (memcmp(cmp, name, name_len) == 0) {
+            *dest = i;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b)
 {
     if (a.type != b.type)

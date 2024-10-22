@@ -71,11 +71,8 @@ void vx_opt_join_compute(vx_IrBlock *block)
 
         vx_IrOp* last = pred;
         for (size_t i = 0; i < op->outs_len; i ++) {
-            vx_IrOp* new = (pred == NULL)
-                ? vx_IrBlock_addOpAtBeginBuilding(block)
-                : vx_IrBlock_insertOpBuildingAfter(pred);
+            vx_IrOp* new = vx_IrBlock_insertOpCreateAfter(block, pred, VX_IR_OP_IMM);
 
-            vx_IrOp_init(new, VX_IR_OP_IMM, block);
             vx_IrOp_addParam_s(new, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(m->outs[i].var));
             vx_IrOp_addOut(new, op->outs[i].var, op->outs[i].type);
             last = new;

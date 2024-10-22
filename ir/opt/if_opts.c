@@ -72,8 +72,7 @@ void vx_opt_if_opts(vx_IrBlock* block)
         if (thenLast->id != VX_IR_OP_RETURN) continue;
         if (elseLast->id != VX_IR_OP_RETURN) continue;
 
-        vx_IrOp* retInst = vx_IrBlock_insertOpBuildingAfter(op);
-        vx_IrOp_init(retInst, VX_IR_OP_RETURN, block);
+        vx_IrOp* retInst = vx_IrBlock_insertOpCreateAfter(block, op, VX_IR_OP_RETURN);
 
         vx_IrBlock* root = vx_IrBlock_root(block);
         size_t numRets = root->outs_len;

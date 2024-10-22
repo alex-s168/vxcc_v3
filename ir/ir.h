@@ -288,8 +288,7 @@ void vx_IrBlock_addIn(vx_IrBlock *block, vx_IrVar var, vx_IrType *type);
 void vx_IrBlock_addOp(vx_IrBlock *block, const vx_IrOp *op);
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block);
-vx_IrOp *vx_IrBlock_addOpAtBeginBuilding(vx_IrBlock *block);
-vx_IrOp *vx_IrBlock_insertOpBuildingAfter(vx_IrOp *after);
+vx_IrOp *vx_IrBlock_insertOpCreateAfter(vx_IrBlock* block, vx_IrOp* afterNullable, vx_IrOpType ty);
 void vx_IrBlock_addAllOp(vx_IrBlock *dest, const vx_IrBlock *src);
 void vx_IrBlock_addOut(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);
@@ -365,6 +364,16 @@ typedef enum {
 } vx_IrName;
 
 extern const char *vx_IrName_str[];
+
+vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen);
+static vx_IrName vx_IrName_parsec(const char * src) {
+    return vx_IrName_parse(src, strlen(src));
+}
+
+bool vx_IrOpType_parse(vx_IrOpType* dest, const char * name, size_t name_len);
+static bool vx_IrOpType_parsec(vx_IrOpType* dest, const char * name) {
+    return vx_IrOpType_parse(dest, name, strlen(name));
+}
 
 typedef struct {
     vx_IrName   name;

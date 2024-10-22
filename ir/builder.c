@@ -155,13 +155,6 @@ void vx_IrBlock_addOp(vx_IrBlock *block,
     vx_IrBlock_deepTraverse(new->parent, add_op__trav, &data);
 }
 
-vx_IrOp *vx_IrBlock_addOpAtBeginBuilding(vx_IrBlock *block) {
-    vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
-    new->next = block->first;
-    block->first = new;
-    return new;
-}
-
 /** WARNING: DON'T REF VARS IN OP THAT ARE NOT ALREADY INDEXED ROOT */
 vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block) {
     vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
@@ -178,18 +171,20 @@ vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block) {
     return new;
 }
 
-vx_IrOp *vx_IrBlock_insertOpBuildingAfter(vx_IrOp *after) {
-    assert(after);
-    vx_IrBlock *block = after->parent;
-    assert(block);
+vx_IrOp *vx_IrBlock_insertOpCreateAfter(vx_IrBlock* block, vx_IrOp* afterNullable, vx_IrOpType ty)
+{
+    vx_IrOp* op = fastalloc(sizeof(vx_IrOp));
+    vx_IrOp_init(op, ty, block);
 
-    vx_IrOp *new = fastalloc(sizeof(vx_IrOp));
+    if (afterNullable) {
+        op->next = afterNullable->next;
+        afterNullable->next = op;
+    } else {
+        op->next = block->first;
+        block->first = op;
+    }
 
-    new->next = after->next;
-
-    after->next = new;
-
-    return new;
+    return op;
 }
 
 void vx_IrBlock_addOut(vx_IrBlock *block, vx_IrVar out)

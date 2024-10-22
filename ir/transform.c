@@ -18,8 +18,7 @@ void vx_IrBlock_flattenFlattenPleaseRec(vx_IrBlock* block)
             
             for (size_t i = 0; i < op->outs_len; i ++) 
             {
-                vx_IrOp* imm = vx_IrBlock_insertOpBuildingAfter(blkTail);
-                vx_IrOp_init(imm, VX_IR_OP_IMM, blk);
+                vx_IrOp* imm = vx_IrBlock_insertOpCreateAfter(block, blkTail, VX_IR_OP_IMM);
                 vx_IrOp_addOut(imm, op->outs[i].var, op->outs[i].type);
                 vx_IrOp_addParam_s(imm, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(blk->outs[i]));
             }
