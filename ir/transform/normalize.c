@@ -18,32 +18,20 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
             op->params = NULL;
             op->params_len = 0;
 
-            {
-                vx_IrOp* opdo = vx_IrBlock_addOpBuilding(new);
-                vx_IrOp_init(opdo, VX_IR_OP_FLATTEN_PLEASE, new);
-                vx_IrOp_addParam_s(opdo, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(b_init));
-            }
+            vx_IrBlock_addAllOp(new, b_init);
 
             vx_IrOp *opwhile = vx_IrBlock_addOpBuilding(new);
             vx_IrOp_init(opwhile, VX_IR_OP_WHILE, new);
             vx_IrOp_addParam_s(opwhile, VX_IR_NAME_COND, VX_IR_VALUE_BLK(b_cond));
 
             vx_IrBlock *doblock = vx_IrBlock_initHeap(new, opwhile);
-            {
-                vx_IrOp* opdo = vx_IrBlock_addOpBuilding(doblock);
-                vx_IrOp_init(opdo, VX_IR_OP_FLATTEN_PLEASE, doblock);
-                vx_IrOp_addParam_s(opdo, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(b_do));
-            }
-            {
-                vx_IrOp* opdo = vx_IrBlock_addOpBuilding(doblock);
-                vx_IrOp_init(opdo, VX_IR_OP_FLATTEN_PLEASE, doblock);
-                vx_IrOp_addParam_s(opdo, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(b_end));
-            }
+            vx_IrBlock_addAllOp(doblock, b_do);
+            vx_IrBlock_addAllOp(doblock, b_end);
 
             vx_IrOp_addParam_s(opwhile, VX_IR_NAME_LOOP_DO, VX_IR_VALUE_BLK(doblock));
 
-            op->id = VX_IR_OP_FLATTEN_PLEASE;
-            vx_IrOp_addParam_s(op, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(new));
+            vx_IrBlock_insertAllOpAfter(block, new, op);
+            vx_IrOp_remove(op);
         }
 
         FOR_INPUTS(op, inp, {

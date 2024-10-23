@@ -8,11 +8,10 @@ struct vx_IrView_substitute_var__data {
     vx_IrOp* newSrc;
 };
 
-// TODO: fix this piece of shit (probably broken because both ops in diff blocks)
-
 static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
     struct vx_IrView_substitute_var__data *data = dataIn;
 
+    /*
     vx_IrOp *first = op;
     vx_IrOp *last = data->newSrc;
     vx_IrOp_earlierFirst(&first, &last);
@@ -23,7 +22,7 @@ static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
         if (o->id == VX_IR_OP_LABEL) {
             return false;
         }
-    } 
+    }*/ 
 
     vx_IrBlock* block = op->parent;
     for (size_t j = 0; j < block->outs_len; j ++) {

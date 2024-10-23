@@ -373,7 +373,6 @@ int vx_CU_compile(vx_CU * cu,
     FOR_BLOCK({
         vx_CIrBlock_fix(block); // TODO: why...
         vx_CIrBlock_normalize(block);
-        vx_IrBlock_flattenFlattenPleaseRec(block);
         vx_CIrBlock_mksa_states(block);
         vx_CIrBlock_mksa_final(block);
         vx_CIrBlock_fix(block); // TODO: why...
@@ -390,8 +389,6 @@ int vx_CU_compile(vx_CU * cu,
 
         puts("post SSA IR opt:");
         vx_IrBlock_dump(block, stdout, 0); // TODO remove 
-
-        vx_IrBlock_flattenFlattenPleaseRec(block);
 
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);

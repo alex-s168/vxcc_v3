@@ -4,15 +4,8 @@ static vx_IrVar block_res_as_var(vx_IrBlock *parent, vx_IrBlock *block) {
     vx_IrBlock* root = vx_IrBlock_root(parent);
     assert(root);
 
-    vx_IrOp *op = vx_IrBlock_addOpBuilding(parent);
-    vx_IrOp_init(op, VX_IR_OP_FLATTEN_PLEASE, parent);
-    vx_IrVar dest = vx_IrBlock_newVar(parent, op);
-    vx_IrOp_addParam_s(op, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(block));
-    assert(block->outs_len >= 1);
-    vx_IrType* type = vx_IrBlock_typeofVar(block, block->outs[0]);
-    assert(type);
-    vx_IrOp_addOut(op, dest, type);
-    return dest;
+    vx_IrBlock_addAllOp(parent, block);
+    return block->outs[0];
 }
 
 //   convert:
@@ -74,22 +67,14 @@ void vx_opt_cmov(vx_IrBlock *block)
 
         vx_IrOp *cmov = vx_IrBlock_addOpBuilding(body);
         vx_IrOp_init(cmov, VX_IR_OP_CMOV, body);
-        vx_IrVar dest = vx_IrBlock_newVar(body, cmov);
         vx_IrOp_addParam_s(cmov, VX_IR_NAME_COND, VX_IR_VALUE_BLK(cond));
         vx_IrOp_addParam_s(cmov, VX_IR_NAME_COND_THEN, VX_IR_VALUE_VAR(v0));
         vx_IrOp_addParam_s(cmov, VX_IR_NAME_COND_ELSE, VX_IR_VALUE_VAR(v1));
         vx_IrType* thenOutTy = vx_IrBlock_typeofVar(root, then->outs[0]);
         assert(thenOutTy);
-        vx_IrOp_addOut(cmov, dest, thenOutTy);
+        vx_IrOp_addOut(cmov, op->outs[0].var, thenOutTy);
 
-        vx_IrBlock_addOut(body, dest);
-
-        free(op->params);
-        op->params = NULL;
-        op->params_len = 0;
-
-        op->id = VX_IR_OP_FLATTEN_PLEASE;
-
-        vx_IrOp_addParam_s(op, VX_IR_NAME_BLOCK, VX_IR_VALUE_BLK(body));
+        vx_IrBlock_insertAllOpAfter(block, body, op);
+        vx_IrOp_remove(op);
     }
 }

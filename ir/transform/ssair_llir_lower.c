@@ -197,10 +197,6 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
                 vx_IrOp_addParam_s(jump, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_id));
             }
         }
-        else if (op->id == VX_IR_OP_FLATTEN_PLEASE) {
-            vx_IrBlock *body = vx_IrOp_param(op, VX_IR_NAME_BLOCK)->block;
-            into(body, op, dest, continueLabel, breakLabel, loopOP);    
-        }
         else if (op->id == VX_IR_OP_CMOV) {
 
             vx_IrValue *pcond = vx_IrOp_param(op, VX_IR_NAME_COND);

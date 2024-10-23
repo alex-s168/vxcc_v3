@@ -23,7 +23,7 @@ static void RecCallInOut(void (*fn)(vx_IrBlock*), vx_IrBlock* block)
 
 static void opt_pre(vx_IrBlock *block) {
     // place immediates into params
-//    vx_opt_inline_vars(block);
+    vx_opt_inline_vars(block);
 
     vx_opt_vars(block);
 
@@ -31,7 +31,7 @@ static void opt_pre(vx_IrBlock *block) {
         // evaluate constants
         vx_opt_constant_eval(block);
         // place results into params
-//        vx_opt_inline_vars(block);
+        vx_opt_inline_vars(block);
     }
 
     vx_opt_simple_patterns(block);

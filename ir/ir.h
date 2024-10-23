@@ -290,6 +290,7 @@ void vx_IrBlock_addOp(vx_IrBlock *block, const vx_IrOp *op);
 vx_IrOp *vx_IrBlock_addOpBuilding(vx_IrBlock *block);
 vx_IrOp *vx_IrBlock_insertOpCreateAfter(vx_IrBlock* block, vx_IrOp* afterNullable, vx_IrOpType ty);
 void vx_IrBlock_addAllOp(vx_IrBlock *dest, const vx_IrBlock *src);
+void vx_IrBlock_insertAllOpAfter(vx_IrBlock* dest, const vx_IrBlock* src, vx_IrOp* afterNullable);
 void vx_IrBlock_addOut(vx_IrBlock *block, vx_IrVar out);
 void vx_IrBlock_destroy(vx_IrBlock *block);
 vx_IrType *vx_IrBlock_typeofVar(vx_IrBlock *block, vx_IrVar var);
@@ -580,8 +581,6 @@ static vx_IrTypeRef vx_ptrType(vx_IrBlock* root) {
     type->base.sizeless = false;
     return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
 }
-
-void vx_IrBlock_flattenFlattenPleaseRec(vx_IrBlock* block);
 
 bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
 

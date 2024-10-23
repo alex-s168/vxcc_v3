@@ -26,17 +26,6 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect false
                          ;
 
-    entry FLATTEN_PLEASE args       "block: block"
-                         debug      "."
-                         descr      "operations in arg block will replace this operation in lowering passes"
-                         inlineCost 0        # \/ arg blocks will be automatically combined with these values
-                         execCost   0 
-                         endsFlow   false 
-                         hasEffect  false 
-                         volatile   false  
-                         sideEffect false
-                         ;
-
     entry ZEROEXT        args       "val: value"
                          debug      "zx" 
                          descr      "zero-extends the given value to the result type"

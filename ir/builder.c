@@ -4,6 +4,34 @@
 #include <string.h>
 #include <assert.h>
 
+void vx_IrBlock_addAllOp(vx_IrBlock *dest, const vx_IrBlock *src)
+{
+    vx_IrOp* t = vx_IrBlock_tail(dest);
+    if (t) {
+        t->next = src->first;
+    } else {
+        dest->first = src->first;
+    }
+    for (vx_IrOp* i = src->first; i; i = i->next)
+        vx_IrOp_updateParent(i, dest);
+}
+
+void vx_IrBlock_insertAllOpAfter(vx_IrBlock* dest, const vx_IrBlock* src, vx_IrOp* afterNullable)
+{
+    vx_IrOp* srctail = vx_IrBlock_tail((vx_IrBlock*) src);
+    if (!srctail) return;
+
+    for (vx_IrOp* i = src->first; i; i = i->next)
+        vx_IrOp_updateParent(i, dest);
+
+    srctail->next = afterNullable ? afterNullable->next : dest->first;
+    if (afterNullable) {
+        afterNullable->next = src->first;
+    } else {
+        dest->first = src->first;
+    }
+}
+
 void vx_IrBlock_init(vx_IrBlock *block,
                      vx_IrBlock *parent,
                       vx_IrOp *parent_op)
