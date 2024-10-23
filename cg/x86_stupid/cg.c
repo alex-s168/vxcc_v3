@@ -1604,8 +1604,6 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                     .argLoc = loc
                 };
             }
-
-            id_f ++;
         }
         else {
             Location* loc;
@@ -1627,9 +1625,12 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
                     .argLoc = loc
                 };
             } 
-
-            id_i ++;
         }
+
+        if (var.type->base.isfloat)
+            id_f ++;
+        else 
+            id_i ++;
     }
 
     free(varsHotFirst);

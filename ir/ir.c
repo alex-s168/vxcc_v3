@@ -366,19 +366,11 @@ int vx_CU_compile(vx_CU * cu,
     }
 
     FOR_BLOCK({
-        if (optionalOptimizedSsaIr != NULL)
-            vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
-    });
-
-    FOR_BLOCK({
         vx_CIrBlock_fix(block); // TODO: why...
         vx_CIrBlock_normalize(block);
         vx_CIrBlock_mksa_states(block);
         vx_CIrBlock_mksa_final(block);
         vx_CIrBlock_fix(block); // TODO: why...
-
-        puts("post CIR lower:");
-        vx_IrBlock_dump(block, stdout, 0);
 
         if (vx_ir_verify(block) != 0)
             return 1;
@@ -386,9 +378,6 @@ int vx_CU_compile(vx_CU * cu,
 
     FOR_BLOCK({
         opt(block);
-
-        puts("post SSA IR opt:");
-        vx_IrBlock_dump(block, stdout, 0); // TODO remove 
 
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
@@ -412,6 +401,8 @@ int vx_CU_compile(vx_CU * cu,
             vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
 
         llir_prep_lower(block);
+
+        vx_IrBlock_dump(block, stdout, 0);
 
         if (optionalAsm)
             vx_cg_x86stupid_gen(block, optionalAsm);
