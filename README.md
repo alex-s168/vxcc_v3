@@ -56,8 +56,18 @@ If you have any questions, you can ask me on Discord (`alex_s168`) or send me an
 ## contributing
 all contributions are welcome! Don't hesitate to ask me if you have any questions.
 
-## current optimizations
+please do not currently change anything related to:
+- codegen system / isel & regalloc (because I want to re-do it in a specific way)
+- assembler (^^^)
 
+## current optimizations
+- variable inlining
+- duplicate code removal
+- cmoves
+- tailcall
+- simplify loops and ifs
+- simple pattern replacement of bit extract and similar
+- compile time constant eval
 
 ## code-gen example
 input:
