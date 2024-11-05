@@ -334,7 +334,7 @@ int vx_CU_compile(vx_CU * cu,
         if (optionalOptimizedLlIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
 
-        llir_prep_lower(cu, block);
+        vx_llir_prep_lower(cu, block);
 
         vx_IrBlock_dump(block, stdout, 0);
     });

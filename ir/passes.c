@@ -55,7 +55,7 @@ void vx_opt(vx_CU* cu, vx_IrBlock *block) {
     opt_pre(cu, block);
 }
 
-static void opt_preLower(vx_CU* cu, vx_IrBlock *block)
+void vx_opt_preLower(vx_CU* cu, vx_IrBlock *block)
 {
     RecCallInOut(opt_pre, cu, block);
     RecCallInOut(vx_opt_join_compute, cu, block);

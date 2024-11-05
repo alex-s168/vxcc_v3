@@ -45,6 +45,10 @@ enum CompileResult target_gen() {
 
 struct CompileData ir_files[] = {
     DIR("build"),
+
+    DIR("build/common"),
+    SP(CT_C, "common/common.c"),
+
     DIR("build/ir"),
     SP(CT_C, "ir/fastalloc.c"),
     SP(CT_C, "ir/dump.c"),
@@ -123,6 +127,9 @@ struct CompileData parser_files[] = {
 struct CompileData always_files[] = {
     DEP("build/common/target_etca.cdef.o"),
     DEP("build/common/target_x86.cdef.o"),
+    DEP("build/common/targets.cdef.o"),
+    // add target (cdef file)
+
     DEP("build/ir/ops.cdef.o"),
     NOLD_DEP("ir/ir.h"),
 };

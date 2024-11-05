@@ -40,7 +40,7 @@ void vx_IrBlock_ll_share_slots(vx_CU* cu,vx_IrBlock *block);
 void vx_IrBlock_ll_cmov_expand(vx_CU* cu,vx_IrBlock *block);
 // called by the codegen after it knows if it needs epilog
 void vx_IrBlock_ll_finalize(vx_CU* cu, vx_IrBlock *block, bool needEpilog);
-void llir_prep_lower(vx_CU* cu, vx_IrBlock *block);
+void vx_llir_prep_lower(vx_CU* cu, vx_IrBlock *block);
 
 void vx_CIrBlock_normalize(vx_CU*, vx_IrBlock *);
 vx_OptIrVar vx_CIrBlock_mksa_states(vx_CU*, vx_IrBlock *);
