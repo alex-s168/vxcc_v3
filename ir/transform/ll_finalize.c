@@ -1,10 +1,10 @@
-#include "../llir.h"
-#include "../opt.h"
+#include "../passes.h"
 
-void vx_IrBlock_ll_finalize(vx_IrBlock *block, bool needEpilog) {
+void vx_IrBlock_ll_finalize(vx_CU* cu, vx_IrBlock *block, bool needEpilog)
+{
     if (needEpilog)
         return;
 
-    vx_opt_ll_tailcall(block);
-    vx_opt_ll_condtailcall(block);
+    vx_opt_ll_tailcall(cu, block);
+    vx_opt_ll_condtailcall(cu, block);
 }

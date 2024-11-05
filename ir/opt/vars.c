@@ -1,4 +1,6 @@
-#include "../opt.h"
+#include "../passes.h"
+
+// removes unused ops 
 
 static bool canForceRem(vx_IrOp* op)
 {
@@ -11,7 +13,9 @@ static bool canForceRem(vx_IrOp* op)
     return false;
 }
 
-void vx_opt_vars(vx_IrBlock *block) {
+// TODO: rename to vx_opt_unused
+void vx_opt_vars(vx_CU* cu, vx_IrBlock *block)
+{
     vx_IrBlock *root = vx_IrBlock_root(block);
     assert(root != NULL);
     assert(root->is_root);

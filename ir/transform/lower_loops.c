@@ -1,14 +1,14 @@
-#include "../llir.h"
+#include "../passes.h"
 
 // while loop to infinite loop with conidtional break
 
-void vx_IrBlock_llir_preLower_loops(vx_IrBlock *block)
+void vx_IrBlock_llir_preLower_loops(vx_CU* cu, vx_IrBlock *block)
 {
     for (vx_IrOp* op = block->first; op; op = op->next)
     {
         FOR_INPUTS(op, inp, {
             if (inp.type == VX_IR_VAL_BLOCK)
-                vx_IrBlock_llir_preLower_loops(inp.block);
+                vx_IrBlock_llir_preLower_loops(cu, inp.block);
         });
 
         if (op->id != VX_IR_OP_WHILE) continue;

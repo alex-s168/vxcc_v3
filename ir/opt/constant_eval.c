@@ -1,8 +1,7 @@
-#include "../opt.h"
-
 #include <assert.h>
+#include "../passes.h"
 
-void vx_opt_constant_eval(vx_IrBlock *block)
+void vx_opt_constant_eval(vx_CU* cu, vx_IrBlock *block)
 {
     for (vx_IrOp *op = block->first; op; op = op->next) {
 #define BINARY(typedest, what) { \

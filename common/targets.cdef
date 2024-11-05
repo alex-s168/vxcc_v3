@@ -7,5 +7,5 @@ table vx_TargetArch (
     entry ETCA   name "etca"
                  ;
 
-    // add target
+    # // add target
 }

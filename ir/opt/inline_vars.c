@@ -1,14 +1,17 @@
-#include "../opt.h"
+#include "../passes.h"
 
+// TODO: move substitude to transform
 
-struct vx_IrView_substitute_var__data {
+struct vx_IrView_substitute_var__data 
+{
     vx_IrBlock *block;
     vx_IrVar old;
     vx_IrValue new;
     vx_IrOp* newSrc;
 };
 
-static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
+static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn)
+{
     struct vx_IrView_substitute_var__data *data = dataIn;
 
     /*
@@ -43,7 +46,8 @@ static bool vx_IrView_substitute_var__trav(vx_IrOp *op, void *dataIn) {
     return false;
 }
 
-static void vx_IrBlock_substitute_var(vx_IrBlock *block, vx_IrVar old, vx_IrValue new, vx_IrOp* newSrc) {
+static void vx_IrBlock_substitute_var(vx_IrBlock *block, vx_IrVar old, vx_IrValue new, vx_IrOp* newSrc) 
+{
     struct vx_IrView_substitute_var__data data = { .block = block, .old = old, .new = new, .newSrc = newSrc };
     vx_IrBlock_deepTraverse(block, vx_IrView_substitute_var__trav, &data);
 }
@@ -67,11 +71,12 @@ static bool trav (vx_IrOp *op, void *data)
     return false;
 }
 
-void vx_opt_inline_vars(vx_IrBlock *block) {
+void vx_opt_inline_vars(vx_CU* cu, vx_IrBlock *block)
+{
     vx_IrBlock_deepTraverse(block, trav, block);
 }
 
-void vx_opt_ll_inlineVars(vx_IrBlock *block)
+void vx_opt_ll_inlineVars(vx_CU* cu, vx_IrBlock *block)
 {
     for (vx_IrOp* imm = block->first; imm; imm = imm->next)
     {

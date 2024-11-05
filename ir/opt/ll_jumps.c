@@ -1,9 +1,9 @@
-#include "../opt.h"
-
+#include "../passes.h"
 
 // we go trough all ops between the jump and the label
 // if all of them have no effect (labels, nops), we can remove the jump instruction
-static void part1(vx_IrBlock *block) {
+static void part1(vx_IrBlock *block)
+{
     vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
@@ -34,7 +34,8 @@ static void part1(vx_IrBlock *block) {
 }
 
 // is the jump dest just another jump? optimize that
-static void part2(vx_IrBlock *block) {
+static void part2(vx_IrBlock *block)
+{
     vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
@@ -58,7 +59,8 @@ static void part2(vx_IrBlock *block) {
     }
 }
 
-void vx_opt_ll_jumps(vx_IrBlock *block) {
+void vx_opt_ll_jumps(vx_CU* cu, vx_IrBlock *block)
+{
     part1(block);
     part2(block);
 }

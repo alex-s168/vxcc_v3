@@ -1,7 +1,8 @@
-#include "../opt.h"
 #include <assert.h>
 #include <string.h>
+#include "../passes.h"
 
+// TODO: move to analysis
 static bool eq(vx_IrOp* a, vx_IrOp* b)
 {
     if (!( a->id == b->id
@@ -25,6 +26,7 @@ static bool eq(vx_IrOp* a, vx_IrOp* b)
     return true;
 }
 
+// TODO: move to analysis
 static vx_IrOp* findMatchingOutBefore(vx_IrBlock* block, vx_IrOp* before, vx_IrOp* cmp, bool stepIn, bool stepOut)
 {
     for (vx_IrOp* op = block->first; op && op != before; op = op->next)
@@ -56,7 +58,7 @@ static vx_IrOp* findMatchingOutBefore(vx_IrBlock* block, vx_IrOp* before, vx_IrO
 /**
  * Find identical computations and join them
  */
-void vx_opt_join_compute(vx_IrBlock *block)
+void vx_opt_join_compute(vx_CU* cu, vx_IrBlock *block)
 {
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (vx_IrOp_isVolatile(op) || vx_IrOp_hasSideEffect(op))

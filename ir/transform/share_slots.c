@@ -1,4 +1,6 @@
-#include "../llir.h"
+#include "../passes.h"
+
+// TODO: move to common/
 
 static bool boolArrOverlap(bool* a, bool* b, size_t len)
 {
@@ -80,7 +82,8 @@ static size_t calcPriority(vx_IrBlock* block, vx_IrVar var)
 // TODO: second strategry that is configurable in config:
 //   when the lifetimes do overlap, but one of them ends during the lt of the other, move other into dead lifetime
 
-void vx_IrBlock_ll_share_slots(vx_IrBlock *block) {
+void vx_IrBlock_ll_share_slots(vx_CU* cu, vx_IrBlock *block)
+{
     size_t blkInstLen = vx_IrBlock_countOps(block);
     size_t varsLen = block->as_root.vars_len;
 

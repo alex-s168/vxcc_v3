@@ -1,4 +1,4 @@
-#include "../opt.h"
+#include "../passes.h"
 
 struct Move {
     vx_IrOp* what;
@@ -54,7 +54,8 @@ static void runSched(vx_IrBlock* block, struct Move **to_move, size_t *to_move_l
     }
 }
 
-void vx_opt_ll_sched(vx_IrBlock *block) {
+void vx_opt_ll_sched(vx_CU* cu, vx_IrBlock *block)
+{
     assert(block->is_root);
 
     struct Move* to_move = NULL;

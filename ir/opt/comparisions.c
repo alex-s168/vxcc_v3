@@ -1,4 +1,4 @@
-#include "../opt.h"
+#include "../passes.h"
 
 /**
  * `a <= constant` -> `a < constant + 1`
@@ -8,10 +8,12 @@
  * `!cmp(a,b)` -> `ncmp(a,b)`
  * `constant == a` -> `a == constant`
  */
-void vx_opt_comparisions(vx_IrBlock *block)
+void vx_opt_comparisions(vx_CU* cu, vx_IrBlock *block)
 {
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        switch (op->id) {
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
+        switch (op->id)
+        {
             case VX_IR_OP_NOT: {
                 vx_IrValue* oldres = vx_IrOp_param(op, VX_IR_NAME_VALUE);
                 vx_IrOp* cmp;

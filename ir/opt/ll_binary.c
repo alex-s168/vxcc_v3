@@ -1,6 +1,6 @@
-#include "../opt.h"
+#include "../passes.h"
 
-OPT_PASS void vx_opt_ll_binary(vx_IrBlock *block) {
+void vx_opt_ll_binary(vx_CU* cu, vx_IrBlock *block) {
     for (vx_IrOp* op = block->first; op; op = op->next) {
         switch (op->id) {
         case VX_IR_OP_EQ:

@@ -59,7 +59,7 @@ struct CompileData ir_files[] = {
 struct CompileData ir_opt_files[] = {
     DIR("build"),
     DIR("build/ir"),
-    SP(CT_C, "ir/opt.c"),
+    SP(CT_C, "ir/passes.c"),
 
     DIR("build/ir/opt"),
     SP(CT_C, "ir/opt/tailcall.c"),

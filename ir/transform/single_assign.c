@@ -1,4 +1,4 @@
-#include "../cir.h"
+#include "../passes.h"
 
 /**
  * Go trough every unconditional assignement in the block,
@@ -7,12 +7,14 @@
  *
  * inside out!
  */
-void vx_CIrBlock_mksa_final(vx_IrBlock *block)
+void vx_CIrBlock_mksa_final(vx_CU* cu, vx_IrBlock *block)
 {
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        for (size_t j = 0; j < op->params_len; j ++)
-            if (op->params[j].val.type == VX_IR_VAL_BLOCK)
-                vx_CIrBlock_mksa_final(op->params[j].val.block);
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
+        FOR_INPUTS(op, inp, ({
+            if (inp.type == VX_IR_VAL_BLOCK)
+                vx_CIrBlock_mksa_final(cu, inp.block);
+        }));
 
         for (size_t j = 0; j < op->outs_len; j ++) {
             vx_IrVar *var = &op->outs[j].var;

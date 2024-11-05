@@ -1,7 +1,9 @@
-#include "../llir.h"
+#include "../passes.h"
 
-void vx_IrBlock_ll_cmov_expand(vx_IrBlock *block) {
-    for (vx_IrOp* op = block->first; op; op = op->next) {
+void vx_IrBlock_ll_cmov_expand(vx_CU* cu, vx_IrBlock *block)
+{
+    for (vx_IrOp* op = block->first; op; op = op->next)
+    {
         if (op->id != VX_IR_OP_CMOV)
             continue;
 

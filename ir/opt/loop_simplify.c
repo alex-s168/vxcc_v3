@@ -1,6 +1,6 @@
-#include "../opt.h"
+#include "../passes.h"
 
-void vx_opt_loop_simplify(vx_IrBlock *block)
+void vx_opt_loop_simplify(vx_CU* cu, vx_IrBlock *block)
 {
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id != VX_IR_OP_FOR)

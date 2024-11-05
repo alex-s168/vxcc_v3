@@ -1,7 +1,5 @@
 #include <assert.h>
-
-#include "../ir.h"
-#include "../cir.h"
+#include "../passes.h"
 
 /**
  * @param outer assignment of var that is closest to conditional
@@ -65,7 +63,7 @@ static vx_IrVar megic(vx_IrBlock *outer,
 
 // call megic somehow
 // detect the patter from the inside out!!
-vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
+vx_OptIrVar vx_CIrBlock_mksa_states(vx_CU* cu, vx_IrBlock *block)
 {
     vx_IrBlock* root = vx_IrBlock_root(block); assert(root);
     vx_OptIrVar rvar = VX_IRVAR_OPT_NONE;
@@ -75,7 +73,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
             // inside out:
             FOR_PARAMS(op, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
                 vx_IrBlock *conditional = param.block;
-                vx_OptIrVar manip = vx_CIrBlock_mksa_states(conditional);
+                vx_OptIrVar manip = vx_CIrBlock_mksa_states(cu, conditional);
 
                 // are we assigning any variable directly in that block that we also assign on the outside before the inst?
                 for (vx_IrOp *condAssignOp = conditional->first; condAssignOp; condAssignOp = condAssignOp->next) {
@@ -94,7 +92,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_IrBlock *block)
 
         FOR_INPUTS(op, inp, {
             if (inp.type == VX_IR_VAL_BLOCK)
-                (void) vx_CIrBlock_mksa_states(inp.block);
+                (void) vx_CIrBlock_mksa_states(cu, inp.block);
         });
         
         if (op->id == VX_IR_OP_WHILE) {

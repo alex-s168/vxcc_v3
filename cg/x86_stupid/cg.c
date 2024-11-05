@@ -1320,11 +1320,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
     return op->next;
 }
 
-vx_cg_x86stupid vx_cg_x86stupid_options = (vx_cg_x86stupid) {
-    .use_red_zone = true,
-};
-
-void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
+void vx_cg_x86stupid_gen(vx_CU* cu, vx_IrBlock* block, FILE* out) {
     fprintf(out, "%s:\n", block->name);
 
     assert(block->is_root);
@@ -1652,7 +1648,7 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
 
     bool needProlog = (stackOff > 0 && !is_leaf) ||
         stackOff > 128 ||
-        (stackOff > 0 && !vx_cg_x86stupid_options.use_red_zone);
+        (stackOff > 0 && cu->target.flags.x86[vx_Target_X86__NO_REDZONE]);
 
     needEpilog = false;
     if (anyPlaced || needProlog) {
@@ -1660,10 +1656,10 @@ void vx_cg_x86stupid_gen(vx_IrBlock* block, FILE* out) {
         needEpilog = true;
     }
 
-    vx_IrBlock_ll_finalize(block, needEpilog);
+    vx_IrBlock_ll_finalize(cu, block, needEpilog);
 
     if (needProlog) {
-        if (is_leaf && vx_cg_x86stupid_options.use_red_zone) {
+        if (is_leaf && cu->target.flags.x86[vx_Target_X86__NO_REDZONE]) {
             size_t v = 128 - stackOff;
             fprintf(out, "sub rsp, %zu\n", v);
         } else {

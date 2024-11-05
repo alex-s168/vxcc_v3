@@ -1,4 +1,4 @@
-#include "../opt.h"
+#include "../passes.h"
 
 static void rmcode_before_label(vx_IrOp *op) {
     for (; op; op = op->next) {
@@ -20,7 +20,9 @@ static bool labelUsed(vx_IrBlock* block, size_t label)
     return false;
 }
 
-void vx_opt_ll_dce(vx_IrBlock *block) {
+// TODO: rename to vx_opt_dce
+void vx_opt_ll_dce(vx_CU* cu, vx_IrBlock *block)
+{
     for (vx_IrOp *op = block->first; op; op = op->next) {
         if (op->id == VX_IR_OP_LABEL) {
             size_t id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;

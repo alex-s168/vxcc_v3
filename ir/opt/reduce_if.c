@@ -1,6 +1,6 @@
-#include "../opt.h"
+#include "../passes.h"
 
-void vx_opt_reduce_if(vx_IrBlock *block)
+void vx_opt_reduce_if(vx_CU* cu, vx_IrBlock *block)
 {
     vx_IrBlock *root = vx_IrBlock_root(block);
 

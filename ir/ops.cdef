@@ -10,7 +10,7 @@ table vx_IrOpType (
     volatile   bool ;
     sideEffect bool ;
 
-    boolInv  ? str ;
+    boolInv  ? str  ;
 )
 enum_entry_prefix "VX_IR_OP_"
 {
@@ -182,7 +182,7 @@ enum_entry_prefix "VX_IR_OP_"
 
     entry SUB            args       "a: value, b: value"
                          debug      "sub"
-                         descr      "subctract the float or integer b from the float or intege a ; both values have to have the same type as the output type"
+                         descr      "subtract the float or integer b from the float or intege a ; both values have to have the same type as the output type"
                          inlineCost 1 
                          execCost   2 
                          endsFlow   false

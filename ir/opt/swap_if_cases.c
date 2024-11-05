@@ -1,6 +1,8 @@
-#include "../opt.h"
+#include "../passes.h"
 
-void vx_opt_if_swapCases(vx_IrBlock* block)
+// if the else case only has one op, swap both cases
+
+void vx_opt_if_swapCases(vx_CU* cu, vx_IrBlock* block)
 {
     vx_IrBlock_dump(block, stdout, 0);
 
@@ -41,6 +43,7 @@ void vx_opt_if_swapCases(vx_IrBlock* block)
 
         vx_IrOp* pred = vx_IrOp_predecessor(op);
 
+        // generate not op; optimized away by ther pass
         vx_IrOp* inv = vx_IrBlock_insertOpCreateAfter(block, pred, VX_IR_OP_NOT);
         vx_IrVar new = vx_IrBlock_newVar(block, inv);
         vx_IrOp_addOut(inv, new, vx_IrBlock_typeofVar(block, *cond));

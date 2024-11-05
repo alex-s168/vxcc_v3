@@ -1,7 +1,7 @@
 #include "verify.h"
 #include "passes.h"
 
-vx_Errors vx_CIrBlock_verify(vx_IrBlock *block)
+vx_Errors vx_CIrBlock_verify(vx_CU* cu, vx_IrBlock *block)
 {
     vx_Errors errors;
     errors.items = NULL;

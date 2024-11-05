@@ -1,4 +1,4 @@
-#include "../opt.h"
+#include "../passes.h"
 
 // TODO: move to ir/transform.c
 static vx_IrVar genIntoVar(vx_IrBlock* block, vx_IrValue val)
@@ -14,7 +14,7 @@ static vx_IrVar genIntoVar(vx_IrBlock* block, vx_IrValue val)
     return var;
 }
 
-void vx_opt_if_opts(vx_IrBlock* block)
+void vx_opt_if_opts(vx_CU* cu, vx_IrBlock* block)
 {
     // move code after if statements that partially end flow into the branch that doesn't end flow
     for (vx_IrOp* op = block->first; op; op = op->next)
@@ -54,7 +54,7 @@ void vx_opt_if_opts(vx_IrBlock* block)
         break; // there is no next anymore 
     }
 
-    vx_opt_ll_dce(block); // it says ll but also works in ssa 
+    vx_opt_ll_dce(cu, block); // it says ll but also works in ssa 
 
     for (vx_IrOp* op = block->first; op; op = op->next)
     {

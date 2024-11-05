@@ -1,8 +1,8 @@
 #include <assert.h>
+#include "../passes.h"
 
-#include "../opt.h"
-
-static bool trav(vx_IrOp *op, void *ignore) {
+static bool trav(vx_IrOp *op, void *ignore) 
+{
     (void) ignore;
     if (op->id == VX_IR_OP_CALL && vx_IrOp_isTail(op)) {
         op->id = VX_IR_OP_TAILCALL;
@@ -10,11 +10,13 @@ static bool trav(vx_IrOp *op, void *ignore) {
     return false;
 }
 
-void vx_opt_ll_tailcall(vx_IrBlock *block) {
+void vx_opt_ll_tailcall(vx_CU* cu, vx_IrBlock *block) 
+{
     vx_IrBlock_deepTraverse(block, trav, NULL); 
 }
 
-void vx_opt_ll_condtailcall(vx_IrBlock *block) {
+void vx_opt_ll_condtailcall(vx_CU* cu, vx_IrBlock *block)
+{
     assert(block->is_root);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {

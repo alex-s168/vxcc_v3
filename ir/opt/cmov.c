@@ -1,9 +1,6 @@
-#include "../opt.h"
+#include "../passes.h"
 
 static vx_IrVar block_res_as_var(vx_IrBlock *parent, vx_IrBlock *block) {
-    vx_IrBlock* root = vx_IrBlock_root(parent);
-    assert(root);
-
     vx_IrBlock_addAllOp(parent, block);
     return block->outs[0];
 }
@@ -24,10 +21,14 @@ static vx_IrVar block_res_as_var(vx_IrBlock *parent, vx_IrBlock *block) {
 // cost of then + else is small enough
 // exactly one out
 
-void vx_opt_cmov(vx_IrBlock *block)
+void vx_opt_cmov(vx_CU* cu, vx_IrBlock *block)
 {
+    if (!cu->info.cmov_opt)
+        return;
+
     vx_IrBlock* root = vx_IrBlock_root(block);
-    for (vx_IrOp *op = block->first; op; op = op->next) {
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
         if (op->id != VX_IR_OP_IF)
             continue;
 
@@ -53,7 +54,7 @@ void vx_opt_cmov(vx_IrBlock *block)
             continue;
 
         size_t total_cost = vx_IrBlock_inlineCost(then) + vx_IrBlock_inlineCost(els);
-        if (total_cost > vx_g_optconfig.max_total_cmov_inline_cost)
+        if (total_cost > cu->opt.max_total_cmov_inline_cost)
             continue;
 
         vx_IrValue condv = *vx_IrOp_param(op, VX_IR_NAME_COND);

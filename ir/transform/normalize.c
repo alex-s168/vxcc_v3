@@ -1,11 +1,12 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "../cir.h"
+#include "../passes.h"
 
-void vx_CIrBlock_normalize(vx_IrBlock *block)
+void vx_CIrBlock_normalize(vx_CU* cu, vx_IrBlock *block)
 {
-    for (vx_IrOp *op = block->first; op; op = op->next) {
+    for (vx_IrOp *op = block->first; op; op = op->next)
+    {
         if (op->id == VX_IR_OP_CFOR) {
             vx_IrBlock *new = vx_IrBlock_initHeap(block, op);
 
@@ -36,7 +37,7 @@ void vx_CIrBlock_normalize(vx_IrBlock *block)
 
         FOR_INPUTS(op, inp, {
             if (inp.type == VX_IR_VAL_BLOCK)
-                vx_CIrBlock_normalize(inp.block);
+                vx_CIrBlock_normalize(cu, inp.block);
         });
     }
 }

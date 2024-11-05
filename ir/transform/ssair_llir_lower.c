@@ -1,14 +1,14 @@
 #include <assert.h>
 
-#include "../llir.h"
+#include "../passes.h"
 
-void vx_IrBlock_llir_preLower_ifs(vx_IrBlock *block)
+void vx_IrBlock_llir_preLower_ifs(vx_CU* cu, vx_IrBlock *block)
 {
     for (vx_IrOp* op = block->first; op; op = op->next)
     {
         FOR_INPUTS(op, inp, {
             if (inp.type == VX_IR_VAL_BLOCK)
-                vx_IrBlock_llir_preLower_ifs(inp.block);
+                vx_IrBlock_llir_preLower_ifs(cu, inp.block);
         });
 
         if (op->id != VX_IR_OP_IF)
@@ -303,7 +303,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
     }
 }
 
-void vx_IrBlock_llir_lower(vx_IrBlock *block) {
+void vx_IrBlock_llir_lower(vx_CU* cu, vx_IrBlock *block) {
     puts("pre lower:");
     vx_IrBlock_dump(block, stdout, 0);
 
