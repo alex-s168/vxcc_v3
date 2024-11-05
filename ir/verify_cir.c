@@ -1,5 +1,5 @@
-#include "cir.h"
 #include "verify.h"
+#include "passes.h"
 
 vx_Errors vx_CIrBlock_verify(vx_IrBlock *block)
 {

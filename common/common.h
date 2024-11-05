@@ -20,12 +20,10 @@ void vx_Errors_add_all_and_free(vx_Errors *dest, vx_Errors *src);
 void vx_Errors_free(vx_Errors errors);
 void vx_Errors_print(vx_Errors errors, FILE *dest);
 
-#define OPT_PASS        /* opt: */
-#define TRANSFORM_PASS  /* transform: */
-#define ANALYSIS_PASS   /* analysis: */
-
+#include "../build/common/targets.cdef.h"
 #include "../build/common/target_etca.cdef.h"
 #include "../build/common/target_x86.cdef.h"
+// add target (and create a cdef file in this dir)
 
 #define TARGET_FLAGS_GEN(tg) \
 typedef bool vx_Target_##tg##__flags [vx_Target_##tg##__len]; \
@@ -57,6 +55,9 @@ static void vx_Target_##tg##__parseAdditionalFlags(vx_Target_##tg##__flags * des
 
 TARGET_FLAGS_GEN(ETCA)
 TARGET_FLAGS_GEN(X86)
+// add target
+
+#undef TARGET_FLAGS_GEN
 
 typedef enum {
     VX_BIN_ELF,
@@ -64,17 +65,24 @@ typedef enum {
     VX_BIN_MACHO,
 } vx_BinFormat;
 
-typedef enum {
-    VX_TARGET_X86_64,
-    VX_TARGET_ETCA,
-} vx_TargetArch;
-
 typedef struct {
     vx_TargetArch arch;
     union {
         vx_Target_ETCA__flags etca;
         vx_Target_X86__flags x86;
+        // add target
     } flags;
 } vx_Target;
+
+/** format: "arch" or "arch:ext"; 0 is ok */
+int vx_Target_parse(vx_Target* dest, const char * str);
+
+typedef struct {
+    bool cmov_opt;
+    bool tailcall_opt;
+    bool ea_opt;
+} vx_TargetInfo;
+
+void vx_Target_info(vx_TargetInfo* dest, vx_Target const* target);
 
 #endif //COMMON_H

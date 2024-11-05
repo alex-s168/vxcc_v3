@@ -1,6 +1,5 @@
 #include <assert.h>
 #include "ir.h"
-#include "llir.h"
 
 static void extendLifetimeSegment(bool * bools, vx_IrOp * op)
 {

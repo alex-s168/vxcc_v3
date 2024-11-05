@@ -93,3 +93,10 @@ strcpy:
   .l1:
   ret
 ```
+
+## adding a target 
+You need to complete these tasks (in any order):
+- add your target to every place with the comment `// add target`.
+  (you can use `git grep -Fn "// add target"` to find them)
+- write a code generator (see ETC.A or X86 backend as reference) and add the file to the `build.c`
+- add support for it to frontends?

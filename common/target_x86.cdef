@@ -4,6 +4,10 @@ table vx_Target_X86 (
     infer ? str ;
 ) {
 
+    entry _NO_REDZONE        id    "no-redzone"
+                             name  "Don't use SystemV64 redzone"
+                             ;
+
     entry ADX                id    "adx"
                              name  "Multi-Precision Add-Carry Instruction Extensions"
                              ;

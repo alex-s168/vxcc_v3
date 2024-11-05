@@ -1,6 +1,4 @@
 #include "ir.h"
-#include "cir.h"
-#include "llir.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -34,6 +32,21 @@ bool vx_IrOpType_parse(vx_IrOpType* dest, const char * name, size_t name_len)
         }
     }
     return false;
+}
+
+void vx_CU_init(vx_CU* dest, const char * targetStr)
+{
+    memset(dest, 0, sizeof(vx_CU));
+
+    vx_Target_parse(&dest->target, targetStr);
+    vx_Target_info(&dest->info, &dest->target);
+
+    dest->opt = (vx_OptConfig) {
+        .max_total_cmov_inline_cost = 4,
+        .consteval_iterations = 6,
+        .loop_simplify = true,
+        .if_eval = true,
+    };
 }
 
 bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b)
@@ -349,7 +362,7 @@ void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to)
     }));
 }
 
-#include "opt.h"
+#include "passes.h"
 #include "../cg/x86_stupid/cg.h"
 
 /** 0 if ok */
@@ -366,18 +379,18 @@ int vx_CU_compile(vx_CU * cu,
     }
 
     FOR_BLOCK({
-        vx_CIrBlock_fix(block); // TODO: why...
-        vx_CIrBlock_normalize(block);
-        vx_CIrBlock_mksa_states(block);
-        vx_CIrBlock_mksa_final(block);
-        vx_CIrBlock_fix(block); // TODO: why...
+        vx_CIrBlock_fix(cu, block); // TODO: why...
+        vx_CIrBlock_normalize(cu, block);
+        vx_CIrBlock_mksa_states(cu, block);
+        vx_CIrBlock_mksa_final(cu, block);
+        vx_CIrBlock_fix(cu, block); // TODO: why...
 
         if (vx_ir_verify(block) != 0)
             return 1;
     });
 
     FOR_BLOCK({
-        opt(block);
+        vx_opt(cu, block);
 
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
@@ -387,26 +400,61 @@ int vx_CU_compile(vx_CU * cu,
     });
 
     FOR_BLOCK({
-        vx_IrBlock_llir_preLower_loops(block);
-        vx_IrBlock_llir_preLower_ifs(block);
-        opt_preLower(block);
-        vx_IrBlock_llir_lower(block);
-        vx_IrBlock_llir_fix_decl(block);
+        vx_IrBlock_llir_preLower_loops(cu, block);
+        vx_IrBlock_llir_preLower_ifs(cu, block);
+        opt_preLower(cu, block);
+        vx_IrBlock_llir_lower(cu, block);
+        vx_IrBlock_llir_fix_decl(cu, block);
     });
 
     FOR_BLOCK({
-        opt_ll(block);
+        opt_ll(cu, block);
 
         if (optionalOptimizedLlIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
 
-        llir_prep_lower(block);
+        llir_prep_lower(cu, block);
 
-        vx_IrBlock_dump(block, stdout, 0);
-
-        if (optionalAsm)
-            vx_cg_x86stupid_gen(block, optionalAsm);
+        vx_IrBlock_dump(cu, block, stdout, 0);
     });
+
+    if (optionalAsm) {
+        for (size_t i = 0; i < cu->blocks_len; i ++) {
+            vx_CUBlock* cb = &cu->blocks[i];
+            switch (cu->blocks[i].type) {
+                case VX_CU_BLOCK_IR:
+                {
+                    if (cb->do_export)
+                        fprintf(optionalAsm, "    global %s\n", cb->v.ir->name);
+                    switch (cu->target.arch)
+                    {
+                        case VX_TARGET_X86:
+                            vx_cg_x86stupid_gen(cu, cb->v.ir, optionalAsm);
+                            break;
+
+                        // add target 
+
+                        default:
+                            assert(false);
+                            break;
+                    }
+                    break;
+                }
+
+                case VX_CU_BLOCK_BLK_REF:
+                {
+                    fprintf(optionalAsm, "    extern %s\n", cb->v.blk_ref->name);
+                    break;
+                }
+
+                default:
+                {
+                    assert(false && "wip");
+                    break;
+                }
+            }
+        }
+    }
 
 #undef FOR_BLOCK
 

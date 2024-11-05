@@ -21,8 +21,10 @@ struct CompileData target_gen_files[] = {
     DIR("build"),
 
     DIR("build/common"),
+    SP(CT_CDEF, "common/targets.cdef"),
     SP(CT_CDEF, "common/target_etca.cdef"),
     SP(CT_CDEF, "common/target_x86.cdef"),
+    // add target (cdef file)
 
     DIR("build/ir"),
     SP(CT_CDEF, "ir/ops.cdef"),

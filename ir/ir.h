@@ -164,29 +164,62 @@ struct vx_IrBlock_s {
 
 typedef enum {
     VX_CU_BLOCK_IR,
-    VX_CU_BLOCK_SYM_REF,
+    VX_CU_BLOCK_BLK_REF,
     VX_CU_BLOCK_ASM,
+    VX_CU_BLOCK_DATA,
 } vx_CUBlockType;
+
+typedef struct {
+    char const* name;
+
+    size_t      numel;
+    vx_IrType * elty;
+    size_t      comptime_elt_size;
+    /** if null, then extern data */
+    void      * data;
+} vx_Data;
+
+typedef struct {
+    const char * name;
+
+    size_t      ins_len;
+    vx_IrType * ins;
+
+    size_t outs_len;
+    vx_IrType * outs;
+} vx_RefBlock;
 
 typedef struct {
     vx_CUBlockType type;
     union {
-        vx_IrBlock * ir;
-        const char * sym_ref;
-        char *       asmb; // ptr to malloc()-ed asm source code
+        vx_IrBlock  * ir;
+        vx_RefBlock * blk_ref;
+        char *        asmb; // ptr to malloc()-ed asm source code
+        vx_Data     * data;
     } v;
     bool       do_export;
 } vx_CUBlock;
 
-// TODO: move opt config into vx_CU
+typedef struct {
+    size_t max_total_cmov_inline_cost;
+    size_t consteval_iterations;
+    bool   loop_simplify;
+    bool   if_eval;
+} vx_OptConfig;
 
 /** single compilation unit */ 
 typedef struct {
-    vx_Target target;
+    vx_Target     target;
+    vx_TargetInfo info;
 
+    vx_OptConfig  opt;
+
+    // TODO: rename to symbols 
     vx_CUBlock * blocks;
     size_t       blocks_len;
 } vx_CU;
+/** targetStr is "arch:ext1,ext2" or "arch" */
+void vx_CU_init(vx_CU* dest, const char * targetStr);
 
 static vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
     vx_cu->blocks = (vx_CUBlock*) realloc(vx_cu->blocks, sizeof(vx_CUBlock) * (vx_cu->blocks_len + 1));
