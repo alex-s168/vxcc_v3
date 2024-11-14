@@ -137,27 +137,26 @@ struct CompileData always_files[] = {
 enum CompileResult target_lib() {
     START;
 
-    bool all = !exists("build/lib.a") ||
-        file_changed("ir/ir.h");
+    bool all = file_changed("ir/ir.h");
 
     VaList comp = ASVAR(always_files);
 
-    if (all || source_changed(LI(ir_files)))
+    if (source_changed(LI(ir_files)) || all)
         comp = vaListConcat(comp, ASVAR(ir_files));
 
-    if (all || file_changed("ir/opt/"))
+    if (file_changed("ir/opt/") || all)
         comp = vaListConcat(comp, ASVAR(ir_opt_files));
 
-    if (all || file_changed("ir/transform/"))
+    if (file_changed("ir/transform/") || all)
         comp = vaListConcat(comp, ASVAR(ir_transform_files));
 
-    if (all || source_changed(LI(ir_verify_files)))
+    if (source_changed(LI(ir_verify_files)) || all)
         comp = vaListConcat(comp, ASVAR(ir_verify_files));
 
-    if (all || file_changed("cg/"))
+    if (file_changed("cg/") || all)
         comp = vaListConcat(comp, ASVAR(cg_files));
 
-    if (all || file_changed("irparser/"))
+    if (file_changed("irparser/") || all)
         comp = vaListConcat(comp, ASVAR(parser_files));
 
     DO(compile(VLI(comp)));

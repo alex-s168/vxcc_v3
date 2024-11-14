@@ -103,8 +103,11 @@ elif [[ $1 == "lsp" ]]; then
   prepare
 elif [[ $1 == "libfiles" ]]; then
   echo "build/lib.a allib/build/all.a"
+elif [[ $1 == "clean" ]]; then
+  rm -r build/
+  rm build.slowdb
 else
-  echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build|lsp|libfiles]"
+  echo "invalid arguments; usage: ./build.sh [ganalyze|analyze|build|lsp|libfiles|clean]"
   echo "you can set CC, CFLAGS, BUILD_CC, python, EX_CFLAGS, AR, EX_LDFLAGS"
   echo "if you set EMPATH, these flags get added automatically (you can overwrite them manually): CC=\$EMPATH/emcc BUILD_CC=clang EX_CFLAGS="-O3" AR=\$EMPATH/emar"
 fi
