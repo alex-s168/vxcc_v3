@@ -207,8 +207,19 @@ typedef struct {
     bool   if_eval;
 } vx_OptConfig;
 
-/** single compilation unit */ 
+typedef struct vx_CU vx_CU;
+
 typedef struct {
+    bool cmov_opt;
+    bool tailcall_opt;
+    bool ea_opt;
+    bool (*need_move_ret_to_arg)(vx_CU* cu, vx_IrBlock* block, size_t ret_id);
+} vx_TargetInfo;
+
+void vx_Target_info(vx_TargetInfo* dest, vx_Target const* target);
+
+/** single compilation unit */
+struct vx_CU {
     vx_Target     target;
     vx_TargetInfo info;
 
@@ -217,7 +228,7 @@ typedef struct {
     // TODO: rename to symbols 
     vx_CUBlock * blocks;
     size_t       blocks_len;
-} vx_CU;
+};
 /** targetStr is "arch:ext1,ext2" or "arch" */
 void vx_CU_init(vx_CU* dest, const char * targetStr);
 

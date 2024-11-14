@@ -77,12 +77,4 @@ typedef struct {
 /** format: "arch" or "arch:ext"; 0 is ok */
 int vx_Target_parse(vx_Target* dest, const char * str);
 
-typedef struct {
-    bool cmov_opt;
-    bool tailcall_opt;
-    bool ea_opt;
-} vx_TargetInfo;
-
-void vx_Target_info(vx_TargetInfo* dest, vx_Target const* target);
-
 #endif //COMMON_H

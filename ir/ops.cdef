@@ -741,15 +741,4 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect true 
                          ;
 
-    entry MEMSET         args       "addr: int, size: int, value: int"
-                         debug      "memset"
-                         descr      "fill every byte from addr to addr+size with value"
-                         inlineCost 3  # bcz call to memset 
-                         execCost   4
-                         endsFlow   false 
-                         hasEffect  true
-                         volatile   false 
-                         sideEffect true 
-                         ;
-
 }
