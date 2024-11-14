@@ -1,20 +1,44 @@
-set -e
-
-: ${CFLAGS:="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror -g -glldb"}
+set -e 
 
 if [ -z $EMPATH ]; then
+    : ${EX_CFLAGS:=""}
+    : ${EX_LDFLAGS:=""}
+
+    if [ -z $CC ]; then 
+        if hash clang 2>/dev/null; then
+            CC="clang"
+            AUTO_CFLAGS_DBG="-g -glldb"
+        elif hash gcc 2>/dev/null; then
+            CC="gcc"
+            AUTO_CFLAGS_DBG="-g -ggdb"
+        elif hash tcc 2>/dev/null; then
+            CC="tcc"
+            : ${AR:="tcc -ar"}
+            : ${SERIAL:=1}
+            AUTO_CFLAGS_DBG="-g"
+        else 
+            echo "could not find a C compiler. please manually set the CC variable"
+        fi 
+    else 
         : ${CC:=clang}
-        : ${BUILD_CC:=$CC}
-        : ${EX_CFLAGS:=""}
-	: ${EX_LDFLAGS:=""}
-        : ${AR:="ar"}
+    fi 
+
+    : ${AR:="ar"}
+    : ${BUILD_CC:=$CC}
 else
-        : ${CC:=$EMPATH/emcc}
-        : ${BUILD_CC:=clang}
-        : ${EX_CFLAGS:="-O3"}
-	: ${EX_LDFLAGS:=""}
-        : ${AR:=$EMPATH/emar}
+    : ${CC:=$EMPATH/emcc}
+    : ${BUILD_CC:=clang}
+    : ${EX_CFLAGS:="-O3"}
+    : ${EX_LDFLAGS:=""}
+    : ${AR:=$EMPATH/emar}
 fi
+
+AUTO_CFLAGS="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror ${AUTO_CFLAGS_DBG}"
+
+: ${SERIAL:=0}
+: ${CFLAGS:="$AUTO_CFLAGS"}
+
+echo ""
 
 ANALYZER_FLAGS="$CFLAGS -Wno-analyzer-malloc-leak -Wno-analyzer-deref-before-check"
 CFLAGS="$CFLAGS $EX_CFLAGS"
@@ -41,7 +65,12 @@ FILES="ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c irparser/
 # shellcheck disable=SC2086
 
 function prepare() {
-  $BUILD_CC build.c -lpthread -DVERBOSE=1 -DPYTHON="\"$python\"" -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS -lpthread\"" -DAR="\"$AR\"" -o build.exe
+  if [[ $SERIAL == 1 ]]; then 
+    SERIAL_ARGS="-DSERIAL=1"
+  else 
+    SERIAL_ARGS="-lpthread"
+  fi 
+  $BUILD_CC build.c $SERIAL_ARGS $CFLAGS -DVERBOSE=1 -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS $SERIAL_ARGS\"" -DAR="\"$AR\"" -o build.exe
   echo "# build.exe compiled"
   echo "# gen cdef files"
   ./build.exe gen
@@ -58,14 +87,11 @@ elif [[ $1 == "ganalyze" ]]; then
   echo "# starting analyzer (gcc)"
   gcc -fanalyzer -fsanitize-trap=undefined $ANALYZER_FLAGS $FILES
 elif [[ $1 == "info" ]]; then
-  echo clang:
-  clang --version
-  echo gcc:
-  gcc --version
-  echo cflags: $CFLAGS
-  echo files: $FILES
-  echo cc:
+  echo CC:
   "$CC" --version
+  echo BUILD_CC:
+  "$CC" --version
+  echo cflags: $CFLAGS
 elif [[ $1 == "build" ]]; then
   echo "# compile Debug"
   prepare

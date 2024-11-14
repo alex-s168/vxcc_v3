@@ -8,6 +8,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "../common/common.h"
 #include "../build/ir/ops.cdef.h"

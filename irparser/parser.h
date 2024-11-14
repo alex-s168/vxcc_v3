@@ -6,11 +6,10 @@
 
 
 // serializable by memcpy
-typedef enum : uint8_t {
-    OPERAND_TYPE_PLACEHOLDER = 0,
-    OPERAND_TYPE_IMM_INT = 1,
-    OPERAND_TYPE_IMM_FLT = 2,
-} OperandType;
+typedef uint8_t OperandType;
+#define OPERAND_TYPE_PLACEHOLDER ((OperandType) 0)
+#define OPERAND_TYPE_IMM_INT     ((OperandType) 1)
+#define OPERAND_TYPE_IMM_FLT     ((OperandType) 2)
 
 // serializable by memcpy
 typedef struct {

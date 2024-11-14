@@ -1,4 +1,4 @@
 build/
 build.exe
-build.changed
+build.slowdb
 venv/

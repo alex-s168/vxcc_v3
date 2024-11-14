@@ -39,7 +39,7 @@ VXCC uses SSA IR with block arguments instead of the commonly used phi-nodes.
 use the `./build.sh build`
 
 ## compile dependencies 
-`clang`: different C compiler can be used by doing `CC=someothercc ./build.sh [build|test]` (`test` can be executed after `build` to run all tests)
+`clang`, `gcc`, or `tcc`: automatically detected. different C compiler can be used by doing `CC=someothercc ./build.sh [build|test]` (`test` can be executed after `build` to run all tests)
 
 `python3`: it is recommended to create a venv in the repository root using `python -m venv venv`
 

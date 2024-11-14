@@ -1,4 +1,4 @@
-#include "common.h"
+#include "../ir/ir.h"
 
 int vx_Target_parse(vx_Target* dest, const char * str)
 {
@@ -46,7 +46,7 @@ static bool x86_need_move_ret_to_arg(vx_CU* cu, vx_IrBlock* block, size_t ret_id
     return ret_id >= 2;
 }
 
-static bool etca_need_move_ret_to_arg(vx_CU*, vx_IrBlock* block, size_t ret_id)
+static bool etca_need_move_ret_to_arg(vx_CU* cu, vx_IrBlock* block, size_t ret_id)
 {
     // TODO
     return ret_id >= 1;

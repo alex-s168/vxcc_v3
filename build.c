@@ -9,7 +9,7 @@ enum CompileResult target_deps() {
     });
 
     START;
-    ss("allib/", ({
+    ssx("allib/", "-DHAVE_WINSOCK=0", ({
         ss_task("all.a");
     }));
     END;
