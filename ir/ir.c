@@ -138,28 +138,30 @@ void vx_IrType_free(vx_IrType *ty) {
     }
 }
 
-vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
-    switch (value.type) {
+vx_IrType* vx_IrValue_type(vx_CU* cu, vx_IrBlock* root, vx_IrValue value) {
+    switch (value.type) 
+	{
         case VX_IR_VAL_IMM_INT:
         case VX_IR_VAL_IMM_FLT:
         case VX_IR_VAL_UNINIT:
-            return (vx_IrTypeRef) { .ptr = value.no_read_rt_type, .shouldFree = false };
+            return value.no_read_rt_type;
 
         case VX_IR_VAL_ID:
-            return vx_ptrType(root);
+            return cu->info.get_ptr_ty(cu, root);
 
-	default:
-	    assert(false);
-        case VX_IR_VAL_TYPE:
+		case VX_IR_VAL_TYPE:
         case VX_IR_VAL_BLOCK:
-            return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
+            return NULL;
 
         case VX_IR_VAL_BLOCKREF:
             return vx_IrBlock_type(value.block);
 
         case VX_IR_VAL_VAR:
-            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeofVar(root, value.var), .shouldFree = false };
-    }
+            return vx_IrBlock_typeofVar(root, value.var);
+    
+		default:
+			assert(false);
+	}
 }
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
@@ -253,25 +255,26 @@ void vx_IrBlock_appendLabelOpPredefined(vx_IrBlock *block, size_t label_id) {
     root->as_root.labels[label_id].decl = label_decl;
 }
 
-vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
-    // TODO: multiple rets
-    vx_IrType *ret = block->outs_len == 1 ? vx_IrBlock_typeofVar(block, block->outs[0])
-                                          : NULL;
-
-    vx_IrType **args = malloc(sizeof(vx_IrType*) * block->ins_len);
-    assert(args);
-    for (size_t i = 0; i < block->ins_len; i ++) {
-        args[i] = block->ins[i].type;
-    }
-
-    vx_IrType *type = malloc(sizeof(vx_IrType));
+vx_IrType* vx_IrBlock_type(vx_IrBlock* block) {
+    vx_IrType *type = fastalloc(sizeof(vx_IrType));
     assert(type);
     type->kind = VX_IR_TYPE_FUNC;
-    type->func.nullableReturnType = ret;
+
+	vx_IrType **args = fastalloc(sizeof(vx_IrType*) * block->ins_len);
+    assert(args);
+    for (size_t i = 0; i < block->ins_len; i ++)
+        args[i] = block->ins[i].type;
     type->func.args_len = block->ins_len;
     type->func.args = args;
 
-    return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
+	vx_IrType **rets = fastalloc(sizeof(vx_IrType*) * block->outs_len);
+	assert(rets);
+	for (size_t i = 0; i < block->outs_len; i ++)
+		rets[i] = vx_IrBlock_typeofVar(block, block->outs[i]);
+	type->func.rets_len = block->outs_len;
+	type->func.rets = rets;
+
+    return type;
 }
 
 void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to)

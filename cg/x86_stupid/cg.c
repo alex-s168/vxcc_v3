@@ -183,7 +183,7 @@ static char widthToWidthWidth(char width) {
         }
         return 16;
     }
-    return widthToWidthWidthLut[width];
+    return widthToWidthWidthLut[(int) width];
 }
 
 static char widthToWidthIdx(char width) {
@@ -211,7 +211,7 @@ static char widthToWidthIdx(char width) {
         return 4;
     }
 
-    return lut[width];
+    return lut[(int) width];
 }
 
 static const char * widthWidthToASM[] = {
@@ -262,26 +262,26 @@ static void emit(Location* loc, FILE* out) {
             fprintf(out, "%zu", loc->v.imm.bits);
             break;
 
-        case LOC_MEM: {
-                          char ww = widthToWidthWidth(loc->bytesWidth);
-                          const char * str = widthWidthToASM[ww];
-                          fputs(str, out);
-                          fputs(" [", out);
-                          emit(loc->v.mem.address, out);
-                          fputs("]", out);
-                      } break;
+		case LOC_MEM: {
+			char ww = widthToWidthWidth(loc->bytesWidth);
+			const char * str = widthWidthToASM[(int) ww];
+			fputs(str, out);
+			fputs(" [", out);
+			emit(loc->v.mem.address, out);
+			fputs("]", out);
+		} break;
 
         case LOC_REG:
-                      fputs(RegLut[loc->v.reg.id]->name[widthToWidthIdx(loc->bytesWidth)], out);
-                      break;
+			fputs(RegLut[loc->v.reg.id]->name[(int) widthToWidthIdx(loc->bytesWidth)], out);
+			break;
 
         case LOC_LABEL:
-                      fputs(loc->v.label.label, out);
-                      break;
+			fputs(loc->v.label.label, out);
+			break;
 
         case LOC_INVALID:
-                      assert(false);
-                      break;
+			assert(false);
+			break;
     }
 }
 
@@ -691,16 +691,15 @@ static Location* as_loc(size_t width, vx_IrValue val) {
     }
 }
 
-static void emit_call_arg_load(vx_IrOp* callOp, FILE* file) {
+static void emit_call_arg_load(vx_CU* cu, vx_IrOp* callOp, FILE* file) {
     assert(callOp->args_len <= 6);
 
     vx_IrValue fn = *vx_IrOp_param(callOp, VX_IR_NAME_ADDR);
 
-    vx_IrTypeRef type = vx_IrValue_type(callOp->parent, fn);
-    assert(type.ptr);
-    assert(type.ptr->kind == VX_IR_TYPE_FUNC);
-    vx_IrTypeFunc fnType = type.ptr->func;
-    vx_IrTypeRef_drop(type);
+    vx_IrType* type = vx_IrValue_type(cu, callOp->parent, fn);
+    assert(type);
+    assert(type->kind == VX_IR_TYPE_FUNC);
+    vx_IrTypeFunc fnType = type->func;
 
     char regs[6] = { REG_RDI.id, REG_RSI.id, REG_RDX.id, REG_RCX.id, REG_R8.id, REG_R9.id };
 
@@ -848,7 +847,7 @@ static void emiti_ret(vx_IrBlock* block, vx_IrValue* values, FILE* out) {
     fputs("ret\n", out);
 }
 
-static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file) {
+static vx_IrOp* emiti(vx_CU* cu, vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file) {
     switch (op->id) {
         case VX_IR_OP_RETURN:
             {
@@ -883,9 +882,8 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                     *dest = LocReg(dest->bytesWidth, XMM_SCRATCH_REG1);
                 }
 
-                vx_IrTypeRef ty = vx_IrValue_type(block, val);
-                Location* val_loc = as_loc(vx_IrType_size(ty.ptr), val);
-                vx_IrTypeRef_drop(ty);
+                vx_IrType* ty = vx_IrValue_type(cu, block, val);
+                Location* val_loc = as_loc(vx_IrType_size(ty), val);
 
                 Location* src = val_loc;
                 if (val_loc->type != LOC_REG) {
@@ -960,19 +958,17 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
             {
                 vx_IrValue addrV = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 vx_IrValue valV = *vx_IrOp_param(op, VX_IR_NAME_VALUE);
-                vx_IrTypeRef type = vx_IrValue_type(block, valV);
-                assert(type.ptr);
+                vx_IrType* type = vx_IrValue_type(cu, block, valV);
+                assert(type);
 
                 Location* addr = as_loc(PTRSIZE, addrV);
                 Location* addr_real = start_as_primitive(addr, file);
 
-                Location* val = as_loc(vx_IrType_size(type.ptr), valV);
+                Location* val = as_loc(vx_IrType_size(type), valV);
                 Location* mem = gen_mem_var(val->bytesWidth, addr_real);
                 emiti_move(val, mem, false, file);
 
                 end_as_primitive(addr_real, addr, file);
-
-                vx_IrTypeRef_drop(type);
             } break;
 
         case VX_IR_OP_PLACE:           // "var"
@@ -1058,10 +1054,9 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         }
 
                         case VX_IR_OP_STORE_EA: {
-                            vx_IrTypeRef valTy = vx_IrValue_type(block, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
-                            size_t bytes = vx_IrType_size(valTy.ptr);
+                            vx_IrType* valTy = vx_IrValue_type(cu, block, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
+                            size_t bytes = vx_IrType_size(valTy);
                             Location* val = as_loc(bytes, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
-                            vx_IrTypeRef_drop(valTy);
                             Location* mem = fastalloc(sizeof(Location));
                             *mem = LocMem(bytes, ea);
                             emiti_move(val, mem, false, file);
@@ -1244,7 +1239,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                         vx_IrValue addr = *vx_IrOp_param(op->next, VX_IR_NAME_ADDR);
                         vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
                         if (v.type == VX_IR_VAL_VAR && v.var == ov) {
-                            emit_call_arg_load(op->next, file);
+                            emit_call_arg_load(cu, op->next, file);
                             emiti_jump_cond(as_loc(PTRSIZE, addr), cc, file);
                             emit_call_ret_store(op->next, file);
                             return op->next->next;
@@ -1272,7 +1267,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
                 Location* loc = as_loc(1, cond);
                 emiti_cmp0(loc, file);
-                emit_call_arg_load(op, file);
+                emit_call_arg_load(cu, op, file);
                 emiti_jump_cond(as_loc(PTRSIZE, addr), "nz", file);
             } break;
 
@@ -1299,7 +1294,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
         case VX_IR_OP_CALL:          // "addr": int / fnref
             {
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
-                emit_call_arg_load(op, file);
+                emit_call_arg_load(cu, op, file);
                 emiti_call(as_loc(PTRSIZE, addr), file);
                 emit_call_ret_store(op, file);
             } break;
@@ -1308,7 +1303,7 @@ static vx_IrOp* emiti(vx_IrBlock* block, vx_IrOp *prev, vx_IrOp* op, FILE* file)
             {
                 assert(!needEpilog);
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
-                emit_call_arg_load(op, file);
+                emit_call_arg_load(cu, op, file);
                 emiti_jump(as_loc(PTRSIZE, addr), file);
             } break;
 
@@ -1385,11 +1380,11 @@ void vx_cg_x86stupid_gen(vx_CU* cu, vx_IrBlock* block, FILE* out) {
     for (vx_IrOp* op = block->first; op != NULL; op = op->next) {
         if (op->id == VX_IR_OP_CALL || op->id == VX_IR_OP_TAILCALL || op->id == VX_IR_OP_CONDTAILCALL) {
             vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
-            vx_IrTypeRef ty = vx_IrValue_type(block, addr);
-            assert(ty.ptr != NULL);
-            assert(ty.ptr->kind == VX_IR_TYPE_FUNC);
+            vx_IrType* ty = vx_IrValue_type(cu, block, addr);
+            assert(ty != NULL);
+            assert(ty->kind == VX_IR_TYPE_FUNC);
 
-            vx_IrTypeFunc fn = ty.ptr->func;
+            vx_IrTypeFunc fn = ty->func;
 
             size_t usedInt = 0;
             size_t usedXmm = 0;
@@ -1407,8 +1402,6 @@ void vx_cg_x86stupid_gen(vx_CU* cu, vx_IrBlock* block, FILE* out) {
                 anyCalledIntArgsCount = usedInt;
             if (usedXmm > anyCalledXmmArgsCount)
                 anyCalledXmmArgsCount = usedXmm;
-
-            vx_IrTypeRef_drop(ty);
         }
     }
     XMM_SCRATCH_REG1 = anyCalledXmmArgsCount;
@@ -1678,7 +1671,7 @@ void vx_cg_x86stupid_gen(vx_CU* cu, vx_IrBlock* block, FILE* out) {
     vx_IrOp* prev = NULL;
 
     while (op != NULL) {
-        vx_IrOp* new = emiti(block, prev, op, out);
+        vx_IrOp* new = emiti(cu, block, prev, op, out);
         prev = op;
         op = new;
     }
@@ -1721,8 +1714,8 @@ static void end_scratch_reg(Location* loc, FILE* out) {
     assert(loc->type == LOC_REG);
 
     char regId = loc->v.reg.id;
-    assert(RegLut[regId]->stored == loc);
-    RegLut[regId]->stored = NULL;
+    assert(RegLut[(int) regId]->stored == loc);
+    RegLut[(int) regId]->stored = NULL;
 
     loc->type = LOC_INVALID;
 }

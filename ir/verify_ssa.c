@@ -29,12 +29,12 @@ static bool verify_vardecls_deeptraverse(vx_IrOp *op, void *dataIn) {
     return false;
 }
 
-vx_Errors vx_IrBlock_verify(vx_IrBlock *block) {
+vx_Errors vx_IrBlock_verify(vx_CU* cu, vx_IrBlock *block) {
     vx_Errors errors;
     errors.len = 0;
     errors.items = NULL;
 
-    vx_IrBlock_verify_ssa_based(&errors, block);
+    vx_IrBlock_verify_ssa_based(cu, &errors, block);
 
     if (block->is_root) {
         for (size_t i = 0; i < block->as_root.vars_len; i ++) {

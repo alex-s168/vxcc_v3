@@ -4,52 +4,53 @@
 #include "ir.h"
 #include "verify.h"
 
-void vx_error_param_type(vx_Errors *errors, const char *expected) {
-    static char buf[256];
+void vx_error_param_type(vx_CU* cu, vx_Errors *errors, const char *expected) {
+    char buf[256];
     sprintf(buf, "Expected parameter type %s", expected);
     const vx_Error error = {
         .error = "Incorrect type",
-        .additional = buf
+        .additional = faststrdup(buf)
     };
     vx_Errors_add(errors, &error);
 }
 
-void vx_error_param_missing(vx_Errors *errors, const char *param) {
-    static char buf[256];
+void vx_error_param_missing(vx_CU* cu, vx_Errors *errors, const char *param) {
+    char buf[256];
     sprintf(buf, "Missing required parameter %s", param);
     const vx_Error error = {
         .error = "Missing parameter",
-        .additional = buf
+        .additional = faststrdup(buf)
     };
     vx_Errors_add(errors, &error);
 }
 
-static bool analyze_if(vx_Errors *dest,
+static bool analyze_if(vx_CU* cu,
+					   vx_Errors *dest,
                        const vx_IrOp *op)
 {
     bool err = false;
 
     const vx_IrValue *vcond = vx_IrOp_param(op, VX_IR_NAME_COND);
     if (vcond == NULL) {
-        vx_error_param_missing(dest, "cond");
+        vx_error_param_missing(cu, dest, "cond");
         err = true;
     }
 
     const vx_IrValue *vthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
     if (vthen == NULL) {
-        vx_error_param_missing(dest, "then");
+        vx_error_param_missing(cu, dest, "then");
         err = true;
     } else if (vthen->type != VX_IR_VAL_BLOCK) {
-        vx_error_param_type(dest, "block");
+        vx_error_param_type(cu, dest, "block");
         err = true;
     }
 
     const vx_IrValue *velse = vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
     if (velse == NULL) {
-        vx_error_param_missing(dest, "else");
+        vx_error_param_missing(cu, dest, "else");
         err = true;
     } else if (velse->type != VX_IR_VAL_BLOCK) {
-        vx_error_param_type(dest, "block");
+        vx_error_param_type(cu, dest, "block");
         err = true;
     }
 
@@ -69,7 +70,8 @@ static bool analyze_if(vx_Errors *dest,
     return err;
 }
 
-static void analyze_loops(vx_Errors *dest,
+static void analyze_loops(vx_CU* cu,
+						  vx_Errors *dest,
                           const vx_IrOp *op)
 {
     const size_t states_count = op->outs_len;
@@ -91,7 +93,7 @@ static void analyze_loops(vx_Errors *dest,
     }
     else {
         if (doblock_v->type != VX_IR_VAL_BLOCK) {
-            vx_error_param_type(dest, "block");
+            vx_error_param_type(cu, dest, "block");
         } else {
             const vx_IrBlock *doblock = doblock_v->block;
 
@@ -106,7 +108,7 @@ static void analyze_loops(vx_Errors *dest,
     }
 }
 
-void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
+void vx_IrBlock_verify_ssa_based(vx_CU* cu, vx_Errors *dest, vx_IrBlock *block) {
     vx_IrBlock *root = vx_IrBlock_root(block);
 
     for (vx_IrOp *op = block->first; op; op = op->next) {
@@ -115,7 +117,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             sprintf(buf, "OP (%s) has different parent", vx_IrOpType__entries[op->id].debug.a);
             const vx_Error error = {
                 .error = "Invalid parent",
-                .additional = strdup(buf)
+                .additional = faststrdup(buf)
             };
             vx_Errors_add(dest, &error);
         }
@@ -139,11 +141,11 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             case VX_IR_OP_REPEAT:
             case VX_IR_OP_INFINITE:
             case VX_IR_OP_WHILE:
-                analyze_loops(dest, op);
+                analyze_loops(cu, dest, op);
                 break;
 
             case VX_IR_OP_IF:
-                (void) analyze_if(dest, op);
+                (void) analyze_if(cu, dest, op);
                 break;
 
             case VX_IR_OP_GOTO:
@@ -154,7 +156,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
                     sprintf(buf, "Label %%%zu is never declared!", label);
                     vx_Error error = {
                         .error = "Undeclared label",
-                        .additional = strdup(buf)
+                        .additional = faststrdup(buf)
                     };
                     vx_Errors_add(dest, &error);
                 }
@@ -163,10 +165,9 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
             case VX_IR_OP_CALL:
             case VX_IR_OP_CONDTAILCALL: {
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
-                vx_IrTypeRef ty = vx_IrValue_type((vx_IrBlock*) root, addr);
-                assert(ty.ptr);
-                assert(ty.ptr->kind == VX_IR_TYPE_FUNC);
-                vx_IrTypeRef_drop(ty);
+                vx_IrType* ty = vx_IrValue_type(cu, (vx_IrBlock*) root, addr);
+                assert(ty);
+                assert(ty->kind == VX_IR_TYPE_FUNC);
             } break;
 
             default:
@@ -193,7 +194,7 @@ void vx_IrBlock_verify_ssa_based(vx_Errors *dest, vx_IrBlock *block) {
                     sprintf(buf, "Variable %%%zu is never declared!", var);
                     vx_Error error = {
                         .error = "Undeclared variable",
-                        .additional = strdup(buf)
+                        .additional = faststrdup(buf)
                     };
                     vx_Errors_add(dest, &error);
                 }

@@ -15,7 +15,7 @@
 
 // TODO: use kollektions
 // TODO: add allocator similar to this to kallok (allibs) and use allocators here
-// TODO make sure that all analysis functions iterate params AND args
+// TODO: make sure that all analysis functions iterate params AND args AND abstract away for future vector types
 
 typedef size_t vx_IrVar;
 
@@ -48,7 +48,7 @@ static const char * vx_OptIrVar_debug(vx_OptIrVar var) {
     if (var.present) {
         static char c[8];
         sprintf(c, "%zu", var.var);
-        return c;
+ return c;
     }
     return "none";
 }
@@ -75,7 +75,8 @@ typedef struct {
     vx_IrType **args;
     size_t      args_len;
 
-    vx_IrType  *nullableReturnType;
+    vx_IrType **rets;
+	size_t      rets_len;
 } vx_IrTypeFunc;
 
 typedef enum {
@@ -209,12 +210,27 @@ typedef struct {
 } vx_OptConfig;
 
 typedef struct vx_CU vx_CU;
+typedef struct vx_IrValue vx_IrValue;
 
 typedef struct {
+	void* tg;
+
     bool cmov_opt;
     bool tailcall_opt;
     bool ea_opt;
     bool (*need_move_ret_to_arg)(vx_CU* cu, vx_IrBlock* block, size_t ret_id);
+
+	/** gets a pointer type valid for the given root block; result should be cached! */
+	vx_IrType* (*get_ptr_ty)(vx_CU*, vx_IrBlock* root);
+
+	/** appends instructions to [dest] to generate a vx_IrValue that is of type [get_ptr_ty] and represents a invalid pointer */
+	vx_IrValue (*get_null_ptr)(vx_CU* cu, vx_IrBlock* dest);
+
+	/** expand pointer addition or subtraction at this op; called in ssair */
+	void (*lower_ptr_math)(vx_CU* cu, vx_IrOp* op);
+
+	/** append instructions to the end of the block to generate operations that convert a pointer to a integer which is only used in things like printf("%p") */
+	vx_IrValue (*cast_ptr_to_human)(vx_CU* cu, vx_IrBlock* block, vx_IrVar ptr);
 } vx_TargetInfo;
 
 void vx_Target_info(vx_TargetInfo* dest, vx_Target const* target);
@@ -258,18 +274,16 @@ vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block);
 
 // TODO: do differently
 
-vx_Errors vx_IrBlock_verify(vx_IrBlock *block);
+vx_Errors vx_IrBlock_verify(vx_CU* cu, vx_IrBlock *block);
 
-static int vx_ir_verify(vx_IrBlock *block) {
-    const vx_Errors errs = vx_IrBlock_verify(block);
+static int vx_ir_verify(vx_CU* cu, vx_IrBlock *block) {
+    const vx_Errors errs = vx_IrBlock_verify(cu, block);
     vx_Errors_print(errs, stderr);
     vx_Errors_free(errs);
     return errs.len > 0;
 }
 
-// TODO: move builder functions into separate header
-
-typedef struct {
+struct vx_IrValue {
     enum {
         // storable
         VX_IR_VAL_IMM_INT,
@@ -295,7 +309,7 @@ typedef struct {
         vx_IrType *ty;
         size_t id;
     };
-} vx_IrValue;
+};
 
 bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b);
 
@@ -600,32 +614,10 @@ struct IrStaticIncrement {
 };
 struct IrStaticIncrement vx_IrOp_detectStaticIncrement(vx_IrOp *op);
 
-typedef struct {
-    vx_IrType *ptr;
-    bool shouldFree;
-} vx_IrTypeRef;
-
-static void vx_IrTypeRef_drop(vx_IrTypeRef ref) {
-    if (ref.shouldFree) {
-        vx_IrType_free(ref.ptr);
-    }
-}
-
-vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block);
+vx_IrType* vx_IrBlock_type(vx_IrBlock* block);
 
 // null if depends on context or has no type 
-vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value);
-
-static vx_IrTypeRef vx_ptrType(vx_IrBlock* root) {
-    vx_IrType* type = vx_IrType_heap();
-    type->kind = VX_IR_TYPE_KIND_BASE;
-    type->debugName = "ptr";
-    type->base.size = 8; // TODO 
-    type->base.align = 0; //  ^^^ 
-    type->base.isfloat = false;
-    type->base.sizeless = false;
-    return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
-}
+vx_IrType* vx_IrValue_type(vx_CU* cu, vx_IrBlock* root, vx_IrValue value);
 
 bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
 
