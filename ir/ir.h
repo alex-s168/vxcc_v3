@@ -107,9 +107,6 @@ static vx_IrType* vx_IrType_heap(void) {
     return ptr;
 }
 
-size_t vx_IrType_size(vx_IrType *ty);
-void vx_IrType_free(vx_IrType *ty);
-
 static bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
     return a == b; // TODO (not used right now)
 }
@@ -169,9 +166,12 @@ typedef enum {
     VX_CU_BLOCK_BLK_REF,
     VX_CU_BLOCK_ASM,
     VX_CU_BLOCK_DATA,
+	// TODO: DATA_REF
 } vx_CUBlockType;
 
 typedef struct {
+	// TODO: in the future: use vector types for data 
+
     char const* name;
 
     size_t      numel;
@@ -620,5 +620,7 @@ vx_IrType* vx_IrBlock_type(vx_IrBlock* block);
 vx_IrType* vx_IrValue_type(vx_CU* cu, vx_IrBlock* root, vx_IrValue value);
 
 bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
+
+size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty);
 
 #endif //IR_H

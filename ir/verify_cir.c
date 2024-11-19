@@ -7,7 +7,7 @@ vx_Errors vx_CIrBlock_verify(vx_CU* cu, vx_IrBlock *block)
     errors.items = NULL;
     errors.len = 0;
 
-    vx_IrBlock_verify_ssa_based(&errors, block);
+    vx_IrBlock_verify_ssa_based(cu, &errors, block);
 
     return errors;
 }

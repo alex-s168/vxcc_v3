@@ -183,7 +183,7 @@ void vx_IrBlock_verify_ssa_based(vx_CU* cu, vx_Errors *dest, vx_IrBlock *block) 
                     };
                     vx_Errors_add(dest, &error);
                 }
-                vx_Errors errs = vx_IrBlock_verify(val.block);
+                vx_Errors errs = vx_IrBlock_verify(cu, val.block);
                 vx_Errors_add_all_and_free(dest, &errs);
             }
             else if (val.type == VX_IR_VAL_VAR) {
