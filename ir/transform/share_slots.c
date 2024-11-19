@@ -106,7 +106,7 @@ void vx_IrBlock_ll_share_slots(vx_CU* cu, vx_IrBlock *block)
         if (type1 == NULL)
             continue;
 
-        size_t typeSize1 = vx_IrType_size(type1);
+        size_t typeSize1 = vx_IrType_size(cu, block, type1);
 
         for (vx_IrVar var2 = 0; var2 < block->as_root.vars_len; var2 ++) {
             if (var == var2)
@@ -124,7 +124,7 @@ void vx_IrBlock_ll_share_slots(vx_CU* cu, vx_IrBlock *block)
             if (type2 == NULL)
                 continue;
 
-            size_t typeSize2 = vx_IrType_size(type2); 
+            size_t typeSize2 = vx_IrType_size(cu, block, type2); 
 
             if (typeSize1 != typeSize2)
                 continue;

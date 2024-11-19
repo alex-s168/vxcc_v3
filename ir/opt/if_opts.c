@@ -1,15 +1,14 @@
 #include "../passes.h"
 
 // TODO: move to ir/transform.c
-static vx_IrVar genIntoVar(vx_IrBlock* block, vx_IrValue val)
+static vx_IrVar genIntoVar(vx_CU* cu, vx_IrBlock* block, vx_IrValue val)
 {
     vx_IrOp* op = vx_IrBlock_addOpBuilding(block);
     vx_IrOp_init(op, VX_IR_OP_IMM, block);
     vx_IrBlock* root = vx_IrBlock_root(block);
     vx_IrVar var = vx_IrBlock_newVar(root, op);
-    vx_IrTypeRef ty = vx_IrValue_type(root, val);
-    vx_IrOp_addOut(op, var, ty.ptr);
-    vx_IrTypeRef_drop(ty);
+    vx_IrType* ty = vx_IrValue_type(cu, root, val);
+    vx_IrOp_addOut(op, var, ty);
     vx_IrOp_addParam_s(op, VX_IR_NAME_VALUE, val);
     return var;
 }
@@ -78,8 +77,8 @@ void vx_opt_if_opts(vx_CU* cu, vx_IrBlock* block)
         size_t numRets = root->outs_len;
         for (size_t i = 0; i < numRets; i ++)
         {
-            vx_IrBlock_addOut(bthen, genIntoVar(bthen, thenLast->args[i]));
-            vx_IrBlock_addOut(belse, genIntoVar(belse, elseLast->args[i]));
+            vx_IrBlock_addOut(bthen, genIntoVar(cu, bthen, thenLast->args[i]));
+            vx_IrBlock_addOut(belse, genIntoVar(cu, belse, elseLast->args[i]));
 
             vx_IrVar va = vx_IrBlock_newVar(root, op);
             vx_IrOp_addOut(op, va, vx_IrBlock_typeofVar(root, root->outs[i]));

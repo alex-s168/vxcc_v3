@@ -144,7 +144,7 @@ void vx_IrBlock_llir_fix_decl(vx_CU* cu, vx_IrBlock *root) {
     for (vx_IrOp *op = root->first; op; op = op->next) {
         for (size_t j = 0; j < op->outs_len; j ++) {
             vx_IrTypedVar out = op->outs[j];
-            if (vx_IrType_size(out.type) == 0) {
+            if (vx_IrType_size(cu, root, out.type) == 0) {
                 fprintf(stderr, "size of type %s in 0", out.type->debugName);
                 exit(1);
             }

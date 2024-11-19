@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen)
 {
     for (vx_IrName i = 0; i < VX_IR_NAME__LAST; i ++)
@@ -92,7 +91,7 @@ vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
 
 // TODO: remove cir checks and make sure fn called after cir type expand
 
-size_t vx_IrType_size(vx_IrType *ty) {
+size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty) {
     assert(ty != NULL);
 
     size_t total = 0; 
@@ -103,63 +102,46 @@ size_t vx_IrType_size(vx_IrType *ty) {
 
     case VX_IR_TYPE_KIND_CIR_STRUCT:
         for (size_t i = 0; i < ty->cir_struct.members_len; i ++) {
-            total += vx_IrType_size(ty->cir_struct.members[i]);
+            total += vx_IrType_size(cu, inCtx, ty->cir_struct.members[i]);
         }
         return total;
 
     case VX_IR_TYPE_FUNC:
-        return 8; // TODO
+        return vx_IrType_size(cu, inCtx, cu->info.get_ptr_ty(cu, inCtx));
 
     default:
-	fprintf(stderr, "type %u doesn't have size\n", ty->kind);
-	fflush(stderr);
-	exit(1);
-	assert(false);
-	return 0;
+		fprintf(stderr, "type %u doesn't have size\n", ty->kind);
+		fflush(stderr);
+		exit(1);
+		assert(false);
+		return 0;
     }
 }
 
-void vx_IrType_free(vx_IrType *ty) {
-    switch (ty->kind) {
-    case VX_IR_TYPE_KIND_BASE:
-        return;
-
-    case VX_IR_TYPE_KIND_CIR_STRUCT:
-        free(ty->cir_struct.members);
-        return;
-
-    case VX_IR_TYPE_FUNC:
-        free(ty->func.args);
-        return;
-
-    default:
-	assert(false);
-	return;
-    }
-}
-
-vx_IrTypeRef vx_IrValue_type(vx_IrBlock* root, vx_IrValue value) {
-    switch (value.type) {
+vx_IrType* vx_IrValue_type(vx_CU* cu, vx_IrBlock* root, vx_IrValue value) {
+    switch (value.type) 
+	{
         case VX_IR_VAL_IMM_INT:
         case VX_IR_VAL_IMM_FLT:
         case VX_IR_VAL_UNINIT:
-            return (vx_IrTypeRef) { .ptr = value.no_read_rt_type, .shouldFree = false };
+            return value.no_read_rt_type;
 
         case VX_IR_VAL_ID:
-            return vx_ptrType(root);
+            return cu->info.get_ptr_ty(cu, root);
 
-	default:
-	    assert(false);
-        case VX_IR_VAL_TYPE:
+		case VX_IR_VAL_TYPE:
         case VX_IR_VAL_BLOCK:
-            return (vx_IrTypeRef) { .ptr = NULL, .shouldFree = false };
+            return NULL;
 
         case VX_IR_VAL_BLOCKREF:
             return vx_IrBlock_type(value.block);
 
         case VX_IR_VAL_VAR:
-            return (vx_IrTypeRef) { .ptr = vx_IrBlock_typeofVar(root, value.var), .shouldFree = false };
-    }
+            return vx_IrBlock_typeofVar(root, value.var);
+    
+		default:
+			assert(false);
+	}
 }
 
 void vx_IrOp_warn(vx_IrOp *op, const char *optMsg0, const char *optMsg1) {
@@ -253,25 +235,26 @@ void vx_IrBlock_appendLabelOpPredefined(vx_IrBlock *block, size_t label_id) {
     root->as_root.labels[label_id].decl = label_decl;
 }
 
-vx_IrTypeRef vx_IrBlock_type(vx_IrBlock* block) {
-    // TODO: multiple rets
-    vx_IrType *ret = block->outs_len == 1 ? vx_IrBlock_typeofVar(block, block->outs[0])
-                                          : NULL;
-
-    vx_IrType **args = malloc(sizeof(vx_IrType*) * block->ins_len);
-    assert(args);
-    for (size_t i = 0; i < block->ins_len; i ++) {
-        args[i] = block->ins[i].type;
-    }
-
-    vx_IrType *type = malloc(sizeof(vx_IrType));
+vx_IrType* vx_IrBlock_type(vx_IrBlock* block) {
+    vx_IrType *type = fastalloc(sizeof(vx_IrType));
     assert(type);
     type->kind = VX_IR_TYPE_FUNC;
-    type->func.nullableReturnType = ret;
+
+	vx_IrType **args = fastalloc(sizeof(vx_IrType*) * block->ins_len);
+    assert(args);
+    for (size_t i = 0; i < block->ins_len; i ++)
+        args[i] = block->ins[i].type;
     type->func.args_len = block->ins_len;
     type->func.args = args;
 
-    return (vx_IrTypeRef) { .ptr = type, .shouldFree = true };
+	vx_IrType **rets = fastalloc(sizeof(vx_IrType*) * block->outs_len);
+	assert(rets);
+	for (size_t i = 0; i < block->outs_len; i ++)
+		rets[i] = vx_IrBlock_typeofVar(block, block->outs[i]);
+	type->func.rets_len = block->outs_len;
+	type->func.rets = rets;
+
+    return type;
 }
 
 void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to)
@@ -306,7 +289,7 @@ int vx_CU_compile(vx_CU * cu,
         vx_CIrBlock_mksa_final(cu, block);
         vx_CIrBlock_fix(cu, block); // TODO: why...
 
-        if (vx_ir_verify(block) != 0)
+        if (vx_ir_verify(cu, block) != 0)
             return 1;
     });
 
@@ -316,7 +299,7 @@ int vx_CU_compile(vx_CU * cu,
         if (optionalOptimizedSsaIr != NULL)
             vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
 
-        if (vx_ir_verify(block) != 0)
+        if (vx_ir_verify(cu, block) != 0)
             return 1;
     });
 
@@ -342,9 +325,10 @@ int vx_CU_compile(vx_CU * cu,
     if (optionalAsm) {
         for (size_t i = 0; i < cu->blocks_len; i ++) {
             vx_CUBlock* cb = &cu->blocks[i];
-            switch (cu->blocks[i].type) {
+            switch (cb->type) {
                 case VX_CU_BLOCK_IR:
                 {
+					fprintf(optionalAsm, "section .text\n");
                     if (cb->do_export)
                         fprintf(optionalAsm, "    global %s\n", cb->v.ir->name);
                     switch (cu->target.arch)
@@ -364,15 +348,30 @@ int vx_CU_compile(vx_CU * cu,
 
                 case VX_CU_BLOCK_BLK_REF:
                 {
+					fprintf(optionalAsm, "section .text\n");
                     fprintf(optionalAsm, "    extern %s\n", cb->v.blk_ref->name);
                     break;
                 }
+				
+				case VX_CU_BLOCK_ASM:
+				{
+					fprintf(optionalAsm, "section .text\n");
+					fprintf(optionalAsm, "; generated by frontend\n%s\n", cb->v.asmb);
+				}
 
-                default:
-                {
-                    assert(false && "wip");
-                    break;
-                }
+				case VX_CU_BLOCK_DATA:
+				{
+					fprintf(optionalAsm, "section .data\n");
+                    if (cb->do_export)
+                        fprintf(optionalAsm, "    global %s\n", cb->v.data->name);
+					fprintf(optionalAsm, "%s: ; <%zu * %s>\n", cb->v.data->name,
+															   cb->v.data->numel,
+															   cb->v.data->elty->debugName);
+					fprintf(optionalAsm, "  db ");
+					for (size_t i = 0; i < cb->v.data->comptime_elt_size * cb->v.data->numel; i ++)
+						fprintf(optionalAsm, "%i, ", ((char *) cb->v.data->data)[i]);
+					fprintf(optionalAsm, "\n\n");
+				}
             }
         }
     }
