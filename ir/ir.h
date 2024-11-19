@@ -267,8 +267,6 @@ static int vx_ir_verify(vx_IrBlock *block) {
     return errs.len > 0;
 }
 
-// TODO: move builder functions into separate header
-
 typedef struct {
     enum {
         // storable
