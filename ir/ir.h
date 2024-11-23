@@ -179,6 +179,7 @@ typedef struct {
     size_t      comptime_elt_size;
     /** if null, then extern data */
     void      * data;
+	bool        writable;
 } vx_Data;
 
 typedef struct {

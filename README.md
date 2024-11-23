@@ -49,7 +49,8 @@ Link with all files returned by `./build.sh libfiles` (at time of writing, `buil
 ## using VXCC in a compiler
 this is meant to be extremely easy to do (for the frontend developer)
 
-currently there is no documentation, but you can look at the [C3C fork](https://github.com/alex-s168/c3c) in the `src/compiler/vxcc_*` files.
+There is some documentation in `frontend_dev_doc.md`.
+You can also uselook at the [C3C fork](https://github.com/alex-s168/c3c) in the `src/compiler/vxcc_*` files.
 
 If you have any questions, you can ask me on Discord (`alex_s168`) or send me an [E-Mail](mailto:alexandernutz68@gmail.com)
 
@@ -93,6 +94,7 @@ strcpy:
   .l1:
   ret
 ```
+This will improve in the close future.
 
 ## adding a target 
 You need to complete these tasks (in any order):

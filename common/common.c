@@ -4,7 +4,7 @@ int vx_Target_parse(vx_Target* dest, const char * str)
 {
     bool found = false;
     size_t strLen = strlen(str);
-    for (vx_TargetArch t = 0; t < vx_TargetArch__len; t ++)
+for (vx_TargetArch t = 0; t < vx_TargetArch__len; t ++)
     {
         const char * name = vx_TargetArch__entries[t].name.a;
         size_t nameLen = strlen(name);
