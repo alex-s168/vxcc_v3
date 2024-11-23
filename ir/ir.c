@@ -267,7 +267,6 @@ void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to)
 }
 
 #include "passes.h"
-#include "../cg/x86_stupid/cg.h"
 
 /** 0 if ok */
 int vx_CU_compile(vx_CU * cu,
@@ -334,7 +333,7 @@ int vx_CU_compile(vx_CU * cu,
                     switch (cu->target.arch)
                     {
                         case vx_TargetArch_X86_64:
-                            vx_cg_x86stupid_gen(cu, cb->v.ir, optionalAsm);
+                            vx_llir_emit_asm(cu, cb->v.ir, optionalAsm);
                             break;
 
                         // add target 

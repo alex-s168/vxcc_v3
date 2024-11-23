@@ -20,10 +20,12 @@ enum CompileResult target_deps() {
 struct CompileData target_gen_files[] = {
     DIR("build"),
 
-    DIR("build/common"),
-    SP(CT_CDEF, "common/targets.cdef"),
-    SP(CT_CDEF, "common/target_etca.cdef"),
-    SP(CT_CDEF, "common/target_x86.cdef"),
+    DIR("build/targets"),
+    SP(CT_CDEF, "targets/targets.cdef"),
+    DIR("build/targets/etca"),
+    SP(CT_CDEF, "targets/etca/etca.cdef"),
+    DIR("build/targets/x86"),
+    SP(CT_CDEF, "targets/x86/x86.cdef"),
     // add target (cdef file)
 
     DIR("build/ir"),
@@ -46,11 +48,12 @@ enum CompileResult target_gen() {
 struct CompileData ir_files[] = {
     DIR("build"),
 
-    DIR("build/common"),
-    SP(CT_C, "common/common.c"),
+    DIR("build/targets"),
+    SP(CT_C, "targets/targets.c"),
 
     DIR("build/ir"),
-    SP(CT_C, "ir/fastalloc.c"),
+    SP(CT_C, "ir/verify.c"),
+	SP(CT_C, "ir/fastalloc.c"),
     SP(CT_C, "ir/dump.c"),
     SP(CT_C, "ir/lifetimes.c"),
     SP(CT_C, "ir/transform.c"),
@@ -105,16 +108,18 @@ struct CompileData ir_verify_files[] = {
     SP(CT_C, "ir/verify_cir.c"),
     SP(CT_C, "ir/verify_common.c"),
     SP(CT_C, "ir/verify_ssa.c"),
-
-    DIR("build/common"),
-    SP(CT_C, "common/verify.c"),
 };
 
 struct CompileData cg_files[] = {
     DIR("build"),
-    DIR("build/cg"),
-    DIR("build/cg/x86_stupid"),
-    SP(CT_C, "cg/x86_stupid/cg.c"),
+    DIR("build/targets"),
+    SP(CT_C, "targets/targets.c"),
+    DIR("build/targets/etca"),
+    SP(CT_C, "targets/etca/etca.c"),
+    DIR("build/targets/x86"),
+    SP(CT_C, "targets/x86/x86.c"),
+    SP(CT_C, "targets/x86/cg.c"),
+    // add target
 };
 
 struct CompileData parser_files[] = {
@@ -125,9 +130,9 @@ struct CompileData parser_files[] = {
 };
 
 struct CompileData always_files[] = {
-    DEP("build/common/target_etca.cdef.o"),
-    DEP("build/common/target_x86.cdef.o"),
-    DEP("build/common/targets.cdef.o"),
+    DEP("build/targets/etca/etca.cdef.o"),
+    DEP("build/targets/x86/x86.cdef.o"),
+    DEP("build/targets/targets.cdef.o"),
     // add target (cdef file)
 
     DEP("build/ir/ops.cdef.o"),

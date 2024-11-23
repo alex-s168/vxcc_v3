@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "../common/common.h"
+#include "../targets/targets.h"
 #include "../build/ir/ops.cdef.h"
 
 // TODO: use kollektions
@@ -32,6 +32,21 @@ static char * faststrdup(const char * str) {
     memcpy(ret, str, len);
     return ret;
 }
+
+typedef struct {
+    const char *error;
+    const char *additional;
+} vx_Error;
+
+typedef struct {
+    vx_Error *items;
+    size_t       len;
+} vx_Errors;
+
+void vx_Errors_add(vx_Errors *errors, const vx_Error *error);
+void vx_Errors_add_all_and_free(vx_Errors *dest, vx_Errors *src);
+void vx_Errors_free(vx_Errors errors);
+void vx_Errors_print(vx_Errors errors, FILE *dest);
 
 struct vx_IrOp_s;
 typedef struct vx_IrOp_s vx_IrOp;
@@ -623,5 +638,7 @@ vx_IrType* vx_IrValue_type(vx_CU* cu, vx_IrBlock* root, vx_IrValue value);
 bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
 
 size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty);
+
+void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out);
 
 #endif //IR_H

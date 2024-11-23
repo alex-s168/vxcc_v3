@@ -1421,24 +1421,20 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
         availableRegisters = fastrealloc(availableRegisters, availableRegistersCount, availableRegistersCount + extraAv);
 
         availableRegisters[availableRegistersCount] = REG_R9.id;
-        if (extraAv > 1) {
+        if (extraAv > 1)
             availableRegisters[availableRegistersCount + 1] = REG_R8.id;
-            if (extraAv > 2) {
-                availableRegisters[availableRegistersCount + 2] = REG_RCX.id;
-                if (extraAv > 3) {
-                    availableRegisters[availableRegistersCount + 3] = REG_RDX.id;
-                    if (extraAv > 4) {
-                        availableRegisters[availableRegistersCount + 4] = REG_RSI.id;
-                        if (extraAv > 5) {
-                            availableRegisters[availableRegistersCount + 5] = REG_RDI.id;
-                        }
-                    }
-                }
-            }
-        }
-
+		if (extraAv > 2)
+			availableRegisters[availableRegistersCount + 2] = REG_RCX.id;
+		if (extraAv > 3)
+			availableRegisters[availableRegistersCount + 3] = REG_RDX.id;
+		if (extraAv > 4)
+			availableRegisters[availableRegistersCount + 4] = REG_RSI.id;
+		if (extraAv > 5)
+			availableRegisters[availableRegistersCount + 5] = REG_RDI.id;
         availableRegistersCount += extraAv;
     }
+
+	// TODO: count heat in SSA instead (bc of loops)
 
     varData = block->as_root.vars_len == 0 ? NULL : calloc(block->as_root.vars_len, sizeof(VarData));
     for (size_t i = 0; i < block->ins_len; i ++) {
