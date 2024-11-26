@@ -1,4 +1,4 @@
-#include "cg.h"
+#include "x86.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <assert.h>
@@ -851,6 +851,11 @@ static void emiti_ret(vx_IrBlock* block, vx_IrValue* values, FILE* out) {
 }
 
 static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
+	if (op->backend != NULL) {
+		vx_IrOp_x86* x86 = vx_IrOp_x86_get(op);
+		if (x86->no_cg) return op->next;
+	}
+
     switch (op->id) {
         case VX_IR_OP_RETURN:
             {

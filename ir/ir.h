@@ -151,6 +151,8 @@ struct vx_IrBlock_s {
             lifetime  ll_lifetime;
             vx_IrType *ll_type;
             bool ever_placed;
+
+			size_t heat;
         } *vars;
         size_t vars_len;
 
@@ -174,6 +176,8 @@ struct vx_IrBlock_s {
     bool should_free;
 
     const char *name;
+
+	void* backend;
 };
 
 typedef enum {
@@ -478,6 +482,8 @@ struct vx_IrOp_s {
 
     vx_IrBlock  * parent;
     vx_IrOpType   id;
+
+	void* backend;
 };
 
 vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type);
@@ -640,5 +646,9 @@ bool vx_IrBlock_llIsLeaf(vx_IrBlock* block);
 size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty);
 
 void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out);
+
+void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar newv);
+
+void vx_IrBlock_root_varsHeat(vx_IrBlock* block);
 
 #endif //IR_H

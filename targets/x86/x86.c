@@ -1,4 +1,5 @@
 #include "../targets_internal.h"
+#include "x86.h"
 
 typedef struct {
 	vx_IrType* ptrty_cache;
@@ -19,4 +20,20 @@ void vx_Target_X86__info(vx_TargetInfo* dest, vx_Target const* target)
 	dest->ea_opt = true;
 	dest->need_move_ret_to_arg = x86_need_move_ret_to_arg;
 	x86_intlikeptr(dest);
+}
+
+vx_IrOp_x86* vx_IrOp_x86_get(vx_IrOp* op) {
+	if (op->backend == NULL) {
+		op->backend = fastalloc(sizeof(vx_IrOp_x86));
+		memset(op->backend, 0, sizeof(vx_IrOp_x86));
+	}
+	return (vx_IrOp_x86*) op->backend;
+}
+
+vx_IrBlock_x86* vx_IrBlock_x86_get(vx_IrBlock* block) {
+	if (block->backend == NULL) {
+		block->backend = fastalloc(sizeof(vx_IrBlock_x86));
+		memset(block->backend, 0, sizeof(vx_IrBlock_x86));
+	}
+	return (vx_IrBlock_x86*) block->backend;
 }

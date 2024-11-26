@@ -4,6 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar new)
+{
+	vx_IrBlock* root = vx_IrBlock_root(block);
+	assert(root && root->is_root);
+
+	root->as_root.vars[new].heat = root->as_root.vars[old].heat;
+	root->as_root.vars[new].ll_lifetime = root->as_root.vars[old].ll_lifetime;
+}
+
 vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen)
 {
     for (vx_IrName i = 0; i < VX_IR_NAME__LAST; i ++)
@@ -303,6 +312,8 @@ int vx_CU_compile(vx_CU * cu,
     });
 
     FOR_BLOCK({
+		vx_IrBlock_root_varsHeat(block);
+
         vx_IrBlock_llir_preLower_loops(cu, block);
         vx_IrBlock_llir_preLower_ifs(cu, block);
         vx_opt_preLower(cu, block);
@@ -330,18 +341,7 @@ int vx_CU_compile(vx_CU * cu,
 					fprintf(optionalAsm, "section .text\n");
                     if (cb->do_export)
                         fprintf(optionalAsm, "    global %s\n", cb->v.ir->name);
-                    switch (cu->target.arch)
-                    {
-                        case vx_TargetArch_X86_64:
-                            vx_llir_emit_asm(cu, cb->v.ir, optionalAsm);
-                            break;
-
-                        // add target 
-
-                        default:
-                            assert(false);
-                            break;
-                    }
+					vx_llir_emit_asm(cu, cb->v.ir, optionalAsm);
                     break;
                 }
 

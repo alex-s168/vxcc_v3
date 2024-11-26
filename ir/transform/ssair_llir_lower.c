@@ -172,6 +172,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
 
                     vx_IrOp *inv = vx_IrBlock_addOpBuilding(dest);
                     vx_IrVar new = vx_IrBlock_newVar(dest, inv);
+					vx_IrBlock_markVarOrigin(dest, cond_var, new);
                     vx_IrOp_init(inv, VX_IR_OP_NOT, dest);
                     vx_IrOp_addOut(inv, new, cond_var_ty);
                     vx_IrOp_addParam_s(inv, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));

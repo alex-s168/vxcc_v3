@@ -4,7 +4,7 @@ void vx_tra_move_rets_to_arg(vx_CU* cu, vx_IrBlock* block)
 {
     assert(block->is_root);
 
-    vx_IrType* ptrTy = vx_ptrType(block).ptr;
+    vx_IrType* ptrTy = cu->info.get_ptr_ty(cu, block);
 
     vx_IrTypedVar* newArgs = malloc(sizeof(vx_IrTypedVar) * block->outs_len);
     size_t newArgs_count = 0;
@@ -16,7 +16,7 @@ void vx_tra_move_rets_to_arg(vx_CU* cu, vx_IrBlock* block)
     {
         vx_IrVar var = block->outs[i];
 
-        if (!cu->info.move_ret_to_arg(cu, block, i)) {
+        if (!cu->info.need_move_ret_to_arg(cu, block, i)) {
             newRets[newRets_count ++] = var;
             continue;
         }
@@ -26,6 +26,7 @@ void vx_tra_move_rets_to_arg(vx_CU* cu, vx_IrBlock* block)
 
         vx_IrVar resVar = vx_IrBlock_newVar(block, mov);
         newArgs[newArgs_count ++] = (vx_IrTypedVar) { .var = resVar, .type = ptrTy };
+		block->as_root.vars[resVar].heat = 1; // TODO: maybe better results if higher?
 
         vx_IrOp_addParam_s(mov, VX_IR_NAME_ADDR, VX_IR_VALUE_VAR(resVar));
         vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(var));

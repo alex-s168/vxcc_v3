@@ -53,6 +53,8 @@ void vx_IrBlock_init(vx_IrBlock *block,
     block->should_free = false;
 
     block->name = "___anon";
+
+	block->backend = NULL;
 }
 
 vx_IrBlock *vx_IrBlock_initHeap(vx_IrBlock *parent, vx_IrOp *parent_op)
@@ -271,6 +273,8 @@ void vx_IrOp_init(vx_IrOp *op,
 
     op->args = NULL;
     op->args_len = 0;
+
+	op->backend = NULL;
 }
 
 void vx_IrOp_addOut(vx_IrOp *op,

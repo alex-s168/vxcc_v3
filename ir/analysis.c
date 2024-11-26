@@ -574,3 +574,49 @@ bool vx_IrBlock_llIsLeaf(vx_IrBlock* block) {
     return true;
 }
 
+static void recursive_heat(vx_IrBlock* root, vx_IrBlock* block, size_t factor)
+{
+	for (vx_IrOp* op = block->first; op; op = op->next)
+	{
+		FOR_INPUTS(op, input, ({
+			if (input.type == VX_IR_VAL_VAR) {
+				root->as_root.vars[input.var].heat += factor;
+			} else if (input.type == VX_IR_VAL_BLOCK) {
+				double innerFactor;
+
+				// TODO: move to cdef after defaults supported
+				switch (op->id) {
+				case VX_IR_OP_IF:
+				case VX_IR_OP_CMOV:
+					innerFactor = 0.5;
+					break;
+
+				case VX_IR_OP_WHILE:
+				case VX_IR_OP_CFOR:
+				case VX_IR_OP_REPEAT:
+					innerFactor = 20;
+					break;
+
+				default:
+					innerFactor = 1; 
+					break;
+				}
+
+				recursive_heat(root, input.block, (size_t) (factor * innerFactor));
+			}
+		}));
+
+		for (size_t i = 0; i < op->outs_len; i ++)
+			root->as_root.vars[op->outs[i].var].heat += factor;
+	}
+}
+
+void vx_IrBlock_root_varsHeat(vx_IrBlock* block)
+{
+	assert(block->is_root);
+
+	for (size_t i = 0; i < block->as_root.vars_len; i ++)
+		block->as_root.vars[i].heat = 0;
+
+	recursive_heat(block, block, 1);
+}
