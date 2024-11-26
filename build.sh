@@ -70,10 +70,7 @@ function prepare() {
   else 
     SERIAL_ARGS="-lpthread"
   fi 
-  cd build_c/slowdb
-  ./build.sh
-  cd ../../
-  $BUILD_CC build.c build_c/slowdb/build/slowdb.a $SERIAL_ARGS $CFLAGS -DVERBOSE=1 -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS $SERIAL_ARGS\"" -DAR="\"$AR\"" -o build.exe
+  $BUILD_CC build.c $(build_c/slowdb/build.sh) $SERIAL_ARGS $CFLAGS -DVERBOSE=1 -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS $SERIAL_ARGS\"" -DAR="\"$AR\"" -o build.exe
   echo "# build.exe compiled"
   echo "# gen cdef files"
   ./build.exe gen
@@ -105,7 +102,7 @@ elif [[ $1 == "build" ]]; then
 elif [[ $1 == "lsp" ]]; then 
   prepare
 elif [[ $1 == "libfiles" ]]; then
-  echo "build/lib.a allib/build/all.a"
+  echo "build/lib.a"
 elif [[ $1 == "clean" ]]; then
   rm -r build/
   rm build.slowdb

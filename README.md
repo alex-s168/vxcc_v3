@@ -44,7 +44,7 @@ use the `./build.sh build`
 `python3`: it is recommended to create a venv in the repository root using `python -m venv venv`
 
 ## including into projects
-Link with all files returned by `./build.sh libfiles` (at time of writing, `build/lib.a` and `allib/build/all.a`)
+Link with all files returned by `./build.sh libfiles` (at time of writing, only `build/lib.a`)
 
 ## using VXCC in a compiler
 this is meant to be extremely easy to do (for the frontend developer)

@@ -3,16 +3,8 @@
 /* ========================================================================= */
 
 enum CompileResult target_deps() {
-    ONLY_IF({
-        CHANGED("allib/");
-        NOT_FILE("allib/build/all.a");
-    });
-
-    START;
-    ssx("allib/", "-DHAVE_WINSOCK=0", ({
-        ss_task("all.a");
-    }));
-    END;
+    // currently no deps
+	return CR_OK;
 }
 
 /* ========================================================================= */
