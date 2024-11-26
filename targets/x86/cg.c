@@ -650,7 +650,6 @@ static size_t XMM_SCRATCH_REG2;
 typedef struct {
     vx_IrType* type;
     Location* location;
-    size_t heat; // if heat == 2 then one producer and one consumer
 } VarData;
 
 VarData* varData = NULL;
@@ -1439,34 +1438,10 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
         availableRegistersCount += extraAv;
     }
 
-	// TODO: count heat in SSA instead (bc of loops)
-
     varData = block->as_root.vars_len == 0 ? NULL : calloc(block->as_root.vars_len, sizeof(VarData));
     for (size_t i = 0; i < block->ins_len; i ++) {
         assert(varData);
         varData[block->ins[i].var].type = block->ins[i].type;
-    }
-    for (vx_IrOp *op = block->first; op != NULL; op = op->next) {
-        for (size_t i = 0; i < op->outs_len; i ++) {
-            assert(varData);
-            vx_IrVar v = op->outs[i].var;
-            varData[v].type = op->outs[i].type;
-            varData[v].heat ++;
-        }
-        for (size_t i = 0; i < op->args_len; i ++) {
-            vx_IrValue val = op->args[i];
-            if (val.type == VX_IR_VAL_VAR) {
-                assert(varData);
-                varData[val.var].heat ++;
-            }
-        }
-        for (size_t i = 0; i < op->params_len; i ++) {
-            vx_IrValue val = op->params[i].val;
-            if (val.type == VX_IR_VAL_VAR) {
-                assert(varData);
-                varData[val.var].heat ++;
-            }
-        }
     }
 
     size_t stackOff = 0;
@@ -1475,7 +1450,9 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
     signed long long highestHeat = 0;
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         assert(varData);
-        size_t heat = varData[var].heat;
+        size_t heat = block->as_root.vars[var].heat;
+		if (heat == 0)
+			fprintf(stderr, "warning: variable %%%zu has no heat\n", var);
         if (heat > highestHeat) {
             highestHeat = heat;
         }
@@ -1496,7 +1473,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
         for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
             if (varsSorted[var]) continue;
 
-            if (varData[var].heat == highestHeat) {
+            if (block->as_root.vars[var].heat == highestHeat) {
                 varsHotFirst[varsHotFirstLen ++] = var;
                 varsSorted[var] = true;
             }
@@ -1514,7 +1491,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
             vx_IrVar var = varsHotFirst[varId];
 
             assert(varData);
-            if (varData[var].heat == 0) {
+            if (block->as_root.vars[var].heat == 0) {
                 varData[var].location = NULL;
                 continue;
             }
@@ -1632,7 +1609,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
     free(varsHotFirst);
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        if (varData[var].heat == 0) {
+        if (block->as_root.vars[var].heat == 0) {
             varData[var].location = NULL;
             continue;
         }

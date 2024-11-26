@@ -11,7 +11,7 @@ static bool etca_need_move_ret_to_arg(vx_CU* cu, vx_IrBlock* block, size_t ret_i
     return ret_id >= 1;
 }
 
-void vx_Target_X86__info(vx_TargetInfo* dest, vx_Target const* target)
+void vx_Target_ETCA__info(vx_TargetInfo* dest, vx_Target const* target)
 {
 	set_tg(etca);
 	dest->cmov_opt = target->flags.etca[vx_Target_ETCA_condExec];

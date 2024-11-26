@@ -70,7 +70,10 @@ function prepare() {
   else 
     SERIAL_ARGS="-lpthread"
   fi 
-  $BUILD_CC build.c $SERIAL_ARGS $CFLAGS -DVERBOSE=1 -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS $SERIAL_ARGS\"" -DAR="\"$AR\"" -o build.exe
+  cd build_c/slowdb
+  ./build.sh
+  cd ../../
+  $BUILD_CC build.c build_c/slowdb/build/slowdb.a $SERIAL_ARGS $CFLAGS -DVERBOSE=1 -DCC="\"$CC\"" -DCC_ARGS="\"$CFLAGS\"" -DLD_ARGS="\"$EX_LDFLAGS $SERIAL_ARGS\"" -DAR="\"$AR\"" -o build.exe
   echo "# build.exe compiled"
   echo "# gen cdef files"
   ./build.exe gen

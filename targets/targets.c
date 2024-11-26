@@ -91,7 +91,7 @@ TARGET_FLAGS_GEN(X86)
 
 #undef TARGET_FLAGS_GEN
 
-#include "x86/cg.h"
+#include "x86/x86.h"
 // add target
 
 void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out)
