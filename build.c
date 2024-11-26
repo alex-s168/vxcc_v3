@@ -122,13 +122,6 @@ struct CompileData cg_files[] = {
     // add target
 };
 
-struct CompileData parser_files[] = {
-    DIR("build"),
-    DIR("build/irparser"),
-    SP(CT_C, "irparser/parser.c"),
-    SP(CT_C, "irparser/match.c"),
-};
-
 struct CompileData always_files[] = {
     DEP("build/targets/etca/etca.cdef.o"),
     DEP("build/targets/x86/x86.cdef.o"),
@@ -158,11 +151,8 @@ enum CompileResult target_lib() {
     if (source_changed(LI(ir_verify_files)) || all)
         comp = vaListConcat(comp, ASVAR(ir_verify_files));
 
-    if (file_changed("cg/") || all)
+    if (file_changed("targets/") || all)
         comp = vaListConcat(comp, ASVAR(cg_files));
-
-    if (file_changed("irparser/") || all)
-        comp = vaListConcat(comp, ASVAR(parser_files));
 
     DO(compile(VLI(comp)));
 
@@ -172,7 +162,6 @@ enum CompileResult target_lib() {
     link = vaListConcat(link, ASVAR(ir_transform_files));
     link = vaListConcat(link, ASVAR(ir_verify_files));
     link = vaListConcat(link, ASVAR(cg_files));
-    link = vaListConcat(link, ASVAR(parser_files));
 
     DO(linkTask(VLI(link), "build/lib.a"));
 

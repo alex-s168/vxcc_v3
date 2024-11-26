@@ -86,6 +86,7 @@ void vx_opt_ll(vx_CU* cu, vx_IrBlock *block) {
 }
 
 void vx_llir_prep_lower(vx_CU* cu, vx_IrBlock *block) {
+	assert(block->is_root);
     vx_IrBlock_llir_fix_decl(cu, block);
     //vx_IrBlock_llir_compact(block); /TODO?
     vx_IrBlock_lifetimes(cu, block);

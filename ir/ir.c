@@ -291,6 +291,11 @@ int vx_CU_compile(vx_CU * cu,
     }
 
     FOR_BLOCK({
+		if (!block->is_root) {
+			fprintf(stderr, "only root blocks allowed in CU\n");
+			exit(1);
+		}
+
         vx_CIrBlock_fix(cu, block); // TODO: why...
         vx_CIrBlock_normalize(cu, block);
         vx_CIrBlock_mksa_states(cu, block);

@@ -60,7 +60,7 @@ CFLAGS="$CFLAGS $EX_CFLAGS"
 #       fi
 #fi
 
-FILES="ir/*.c common/*.c ir/opt/*.c ir/transform/*.c cg/x86_stupid/*.c irparser/*.c"
+FILES="ir/*.c targets/*.c ir/opt/*.c ir/transform/*.c"
 
 # shellcheck disable=SC2086
 
