@@ -128,6 +128,7 @@ enum CompileResult target_lib() {
     START;
 
     bool all = file_changed("ir/ir.h");
+	if (all) printf("headers changed: recompile all\n");
 
     VaList comp = ASVAR(always_files);
 
