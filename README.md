@@ -3,6 +3,8 @@ optimizing, small, simple, compiler backend.
 
 VXCC uses SSA IR with block arguments instead of the commonly used phi-nodes.
 
+VXCC is licenced under the [permissive Apache 2.0 license with LLVM Exceptions](LICENCE)
+
 ## compilation stages
 - frontend generates non-SSA IR
 - backend converts it to SSA
