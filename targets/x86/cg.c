@@ -1439,47 +1439,37 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
     }
 
     varData = block->as_root.vars_len == 0 ? NULL : calloc(block->as_root.vars_len, sizeof(VarData));
-    for (size_t i = 0; i < block->ins_len; i ++) {
-        assert(varData);
-        varData[block->ins[i].var].type = block->ins[i].type;
+	assert(varData);
+
+    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        varData[var].type = block->as_root.vars[var].ll_type;
     }
 
     size_t stackOff = 0;
 
     /* ======================== VAR ALLOC ===================== */ 
-    signed long long highestHeat = 0;
-    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        assert(varData);
+
+    vx_IrVar* varsHotFirst = calloc(block->as_root.vars_len, sizeof(vx_IrVar));
+	bool* varsSorted = calloc(block->as_root.vars_len, sizeof(bool));
+    size_t highestHeat = 0;
+	for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         size_t heat = block->as_root.vars[var].heat;
-		if (heat == 0)
-			fprintf(stderr, "warning: variable %%%zu has no heat\n", var);
         if (heat > highestHeat) {
             highestHeat = heat;
         }
     }
-
-    vx_IrVar* varsHotFirst = calloc(block->as_root.vars_len, sizeof(vx_IrVar));
-    size_t varsHotFirstLen = 0;
-
-    char* varsSorted = calloc(block->as_root.vars_len, sizeof(char));
-    if (use_rax) {
-        varsSorted[optLastRetFirstArg.var] = true;
-    }
-    for (size_t i = anyCalledIntArgsCount; i < block->ins_len; i ++) {
-        vx_IrVar var = block->ins[i].var;
-        varsSorted[var] = true;
-    }
-    for (; highestHeat >= 0; highestHeat --) {
-        for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-            if (varsSorted[var]) continue;
-
-            if (block->as_root.vars[var].heat == highestHeat) {
-                varsHotFirst[varsHotFirstLen ++] = var;
-                varsSorted[var] = true;
-            }
-        }
-    }
-    free(varsSorted);
+	size_t varsHotFirstLen = 0;
+	for (; varsHotFirstLen != block->as_root.vars_len; highestHeat --) {
+		for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+			if (varsSorted[var]) continue;
+			size_t heat = block->as_root.vars[var].heat;
+			if (heat == highestHeat) {
+				varsHotFirst[varsHotFirstLen++] = var;
+				varsSorted[var] = true;
+			}
+		}
+	}
+	free(varsSorted);
 
     size_t varId = 0;
     for (size_t i = 0; i < availableRegistersCount; i ++) {
@@ -1489,12 +1479,6 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
 
         for (; varId < varsHotFirstLen; varId ++) {
             vx_IrVar var = varsHotFirst[varId];
-
-            assert(varData);
-            if (block->as_root.vars[var].heat == 0) {
-                varData[var].location = NULL;
-                continue;
-            }
 
             vx_IrType* type = varData[var].type;
             if (type == NULL) continue;
@@ -1532,7 +1516,6 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
         assert(var.type->kind == VX_IR_TYPE_KIND_BASE);
         size_t size = vx_IrType_size(cu, block, var.type);
         assert(size != 0);
-        assert(varData);
 
         bool move_into_stack = block->as_root.vars[var.var].ever_placed;
         move_into_stack = move_into_stack && (var.type->base.isfloat ? id_f < 8 : id_i < 6);
@@ -1609,11 +1592,6 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
     free(varsHotFirst);
 
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        if (block->as_root.vars[var].heat == 0) {
-            varData[var].location = NULL;
-            continue;
-        }
-
         if (varData[var].location) continue;
         if (varData[var].type == NULL) continue;
 

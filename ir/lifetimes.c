@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "ir.h"
+#include "passes.h"
 
 static void extendLifetimeSegment(bool * bools, vx_IrOp * op)
 {
@@ -27,7 +27,7 @@ static void extendLifetimeSegment(bool * bools, vx_IrOp * op)
 }
 
 /** only for root blocks */
-void vx_IrBlock_lifetimes(vx_IrBlock *block) {
+void vx_IrBlock_lifetimes(vx_CU* cu, vx_IrBlock *block) {
     assert(block->is_root);
     size_t numOps = vx_IrBlock_countOps(block);
 

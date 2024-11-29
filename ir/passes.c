@@ -88,6 +88,7 @@ void vx_opt_ll(vx_CU* cu, vx_IrBlock *block) {
 void vx_llir_prep_lower(vx_CU* cu, vx_IrBlock *block) {
 	assert(block->is_root);
     vx_IrBlock_llir_fix_decl(cu, block);
+	assert(block->is_root);
     //vx_IrBlock_llir_compact(block); /TODO?
     vx_IrBlock_lifetimes(cu, block);
     vx_IrBlock_ll_share_slots(cu, block);
@@ -133,8 +134,13 @@ void vx_IrBlock_llir_fix_decl(vx_CU* cu, vx_IrBlock *root) {
 
     // TODO: WHY THE FUCK IS THIS EVEN REQUIRED????
 
-    memset(root->as_root.labels, 0, sizeof(*root->as_root.labels) * root->as_root.labels_len);
-    memset(root->as_root.vars, 0, sizeof(*root->as_root.vars) * root->as_root.vars_len);
+	memset(root->as_root.labels, 0, sizeof(*root->as_root.labels) * root->as_root.labels_len);
+
+	for (size_t i = 0; i < root->as_root.vars_len; i ++) {
+		root->as_root.vars[i].decl = NULL;
+		root->as_root.vars[i].ll_type = NULL;
+		root->as_root.vars[i].ever_placed = false;
+	}
 
     for (size_t i = 0; i < root->ins_len; i ++) {
         vx_IrVar v = root->ins[i].var;
