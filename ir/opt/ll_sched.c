@@ -45,6 +45,7 @@ static void runSched(vx_IrBlock* block, struct Move **to_move, size_t *to_move_l
             if (ok && vx_IrOp_allDepsInRangeOrArgs(block, op, block->first, beforeFirst))
             {
                 *to_move = realloc(*to_move, (*to_move_len + 1) * sizeof(struct Move));
+				assert(*to_move);
                 (*to_move)[(*to_move_len)++] = (struct Move) {
                     .what = op,
                     .before = first,

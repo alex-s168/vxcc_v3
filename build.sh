@@ -91,7 +91,8 @@ elif [[ $1 == "ganalyze" ]]; then
   echo "analyzing (gcc) ..."
   prepare
   echo "# starting analyzer (gcc)"
-  "$GCC" -fanalyzer -fsanitize-trap=undefined $ANALYZER_FLAGS $FILES
+  # gcc assumes that malloc() might return null, and therefore emits tons of null errors. the important ones get catched by clang analyzer anyways.
+  "$GCC" -fanalyzer -fsanitize-trap=undefined -fsyntax-only $ANALYZER_FLAGS $FILES "-Wno-return-type" "-Wno-analyzer-possible-null-argument" "-Wno-analyzer-possible-null-dereference"
 elif [[ $1 == "info" ]]; then
   echo CC:
   "$CC" --version
