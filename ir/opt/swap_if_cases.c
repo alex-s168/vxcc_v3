@@ -4,8 +4,6 @@
 
 void vx_opt_if_swapCases(vx_CU* cu, vx_IrBlock* block)
 {
-    vx_IrBlock_dump(block, stdout, 0);
-
     for (vx_IrOp* op = block->first; op; op = op->next)
     {
         if (op->id != VX_IR_OP_IF)
@@ -51,6 +49,4 @@ void vx_opt_if_swapCases(vx_CU* cu, vx_IrBlock* block)
 
         *cond = new;
     }
-
-    vx_IrBlock_dump(block, stdout, 0);
 }

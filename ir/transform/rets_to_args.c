@@ -32,8 +32,11 @@ void vx_tra_move_rets_to_arg(vx_CU* cu, vx_IrBlock* block)
         vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(var));
     }
 
-    if (newArgs_count == 0)
+    if (newArgs_count == 0) {
+		free(newArgs);
+		free(newRets);
         return;
+	}
 
     free(block->outs);
     block->outs = newRets;

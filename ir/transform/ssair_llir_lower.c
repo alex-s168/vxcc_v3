@@ -305,9 +305,6 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
 }
 
 void vx_IrBlock_llir_lower(vx_CU* cu, vx_IrBlock *block) {
-    puts("pre lower:");
-    vx_IrBlock_dump(block, stdout, 0);
-
     static vx_IrBlock copy;
     copy = *block;
     block->first = NULL;
@@ -315,7 +312,4 @@ void vx_IrBlock_llir_lower(vx_CU* cu, vx_IrBlock *block) {
 
     for (vx_IrOp* op = block->first; op; op = op->next)
         op->parent = block;
-
-    puts("post lower:");
-    vx_IrBlock_dump(block, stdout, 0);
 }

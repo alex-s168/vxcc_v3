@@ -17,7 +17,9 @@ void vx_opt_reduce_if(vx_CU* cu, vx_IrBlock *block)
         vx_IrValue *pelse = vx_IrOp_param(op, VX_IR_NAME_COND_ELSE);
         vx_IrBlock *els = pelse ? pelse->block : NULL;
 
-        if (vx_IrBlock_empty(then) && vx_IrBlock_empty(els) && !then->outs_len && !els->outs_len) {
+        if ((!then || (vx_IrBlock_empty(then) && then->outs_len == 0))
+	     && (!els  || (vx_IrBlock_empty(els)  && els->outs_len == 0)))
+	 	{
             vx_IrOp_remove(op);
             continue;
         }

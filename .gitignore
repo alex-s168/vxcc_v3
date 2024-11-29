@@ -2,3 +2,4 @@ build/
 build.exe
 build.slowdb
 venv/
+*.plist
