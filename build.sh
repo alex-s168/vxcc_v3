@@ -36,14 +36,17 @@ else
     : ${AR:=$EMPATH/emar}
 fi
 
-AUTO_CFLAGS="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror ${AUTO_CFLAGS_DBG}"
+AUTO_CFLAGS="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror"
+
+if [ -z $CFLAGS ]; then
+    ANALYZER_FLAGS="$AUTO_CFLAGS"
+else 
+    ANALYZER_FLAGS="$CFLAGS"
+fi
+ANALYZER_FLAGS="$ANALYZER_FLAGS $CFLAGS -Wno-analyzer-malloc-leak -Wno-analyzer-deref-before-check"
 
 : ${SERIAL:=0}
-: ${CFLAGS:="$AUTO_CFLAGS"}
-
-echo ""
-
-ANALYZER_FLAGS="$CFLAGS -Wno-analyzer-malloc-leak -Wno-analyzer-deref-before-check"
+: ${CFLAGS:="$AUTO_CFLAGS $AUTO_CFLAGS_DBG"}
 CFLAGS="$CFLAGS $EX_CFLAGS"
 
 #CFG_HASH=$(sum <<< "$CC $BUILD_CC $AR $CLAGS")
