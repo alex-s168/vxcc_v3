@@ -1,15 +1,18 @@
 set -e 
 
+: ${GCC:=gcc}
+: ${CLANG:=clang}
+
 if [ -z $EMPATH ]; then
     : ${EX_CFLAGS:=""}
     : ${EX_LDFLAGS:=""}
 
     if [ -z $CC ]; then 
-        if hash clang 2>/dev/null; then
-            CC="clang"
+        if hash "$CLANG" 2>/dev/null; then
+            CC="$CLANG"
             AUTO_CFLAGS_DBG="-g -glldb"
-        elif hash gcc 2>/dev/null; then
-            CC="gcc"
+        elif hash "$GCC" 2>/dev/null; then
+            CC="$GCC"
             AUTO_CFLAGS_DBG="-g -ggdb"
         elif hash tcc 2>/dev/null; then
             CC="tcc"
@@ -80,12 +83,12 @@ if [[ $1 == "analyze" ]]; then
   echo "# analyzing..."
   prepare
   echo "# starting analyzer"
-  clang --analyze -Xclang -analyzer-werror $ANALYZER_FLAGS $FILES
+  "$CLANG" --analyze -Xclang -analyzer-werror $ANALYZER_FLAGS $FILES
 elif [[ $1 == "ganalyze" ]]; then
   echo "analyzing (gcc) ..."
   prepare
   echo "# starting analyzer (gcc)"
-  gcc -fanalyzer -fsanitize-trap=undefined $ANALYZER_FLAGS $FILES
+  "$GCC" -fanalyzer -fsanitize-trap=undefined $ANALYZER_FLAGS $FILES
 elif [[ $1 == "info" ]]; then
   echo CC:
   "$CC" --version
