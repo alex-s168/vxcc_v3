@@ -1326,6 +1326,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
 	cu = _cu;
 	block = _block;
 
+	fprintf(out, "bits 64\n");
     fprintf(out, "%s:\n", block->name);
 
     assert(block->is_root);

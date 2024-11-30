@@ -11,6 +11,9 @@ table vx_IrOpType (
     sideEffect bool ;
 
     boolInv  ? str  ;
+
+    # TODO add default values to cdef
+    x86_affect_flags ? bool ;
 )
 enum_entry_prefix "VX_IR_OP_"
 {
@@ -35,6 +38,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false
+                         x86_affect_flags true
                          ;
 
     entry SIGNEXT        args       "val: value"
@@ -46,6 +50,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false  
                          sideEffect false
+                         x86_affect_flags true
                          ;
 
     entry TOFLT          args       "val: value"
@@ -57,6 +62,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry FROMFLT        args       "val: value"
@@ -68,6 +74,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry FLTCAST        args       "val: value"
@@ -79,6 +86,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry BITCAST        args       "val: value"
@@ -90,6 +98,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false
+                         x86_affect_flags true
                          ;
 
     entry LOAD           args       "addr: value"
@@ -178,6 +187,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry SUB            args       "a: value, b: value"
@@ -189,6 +199,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry MUL            args       "a: value, b: value"
@@ -200,6 +211,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry UDIV           args       "a: value, b: value"
@@ -211,6 +223,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry SDIV           args       "a: value, b: value"
@@ -222,6 +235,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry FDIV           args       "a: value, b: value"
@@ -233,6 +247,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry MOD            args       "a: value, b: value"
@@ -244,6 +259,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry UGT            args       "a: value, b: value"
@@ -268,6 +284,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false 
                          boolInv    "ult"
+                         x86_affect_flags true
                          ;
 
     entry ULT            args       "a: value, b: value"
@@ -280,6 +297,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false
                          boolInv    "ugte"
+                         x86_affect_flags true
                          ;
 
     entry ULTE           args       "a: value, b: value"
@@ -292,6 +310,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false 
                          boolInv    "ugt"
+                         x86_affect_flags true
                          ;
 
     entry SGT            args       "a: value, b: value"
@@ -304,6 +323,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false
                          boolInv    "slte"
+                         x86_affect_flags true
                          ;
 
     entry SGTE           args       "a: value, b: value"
@@ -316,6 +336,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false 
                          boolInv    "slt"
+                         x86_affect_flags true
                          ;
 
     entry SLT            args       "a: value, b: value"
@@ -328,6 +349,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false
                          boolInv    "sgte"
+                         x86_affect_flags true
                          ;
 
     entry SLTE           args       "a: value, b: value"
@@ -340,6 +362,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false 
                          boolInv    "sgt"
+                         x86_affect_flags true
                          ;
 
     entry EQ             args       "a: value, b: value"
@@ -352,6 +375,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false 
                          boolInv    "neq"
+                         x86_affect_flags true
                          ;
 
     entry NEQ            args       "a: value, b: value"
@@ -364,6 +388,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false
                          boolInv    "eq"
+                         x86_affect_flags true
                          ;
 
     entry AND            args       "a: value, b: value"
@@ -375,6 +400,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry OR             args       "a: value, b: value"
@@ -386,6 +412,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry BITWISE_AND    args       "a: value, b: value"
@@ -397,6 +424,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry BITIWSE_OR     args       "a: value, b: value"
@@ -408,6 +436,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry SHL            args       "a: value, b: value"
@@ -419,6 +448,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry SHR            args       "a: value, b: value"
@@ -430,6 +460,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry ASHR           args       "a: value, b: value"
@@ -441,6 +472,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry NEG            args       "val: value"
@@ -452,6 +484,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry NOT            args       "val: value"
@@ -464,6 +497,7 @@ enum_entry_prefix "VX_IR_OP_"
                          volatile   false 
                          sideEffect false 
                          boolInv    "imm"
+                         x86_affect_flags true
                          ;
                          
     entry BITWISE_NOT    args       "val: value"
@@ -475,6 +509,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect false 
+                         x86_affect_flags true
                          ;
 
     entry BITMASK        args       "idx: value"
@@ -717,6 +752,7 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect true 
+                         x86_affect_flags true
                          ;
 
     entry TAILCALL       args       "addr: int / fnref, args..."
@@ -728,17 +764,78 @@ enum_entry_prefix "VX_IR_OP_"
                          hasEffect  true 
                          volatile   false 
                          sideEffect true 
+                         x86_affect_flags true
                          ;
 
     entry CONDTAILCALL   args       "addr: int / fnref, cond: bool, args..."
                          debug      "condtailcall"
                          descr      "conditionally call function at end of this fn"
-                         inlineCost 2
+                         inlineCost 3
                          execCost   3
                          endsFlow   false 
                          hasEffect  true 
                          volatile   false 
                          sideEffect true 
+                         x86_affect_flags true
+                         ;
+
+    # TODO: add include feature to cdef
+
+    entry X86_CMP        args       "a, b"
+                         debug      "_cmp"
+                         descr      "x86 cmp op"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect true 
+                         x86_affect_flags true
+                         ;
+
+    entry X86_BITTEST    args       "value, idx"
+                         debug      "_bit_test"
+                         descr      "x86 bit test op"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false 
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect true 
+                         x86_affect_flags true
+                         ;
+
+    entry X86_CMOV       args       "cond: x86_cc, then: val"
+                         debug      "_cmov"
+                         descr      "x86 cmov op"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         ;
+
+    entry X86_JMPCC      args       "cond: x86_cc, id: label"
+                         debug      "_jmpcc"
+                         descr      "x86 conditional jump op"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false
+                         sideEffect true
+                         ;
+
+    entry X86_SETCC      args       "cond: x86_cc"
+                         debug      "_setcc"
+                         descr      "x86 SETcc op"
+                         inlineCost 1
+                         execCost   1
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false
+                         sideEffect false
                          ;
 
 }
