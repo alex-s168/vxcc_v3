@@ -75,7 +75,6 @@ struct CompileData ir_opt_files[] = {
     SP(CT_C, "ir/opt/ll_jumps.c"),
     SP(CT_C, "ir/opt/ll_binary.c"),
     SP(CT_C, "ir/opt/simple_patterns.c"),
-    SP(CT_C, "ir/opt/ll_sched.c"),
     SP(CT_C, "ir/opt/if_opts.c"),
     SP(CT_C, "ir/opt/swap_if_cases.c"),
 };
