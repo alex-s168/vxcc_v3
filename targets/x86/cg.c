@@ -981,7 +981,6 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
         case VX_IR_OP_PLACE:           // "var"
             {
                 vx_IrValue valV = *vx_IrOp_param(op, VX_IR_NAME_VAR);
-                // TODO: make it move in var if in var in input
                 assert(valV.type == VX_IR_VAL_VAR && "inliner fucked up (VX_IR_OP_PLACE)");
 
                 assert(block->as_root.vars[valV.var].ever_placed);
@@ -1174,116 +1173,56 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 emiti_unary(v, o, "not", file);
             } break;
 
-        case VX_IR_OP_UGT:  // "a", "b"
-        case VX_IR_OP_UGTE: // "a", "b"
-        case VX_IR_OP_ULT:  // "a", "b"
-        case VX_IR_OP_ULTE: // "a", "b"
-        case VX_IR_OP_SGT:  // "a", "b"
-        case VX_IR_OP_SGTE: // "a", "b"
-        case VX_IR_OP_SLT:  // "a", "b"
-        case VX_IR_OP_SLTE: // "a", "b"
-        case VX_IR_OP_EQ:  // "a", "b"
-        case VX_IR_OP_NEQ: // "a", "b"
-        case VX_IR_OP_BITEXTRACT: // "idx", "val"
+        case VX_IR_OP_UGT:
+        case VX_IR_OP_UGTE:
+        case VX_IR_OP_ULT:
+        case VX_IR_OP_ULTE:
+        case VX_IR_OP_SGT:
+        case VX_IR_OP_SGTE:
+        case VX_IR_OP_SLT:
+        case VX_IR_OP_SLTE:
+        case VX_IR_OP_EQ:
+        case VX_IR_OP_NEQ:
+        case VX_IR_OP_BITEXTRACT:
+		case VX_IR_OP_COND:
+		case VX_IR_OP_CMOV:
+			assert(false && "forgot to run x86_llir_conditionals pass?");
+			break;
+
+		case VX_IR_OP_X86_BITTEST:
+			{
+				Location* idx = as_loc(1, *vx_IrOp_param(op, VX_IR_NAME_IDX));
+				Location* val = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
+				emiti_bittest(val, idx, file);
+			} break;
+
+		case VX_IR_OP_X86_CMP:
             {
+				Location* a = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+				Location* b = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+				emiti_cmp(a, b, file);
+            } break;
+
+		case VX_IR_OP_X86_SETCC:
+			{
                 vx_IrVar ov = op->outs[0].var;
                 Location* o = varData[ov].location;
                 assert(o);
+				const char * cc = vx_IrOp_param(op, VX_IR_NAME_COND)->x86_cc;
+				emiti_storecond(o, cc, file);
+			} break;
 
-                const char *cc;
-
-                if (op->id == VX_IR_OP_BITEXTRACT) {
-                    Location* idx = as_loc(1, *vx_IrOp_param(op, VX_IR_NAME_IDX));
-                    Location* val = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_VALUE));
-
-                    emiti_bittest(val, idx, file);
-
-                    cc = "nz";
-                }
-                else {
-                    Location* a = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
-                    Location* b = as_loc(PTRSIZE, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
-
-                    emiti_cmp(a, b, file);
-
-                    switch (op->id) {
-                        case VX_IR_OP_UGT: cc = "a"; break;
-                        case VX_IR_OP_ULT: cc = "b"; break;
-                        case VX_IR_OP_UGTE: cc = "ae"; break;
-                        case VX_IR_OP_ULTE: cc = "be"; break;
-                        case VX_IR_OP_SGT: cc = "g"; break;
-                        case VX_IR_OP_SLT: cc = "l"; break;
-                        case VX_IR_OP_SGTE: cc = "ge"; break;
-                        case VX_IR_OP_SLTE: cc = "le"; break;
-                        case VX_IR_OP_EQ: cc = "e"; break;
-                        case VX_IR_OP_NEQ: cc = "ne"; break;
-
-                        default: assert(false); break;
-                    }
-                }
-
-                if (op->next) {
-                    vx_IrOpType ty = op->next->id;
-                    if (ty == VX_IR_OP_CMOV) {
-                        vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
-                        if (v.type == VX_IR_VAL_VAR && v.var == ov) {
-                            emit_condmove(op->next, cc, file);
-                            return op->next->next;
-                        }
-                    }
-
-                    if (ty == VX_IR_OP_COND) {
-                        vx_IrValue id = *vx_IrOp_param(op->next, VX_IR_NAME_ID);
-                        vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
-                        if (v.type == VX_IR_VAL_VAR && v.var == ov) {
-                            emiti_jump_cond(as_loc(PTRSIZE, id), cc, file);
-                            return op->next->next;
-                        }
-                    }
-
-                    if (ty == VX_IR_OP_CONDTAILCALL) {
-                        assert(!needEpilog);
-                        vx_IrValue addr = *vx_IrOp_param(op->next, VX_IR_NAME_ADDR);
-                        vx_IrValue v = *vx_IrOp_param(op->next, VX_IR_NAME_COND);
-                        if (v.type == VX_IR_VAL_VAR && v.var == ov) {
-                            emit_call_arg_load(op->next, file);
-                            emiti_jump_cond(as_loc(PTRSIZE, addr), cc, file);
-                            emit_call_ret_store(op->next, file);
-                            return op->next->next;
-                        }
-                    }
-                }
-
-                emiti_storecond(o, cc, file);
-            } break;
-
-
-        case VX_IR_OP_COND:         // "id", "cond": bool
+        case VX_IR_OP_X86_JMPCC:         // "id", "cond": x86_cc
             {
                 vx_IrValue id = *vx_IrOp_param(op, VX_IR_NAME_ID);
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
-                Location* loc = as_loc(1, cond);
-                emiti_cmp0(loc, file);
-                emiti_jump_cond(as_loc(PTRSIZE, id), "nz", file);
+                emiti_jump_cond(as_loc(PTRSIZE, id), cond.x86_cc, file);
             } break;
 
-        case VX_IR_OP_CONDTAILCALL:  // "addr": int / fnref, "cond": bool
-            {
-                assert(!needEpilog);
-                vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
-                vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
-                Location* loc = as_loc(1, cond);
-                emiti_cmp0(loc, file);
-                emit_call_arg_load(op, file);
-                emiti_jump_cond(as_loc(PTRSIZE, addr), "nz", file);
-            } break;
-
-        case VX_IR_OP_CMOV:          // "cond": ()->bool, "then": value, "else": value
+        case VX_IR_OP_X86_CMOV:          // "cond": x86_cc, "then": value, "else": value
             {
                 vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
-                Location* loc = as_loc(1, cond);
-                emiti_cmp0(loc, file);
-                emit_condmove(op, "nz", file);
+                emit_condmove(op, cond.x86_cc, file);
             } break;
 
         case VX_IR_OP_LABEL:        // "id"
@@ -1326,6 +1265,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
 	cu = _cu;
 	block = _block;
 
+	fprintf(out, "bits 64\n");
     fprintf(out, "%s:\n", block->name);
 
     assert(block->is_root);
@@ -1388,7 +1328,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
     size_t anyCalledXmmArgsCount = 0;
     // max arg len 
     for (vx_IrOp* op = block->first; op != NULL; op = op->next) {
-        if (op->id == VX_IR_OP_CALL || op->id == VX_IR_OP_TAILCALL || op->id == VX_IR_OP_CONDTAILCALL) {
+        if (op->id == VX_IR_OP_CALL || op->id == VX_IR_OP_TAILCALL) {
             vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
             vx_IrType* ty = vx_IrValue_type(cu, block, addr);
             assert(ty != NULL);

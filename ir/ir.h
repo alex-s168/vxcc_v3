@@ -316,6 +316,7 @@ struct vx_IrValue {
         VX_IR_VAL_BLOCK,
         VX_IR_VAL_TYPE,
         VX_IR_VAL_ID,
+		VX_IR_VAL_X86_CC,
     } type;
 
     vx_IrType* no_read_rt_type;
@@ -328,6 +329,8 @@ struct vx_IrValue {
         vx_IrBlock *block;
         vx_IrType *ty;
         size_t id;
+
+		const char *x86_cc;
     };
 };
 
@@ -341,6 +344,7 @@ bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b);
 #define VX_IR_VALUE_TYPE(idin)  ((vx_IrValue) { .type = VX_IR_VAL_TYPE, .ty = idin })
 #define VX_IR_VALUE_BLK(blk)    ((vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = blk })
 #define VX_IR_VALUE_ID(idin)    ((vx_IrValue) { .type = VX_IR_VAL_ID, .id = idin })
+#define VX_IR_VALUE_X86_CC(cc)  ((vx_IrValue) { .type = VX_IR_VAL_X86_CC, .x86_cc = cc })
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 
@@ -428,9 +432,6 @@ typedef enum {
     VX_IR_NAME_LOOP_START,
     VX_IR_NAME_LOOP_ENDEX,
     VX_IR_NAME_LOOP_STRIDE,
-
-    VX_IR_NAME_ALTERNATIVE_A,
-    VX_IR_NAME_ALTERNATIVE_B,
 
     VX_IR_NAME_IDX,
     VX_IR_NAME_STRUCT,

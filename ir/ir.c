@@ -87,6 +87,9 @@ bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b)
 
         case VX_IR_VAL_ID:
             return a.id == b.id;
+
+		case VX_IR_VAL_X86_CC:
+			return !strcmp(a.x86_cc, b.x86_cc);
     }
 }
 
@@ -147,9 +150,10 @@ vx_IrType* vx_IrValue_type(vx_CU* cu, vx_IrBlock* root, vx_IrValue value) {
 
         case VX_IR_VAL_VAR:
             return vx_IrBlock_typeofVar(root, value.var);
-    
+
 		default:
 			assert(false);
+			return NULL;
 	}
 }
 

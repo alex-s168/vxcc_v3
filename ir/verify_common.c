@@ -162,8 +162,7 @@ void vx_IrBlock_verify_ssa_based(vx_CU* cu, vx_Errors *dest, vx_IrBlock *block) 
                 }
             } break;
 
-            case VX_IR_OP_CALL:
-            case VX_IR_OP_CONDTAILCALL: {
+            case VX_IR_OP_CALL: {
                 vx_IrValue addr = *vx_IrOp_param(op, VX_IR_NAME_ADDR);
                 vx_IrType* ty = vx_IrValue_type(cu, (vx_IrBlock*) root, addr);
                 assert(ty);

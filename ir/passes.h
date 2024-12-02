@@ -19,8 +19,6 @@ void vx_opt_if_swapCases(vx_CU* cu, vx_IrBlock* block);
 void vx_opt_ll_jumps(vx_CU* cu, vx_IrBlock *block);
 void vx_opt_ll_inlineVars(vx_CU* cu, vx_IrBlock *block);
 void vx_opt_ll_dce(vx_CU* cu, vx_IrBlock *block);
-void vx_opt_ll_condtailcall(vx_CU* cu, vx_IrBlock *block);
-void vx_opt_ll_sched(vx_CU* cu, vx_IrBlock *block);
 void vx_opt_ll_binary(vx_CU* cu,vx_IrBlock *block);
 void vx_opt_ll_tailcall(vx_CU* cu,vx_IrBlock *block);
 

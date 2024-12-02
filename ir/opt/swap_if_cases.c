@@ -20,7 +20,6 @@ void vx_opt_if_swapCases(vx_CU* cu, vx_IrBlock* block)
         {
             case VX_IR_OP_BREAK:
             case VX_IR_OP_CONTINUE:
-            case VX_IR_OP_CONDTAILCALL:
                 break;
             default:
                 continue;

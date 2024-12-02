@@ -19,9 +19,6 @@ const char *vx_IrName_str[VX_IR_NAME__LAST] = {
     [VX_IR_NAME_LOOP_ENDEX] = "endex",
     [VX_IR_NAME_LOOP_STRIDE] = "stride",
 
-    [VX_IR_NAME_ALTERNATIVE_A] = "a",
-    [VX_IR_NAME_ALTERNATIVE_B] = "b",
-
     [VX_IR_NAME_IDX] = "idx",
     [VX_IR_NAME_ELSIZE] = "elsize",
     [VX_IR_NAME_OFF] = "off",
@@ -69,6 +66,11 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
             fprintf(out, "%%%zu", value.var);
         }
         break;
+
+		case VX_IR_VAL_X86_CC: {
+			fprintf(out, "%s", value.x86_cc);
+		}
+		break;
 
         case VX_IR_VAL_BLOCK: {
             const vx_IrBlock *block = value.block;
