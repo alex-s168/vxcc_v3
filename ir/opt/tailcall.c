@@ -15,33 +15,3 @@ void vx_opt_ll_tailcall(vx_CU* cu, vx_IrBlock *block)
     vx_IrBlock_deepTraverse(block, trav, NULL); 
 }
 
-void vx_opt_ll_condtailcall(vx_CU* cu, vx_IrBlock *block)
-{
-    assert(block->is_root);
-
-    for (vx_IrOp *op = block->first; op; op = op->next) {
-        if (op->id != VX_IR_OP_COND)
-            continue;
-
-        size_t label = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
-        vx_IrOp *label_op = block->as_root.labels[label].decl;
-        vx_IrOp *tailcall = label_op ? label_op->next : NULL;
-        if (tailcall == NULL)
-            continue;
-
-        if (tailcall->id != VX_IR_OP_TAILCALL)
-            continue;
-
-        vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
-        vx_IrOp_removeParam(op, VX_IR_NAME_COND); // don't want it to free that
-        vx_IrOp *nxt = op->next;
-        vx_IrOp_destroy(op);
-        vx_IrOp_init(op, VX_IR_OP_CONDTAILCALL, block);
-        op->next = nxt;
-        vx_IrOp_addParam_s(op, VX_IR_NAME_COND, cond);
-
-        vx_IrOp_stealParam(op, tailcall, VX_IR_NAME_ADDR);
-
-        vx_IrOp_remove(tailcall);
-    }
-}

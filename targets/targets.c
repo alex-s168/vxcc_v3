@@ -99,6 +99,7 @@ void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out)
 	switch (cu->target.arch)
     {
         case vx_TargetArch_X86_64:
+			vx_llir_x86(cu, llirblock);
         	vx_cg_x86stupid_gen(cu, llirblock, out);
 			break;
 

@@ -766,19 +766,7 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect true 
                          x86_affect_flags true
                          ;
-
-    entry CONDTAILCALL   args       "addr: int / fnref, cond: bool, args..."
-                         debug      "condtailcall"
-                         descr      "conditionally call function at end of this fn"
-                         inlineCost 3
-                         execCost   3
-                         endsFlow   false 
-                         hasEffect  true 
-                         volatile   false 
-                         sideEffect true 
-                         x86_affect_flags true
-                         ;
-
+    
     # TODO: add include feature to cdef
 
     entry X86_CMP        args       "a, b"

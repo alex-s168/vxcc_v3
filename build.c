@@ -111,6 +111,7 @@ struct CompileData cg_files[] = {
     DIR("build/targets/x86"),
     SP(CT_C, "targets/x86/x86.c"),
     SP(CT_C, "targets/x86/cg.c"),
+    SP(CT_C, "targets/x86/llir_conditionals.c"),
     // add target
 };
 

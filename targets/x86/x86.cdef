@@ -49,6 +49,10 @@ table vx_Target_X86 (
                              infer  "avx" 
                              ;
 
+    entry CMOV               id     "cmov"
+                             name   "Conditional Moves"
+                             ;
+
 }
 
 # TODO
@@ -84,7 +88,6 @@ table vx_Target_X86 (
 # X86_FEAT_CLFLUSHOPT,
 # X86_FEAT_CLWB,
 # X86_FEAT_CLZERO,
-# X86_FEAT_CMOV,
 # X86_FEAT_CMPCCXADD,
 # X86_FEAT_CMPXCHG16B,
 # X86_FEAT_CMPXCHG8B,

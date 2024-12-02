@@ -1,5 +1,11 @@
 #include "../targets_internal.h"
 #include "x86.h"
+#include "../../ir/passes.h"
+
+void vx_llir_x86(vx_CU* cu, vx_IrBlock* block) {
+	vx_llir_x86_conditionals(cu, block);	
+	vx_opt_vars(cu, block);
+}
 
 typedef struct {
 	vx_IrType* ptrty_cache;
@@ -15,7 +21,7 @@ static bool x86_need_move_ret_to_arg(vx_CU* cu, vx_IrBlock* block, size_t ret_id
 void vx_Target_X86__info(vx_TargetInfo* dest, vx_Target const* target)
 {
 	set_tg(x86);
-	dest->cmov_opt = true; // TODO: target->flags.x86[vx_Target_X86_CMOV];
+	dest->cmov_opt = target->flags.x86[vx_Target_X86_CMOV];
 	dest->tailcall_opt = true;
 	dest->ea_opt = true;
 	dest->need_move_ret_to_arg = x86_need_move_ret_to_arg;

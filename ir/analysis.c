@@ -107,7 +107,6 @@ bool VX_IR_OPFILTER_CONDITIONAL__impl(vx_IrOp* op, void* ign1) {
 
     switch (op->id)
     {
-        case VX_IR_OP_CONDTAILCALL:
         case VX_IR_OP_COND:
         case VX_IR_OP_CMOV:
             return true;
@@ -562,7 +561,6 @@ bool vx_IrBlock_llIsLeaf(vx_IrBlock* block) {
     for (vx_IrOp* op = block->first; op; op = op->next) {
         switch (op->id) {
             case VX_IR_OP_CALL:
-            case VX_IR_OP_CONDTAILCALL:
             case VX_IR_OP_TAILCALL:
                 return false;
 

@@ -72,7 +72,6 @@ void vx_opt_ll(vx_CU* cu, vx_IrBlock *block) {
     }
 
     vx_IrBlock_ll_cmov_expand(cu, block); // this makes it non-ssa but ll_sched can handle it (but only because it's cmov!!!)
-    vx_opt_ll_sched(cu, block);
 
     for (size_t i = 0; i < 4; i ++) {
         vx_opt_ll_jumps(cu, block);
