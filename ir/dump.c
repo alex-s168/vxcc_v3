@@ -72,6 +72,11 @@ void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {
 		}
 		break;
 
+		case VX_IR_VAL_SYMREF: {
+			fprintf(out, "%s", value.symref);
+		}
+		break;
+
         case VX_IR_VAL_BLOCK: {
             const vx_IrBlock *block = value.block;
 

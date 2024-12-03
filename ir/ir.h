@@ -311,6 +311,7 @@ struct vx_IrValue {
         VX_IR_VAL_VAR,
         VX_IR_VAL_UNINIT,
         VX_IR_VAL_BLOCKREF,
+		VX_IR_VAL_SYMREF,
 
         // not storable
         VX_IR_VAL_BLOCK,
@@ -329,6 +330,7 @@ struct vx_IrValue {
         vx_IrBlock *block;
         vx_IrType *ty;
         size_t id;
+		const char * symref;
 
 		const char *x86_cc;
     };
@@ -345,6 +347,7 @@ bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b);
 #define VX_IR_VALUE_BLK(blk)    ((vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = blk })
 #define VX_IR_VALUE_ID(idin)    ((vx_IrValue) { .type = VX_IR_VAL_ID, .id = idin })
 #define VX_IR_VALUE_X86_CC(cc)  ((vx_IrValue) { .type = VX_IR_VAL_X86_CC, .x86_cc = cc })
+#define VX_IR_VALUE_SYMREF(sy)  ((vx_IrValue) { .type = VX_IR_VAL_SYMREF, .symref = sy })
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
 

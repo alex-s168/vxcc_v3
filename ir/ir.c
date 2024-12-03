@@ -90,6 +90,9 @@ bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b)
 
 		case VX_IR_VAL_X86_CC:
 			return !strcmp(a.x86_cc, b.x86_cc);
+
+		case VX_IR_VAL_SYMREF:
+			return !strcmp(a.symref, b.symref);
     }
 }
 

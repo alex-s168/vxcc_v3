@@ -77,6 +77,7 @@ typedef enum {
     LOC_MEM,
     LOC_IMM,
     LOC_LABEL,
+	LOC_SYM,
     LOC_INVALID,
 } LocationType;
 
@@ -106,6 +107,10 @@ typedef struct Location {
             const char * label;
         } label;
 
+		struct {
+			const char * sym;
+		} sym;
+
         struct {
             struct Location* address;
         } mem;
@@ -122,6 +127,8 @@ typedef struct Location {
     ((Location) { .bytesWidth = (width), .type = LOC_MEM, .v.mem.address = (eaa) })
 #define LocLabel(str) \
     ((Location) { .type = LOC_LABEL, .v.label.label = (str) })
+#define LocSym(str) \
+	((Location) { .type = LOC_SYM, .v.sym.sym = (str) })
 
 Location* loc_opt_copy(Location* old) {
     Location* new = fastalloc(sizeof(Location));
@@ -154,6 +161,11 @@ Location* loc_opt_copy(Location* old) {
                             *new = LocLabel(old->v.label.label);
                             return new;
                         }
+
+		case LOC_SYM: {
+			*new = LocSym(old->v.sym.sym);
+			return new;
+		}
 
         case LOC_INVALID:
         default: {
@@ -282,7 +294,11 @@ static void emit(Location* loc, FILE* out) {
 			fputs(loc->v.label.label, out);
 			break;
 
-        case LOC_INVALID:
+        case LOC_SYM:
+			fputs(loc->v.sym.sym, out);
+			break;
+
+		case LOC_INVALID:
 			assert(false);
 			break;
     }
@@ -686,6 +702,13 @@ static Location* as_loc(size_t width, vx_IrValue val) {
             loc->type = LOC_INVALID;
             return loc;
         }
+
+		case VX_IR_VAL_SYMREF: {
+			Location* loc = fastalloc(sizeof(Location));
+			loc->type = LOC_SYM;
+			loc->v.sym.sym = val.symref;
+			return loc;
+		}
 
         default:
             assert(false);
