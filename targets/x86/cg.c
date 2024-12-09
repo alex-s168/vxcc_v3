@@ -1422,10 +1422,11 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
         }
     }
 	size_t varsHotFirstLen = 0;
-	for (; varsHotFirstLen != block->as_root.vars_len; highestHeat --) {
+	for (; highestHeat > 0 ; highestHeat --) {
 		for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
 			if (varsSorted[var]) continue;
 			size_t heat = block->as_root.vars[var].heat;
+			if (heat == 0) continue;
 			if (heat == highestHeat) {
 				varsHotFirst[varsHotFirstLen++] = var;
 				varsSorted[var] = true;
@@ -1557,6 +1558,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
     for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
         if (varData[var].location) continue;
         if (varData[var].type == NULL) continue;
+		if (block->as_root.vars[var].heat == 0) continue;
 
         size_t size = vx_IrType_size(cu, block, varData[var].type);
         varData[var].location = gen_stack_var(size, stackOff);

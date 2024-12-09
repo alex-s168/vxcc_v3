@@ -618,3 +618,39 @@ void vx_IrBlock_root_varsHeat(vx_IrBlock* block)
 
 	recursive_heat(block, block, 1);
 }
+
+void vx_IrBlock_llir_varsHeat(vx_IrBlock* block)
+{
+	assert(block->is_root);
+	bool* used = calloc(sizeof(bool), block->as_root.vars_len);
+
+	for (vx_IrOp* op = block->first; op; op = op->next)
+	{
+		FOR_INPUTS(op, input, ({
+			if (input.type == VX_IR_VAL_VAR ) {
+				used[input.var] = true;
+			}
+		}));
+
+		for (size_t i = 0; i < op->outs_len; i ++) 
+			used[op->outs[i].var] = true;
+	}
+
+	for (size_t i = 0; i < block->outs_len; i ++)
+		used[block->outs[i]] = true;
+
+	for (size_t i = 0; i < block->ins_len; i ++)
+		used[block->ins[i].var] = true;
+
+	for (vx_IrVar i = 0; i < block->as_root.vars_len; i ++) {
+		if (used[i]) {
+			if (block->as_root.vars[i].heat == 0)
+				block->as_root.vars[i].heat = 1;
+		} else {
+			block->as_root.vars[i].heat = 0;
+			block->as_root.vars[i].ever_placed = false;
+		}
+	}
+
+	free(used);
+}

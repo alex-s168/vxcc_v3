@@ -340,6 +340,7 @@ int vx_CU_compile(vx_CU * cu,
             vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
 
         vx_llir_prep_lower(cu, block);
+		vx_IrBlock_llir_varsHeat(block);
 
         vx_IrBlock_dump(block, stdout, 0);
     });

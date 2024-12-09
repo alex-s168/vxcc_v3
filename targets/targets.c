@@ -64,13 +64,14 @@ void vx_Target_##tg##__parseAdditionalFlag(vx_Target_##tg##__flags * dest, const
     for (size_t i = 0; i < vx_Target_##tg##__len; i ++) { \
         if (*dest[i]) continue; \
         vx_Target_##tg##__entry* entry = &vx_Target_##tg##__entries[i]; \
-        if (strcmp(entry->name.a, flag) == 0) { \
+        if (strcmp(entry->id.a, flag) == 0) { \
             (*dest)[i] = true; \
             if (entry->infer.set) \
                 vx_Target_##tg##__parseAdditionalFlags(dest, entry->infer.a); \
             return; \
         } \
     } \
+	fprintf(stderr, "arch flag \"%s\" not found\n", flag); \
 } \
 void vx_Target_##tg##__parseAdditionalFlags(vx_Target_##tg##__flags * dest, const char * c) { \
     while (c) { \

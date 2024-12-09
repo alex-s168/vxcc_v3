@@ -654,5 +654,6 @@ void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out);
 void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar newv);
 
 void vx_IrBlock_root_varsHeat(vx_IrBlock* block);
+void vx_IrBlock_llir_varsHeat(vx_IrBlock* block);
 
 #endif //IR_H
