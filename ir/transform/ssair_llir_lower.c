@@ -235,10 +235,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
             lower_into(body, dest, newParent, newContinueLabel, newBreakLabel, op);
 
             for (size_t i = 0; i < op->outs_len; i ++) {
-                vx_IrOp* mov = vx_IrBlock_addOpBuilding(dest);
-                vx_IrOp_init(mov, VX_IR_OP_IMM, dest);
-                vx_IrOp_addOut(mov, op->outs[i].var, op->outs[i].type);
-                vx_IrOp_addParam_s(mov, VX_IR_NAME_VALUE, VX_IR_VALUE_VAR(body->outs[i]));
+				vx_IrBlock_renameVar(dest, body->outs[i], op->outs[i].var, VX_RENAME_VAR_BOTH);
             }
 
             vx_IrOp* jmp = vx_IrBlock_addOpBuilding(dest);
