@@ -70,15 +70,6 @@ static const char * vx_OptIrVar_debug(vx_OptIrVar var) {
 
 typedef struct vx_IrType_s vx_IrType;
 
-// only in C IR
-typedef struct {
-    vx_IrType **members;
-    size_t      members_len;
-
-    bool pack;
-    size_t align;
-} vx_IrTypeCIRStruct;
-
 typedef struct {
     bool   sizeless;
     size_t size;
@@ -95,9 +86,6 @@ typedef struct {
 } vx_IrTypeFunc;
 
 typedef enum {
-    // present in: cir
-    VX_IR_TYPE_KIND_CIR_STRUCT,
-
     // present in: cir, ssa
     VX_IR_TYPE_KIND_BASE,
     VX_IR_TYPE_FUNC,
@@ -110,7 +98,6 @@ struct vx_IrType_s {
 
     union {
         vx_IrTypeBase       base;
-        vx_IrTypeCIRStruct  cir_struct;
         vx_IrTypeFunc       func;
     };
 };
@@ -437,7 +424,6 @@ typedef enum {
     VX_IR_NAME_LOOP_STRIDE,
 
     VX_IR_NAME_IDX,
-    VX_IR_NAME_STRUCT,
     VX_IR_NAME_TYPE,
     VX_IR_NAME_ELSIZE,
     VX_IR_NAME_OFF,

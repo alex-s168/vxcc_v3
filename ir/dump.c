@@ -25,7 +25,6 @@ const char *vx_IrName_str[VX_IR_NAME__LAST] = {
 
     [VX_IR_NAME_ID] = "id",
     [VX_IR_NAME_TYPE] = "type",
-    [VX_IR_NAME_STRUCT] = "struct",
 };
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, const size_t indent) {

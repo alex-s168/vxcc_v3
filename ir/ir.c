@@ -115,12 +115,6 @@ size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty) {
     case VX_IR_TYPE_KIND_BASE:
         return ty->base.size;
 
-    case VX_IR_TYPE_KIND_CIR_STRUCT:
-        for (size_t i = 0; i < ty->cir_struct.members_len; i ++) {
-            total += vx_IrType_size(cu, inCtx, ty->cir_struct.members[i]);
-        }
-        return total;
-
     case VX_IR_TYPE_FUNC:
         return vx_IrType_size(cu, inCtx, cu->info.get_ptr_ty(cu, inCtx));
 

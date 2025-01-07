@@ -666,28 +666,6 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect false
                          ;
 
-    entry GETELEM        args       "struct: struct var, idx: index of member"
-                         debug      "getelem"
-                         descr      "get element from struct"
-                         inlineCost 2
-                         execCost   2
-                         endsFlow   false
-                         hasEffect  true 
-                         volatile   false 
-                         sideEffect false 
-                         ;
-
-    entry SETELEM        args       "struct: old struct var, idx: index of member, val: new value of member"
-                         debug      "setelem"
-                         descr      "set element from struct by returning a struct with the modified values"
-                         inlineCost 2
-                         execCost   2
-                         endsFlow   false 
-                         hasEffect  true 
-                         volatile   false
-                         sideEffect false 
-                         ;
-
     entry IF             args       "cond: ()->bool, then: ()->R, (else: ()->R)"
                          debug      "if"
                          descr      "if"

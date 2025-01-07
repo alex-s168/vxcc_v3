@@ -99,5 +99,9 @@ You should never use these operations:
 - `GOTO`, `COND`: using these disables a lot of optimizations.
 - `TAILCALL`: just always use `CALL` instead
 
+Structs are currently not handled by VXCC, which means that like in LLVM, you have to take care of struct calling conventions yourself (if you need them).
+You don't need those for most (if not all) C standard library functions, because they only apply if you pass or return a struct by value.
+If you don't need them for linking with existing C code, you can just "invent" your own calling convention for structs, like passing all members as arguments.
+
 ## Step 6: compile the CU 
-See `vx_CU_compile()`. Note however, that object file output is not yet implemented.
+See `vx_CU_compile()`. Note however, that object file output currently requires `nasm` in the `PATH`.

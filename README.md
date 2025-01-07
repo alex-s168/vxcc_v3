@@ -18,7 +18,7 @@ VXCC is licenced under the [permissive Apache 2.0 license with LLVM Exceptions](
 - easy to implement code generation for any architecture
 - make it easy for people to learn about compiler backends
 - good-ish optimizations
-- beat QBE
+- beat QBE in terms of generated code speed
 
 ## **non**-goals
 - reach complexity of GCC or even LLVM
@@ -33,7 +33,6 @@ VXCC is licenced under the [permissive Apache 2.0 license with LLVM Exceptions](
 | x86 codegen                             | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done but will be re-made |
 | codegen of basic code involving loops   | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done    |
 | basic optimizations                     | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done    |
-| struct support                          | ![#ff9900](https://placehold.co/15x15/ff9900/ff9900.png) | soon    |
 | proper register allocator & ISEL rework | ![#ff9900](https://placehold.co/15x15/ff9900/ff9900.png) | soon    |
 | floating point numbers                  | ![#cc0000](https://placehold.co/15x15/cc0000/cc0000.png) | planned |
 
