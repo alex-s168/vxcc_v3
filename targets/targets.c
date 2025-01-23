@@ -1,4 +1,5 @@
 #include "targets_internal.h"
+#include "../config.h"
 
 int vx_Target_parse(vx_Target* dest, const char * str)
 {
@@ -27,12 +28,20 @@ int vx_Target_parse(vx_Target* dest, const char * str)
     switch (dest->arch)
     {
         case vx_TargetArch_X86_64:
+#if VXCC_BACKEND_X86
             vx_Target_X86__parseAdditionalFlags(&dest->flags.x86, str);
-            break;
+#else
+            assert(false && "x86 backend disabled");
+#endif
+			break;
 
         case vx_TargetArch_ETCA:
+#if VXCC_BACKEND_ETCA
             vx_Target_ETCA__parseAdditionalFlags(&dest->flags.etca, str);
-            break;
+#else
+            assert(false && "etca backend disabled");
+#endif
+			break;
 
         // add target
     }
@@ -47,11 +56,19 @@ void vx_Target_info(vx_TargetInfo* dest, vx_Target const* target)
     switch (target->arch)
     {
         case vx_TargetArch_X86_64:
+#if VXCC_BACKEND_X86
         	vx_Target_X86__info(dest, target);
+#else
+            assert(false && "x86 backend disabled");
+#endif
 			break;
 
         case vx_TargetArch_ETCA:
+#if VXCC_BACKEND_ETCA
             vx_Target_ETCA__info(dest, target);
+#else
+            assert(false && "etca backend disabled");
+#endif
 			break;
 
         // add target
@@ -100,12 +117,20 @@ void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out)
 	switch (cu->target.arch)
     {
         case vx_TargetArch_X86_64:
+#if VXCC_BACKEND_X86
 			vx_llir_x86(cu, llirblock);
         	vx_cg_x86stupid_gen(cu, llirblock, out);
+#else
+            assert(false && "x86 backend disabled");
+#endif
 			break;
 
         case vx_TargetArch_ETCA:
+#if VXCC_BACKEND_ETCA
             assert(false && "codegen for etca not yet implemented");
+#else
+            assert(false && "etca backend disabled");
+#endif
 			break;
 
         // add target

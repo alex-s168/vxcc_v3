@@ -1,0 +1,2 @@
+#define VXCC_BACKEND_X86  1
+#define VXCC_BACKEND_ETCA 1

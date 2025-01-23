@@ -1,5 +1,9 @@
 set -e 
 
+if ! [ -f config.h ]; then
+    cp config.def.h config.h
+fi
+
 : ${GCC:=gcc}
 : ${CLANG:=clang}
 

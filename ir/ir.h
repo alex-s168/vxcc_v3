@@ -2,7 +2,15 @@
 #define IR_H
 
 #include <stddef.h>
-#include <stdbool.h>
+
+#ifdef __LM__
+# define bool int
+# define true 1
+# define false 0
+#else
+# include <stdbool.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
