@@ -64,4 +64,13 @@ void fastfreeall(void) {
     chunkslen = 0;
 }
 
+char * faststrdup(const char * str) {
+    assert(str);
+    size_t len = strlen(str) + 1;
+    len *= sizeof(char);
+    char * ret = (char*) fastalloc(len);
+    assert(ret);
+    memcpy(ret, str, len);
+    return ret;
+}
 

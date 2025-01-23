@@ -23,15 +23,7 @@ typedef size_t vx_IrVar;
 void * fastalloc(size_t bytes);
 void * fastrealloc(void * old, size_t oldBytes, size_t newBytes);
 void   fastfreeall(void);
-static char * faststrdup(const char * str) {
-    assert(str);
-    size_t len = strlen(str) + 1;
-    len *= sizeof(char);
-    char * ret = (char*) fastalloc(len);
-    assert(ret);
-    memcpy(ret, str, len);
-    return ret;
-}
+char * faststrdup(const char * str);
 
 typedef struct {
     const char *error;
@@ -59,14 +51,7 @@ typedef struct {
 #define VX_IRVAR_OPT_NONE (vx_OptIrVar) {.present = false,.var = 0}
 #define VX_IRVAR_OPT_SOME(v) (vx_OptIrVar) {.present = true,.var = v}
 
-static const char * vx_OptIrVar_debug(vx_OptIrVar var) {
-    if (var.present) {
-        static char c[8];
-        sprintf(c, "%zu", var.var);
- return c;
-    }
-    return "none";
-}
+const char * vx_OptIrVar_debug(vx_OptIrVar var);
 
 typedef struct vx_IrType_s vx_IrType;
 
@@ -102,16 +87,8 @@ struct vx_IrType_s {
     };
 };
 
-static vx_IrType* vx_IrType_heap(void) {
-    vx_IrType* ptr = (vx_IrType*) malloc(sizeof(vx_IrType));
-    assert(ptr);
-    memset(ptr, 0, sizeof(vx_IrType));
-    return ptr;
-}
-
-static bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
-    return a == b; // TODO (not used right now)
-}
+vx_IrType* vx_IrType_heap(void);
+bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b);
 
 typedef struct {
     vx_IrVar var;
@@ -256,19 +233,9 @@ struct vx_CU {
 /** targetStr is "arch:ext1,ext2" or "arch" */
 void vx_CU_init(vx_CU* dest, const char * targetStr);
 
-static vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
-    vx_cu->blocks = (vx_CUBlock*) realloc(vx_cu->blocks, sizeof(vx_CUBlock) * (vx_cu->blocks_len + 1));
-    if (vx_cu->blocks == NULL) return NULL;
-    return &vx_cu->blocks[vx_cu->blocks_len ++];
-}
+vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu);
 
-static void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool doExport) {
-    vx_CUBlock* cb = vx_CU_addBlock(vx_cu);
-    assert(cb);
-    cb->type = VX_CU_BLOCK_IR;
-    cb->v.ir = block;
-    cb->do_export = doExport;
-}
+void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool doExport);
 
 /** 0 if ok */
 int vx_CU_compile(vx_CU * cu,
@@ -283,12 +250,7 @@ vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block);
 
 vx_Errors vx_IrBlock_verify(vx_CU* cu, vx_IrBlock *block);
 
-static int vx_ir_verify(vx_CU* cu, vx_IrBlock *block) {
-    const vx_Errors errs = vx_IrBlock_verify(cu, block);
-    vx_Errors_print(errs, stderr);
-    vx_Errors_free(errs);
-    return errs.len > 0;
-}
+int vx_ir_verify(vx_CU* cu, vx_IrBlock *block);
 
 struct vx_IrValue {
     enum {
@@ -378,13 +340,7 @@ void vx_IrBlock_appendLabelOpPredefined(vx_IrBlock *block, size_t id);
 void vx_IrBlock_putVar(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl);
 void vx_IrBlock_putLabel(vx_IrBlock *root, size_t label, vx_IrOp *decl);
 bool vx_IrBlock_anyPlaced(vx_IrBlock* block); // only for root blocks
-
-static bool vx_IrBlock_empty(vx_IrBlock *block) {
-    if (!block)
-        return true;
-    return block->first == NULL;
-}
-
+bool vx_IrBlock_empty(vx_IrBlock *block);
 bool vx_IrBlock_varUsed(vx_IrBlock *block, vx_IrVar var);
 void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, size_t indent);
 /** returns true if static eval ok; only touches dest if true */
@@ -436,26 +392,17 @@ typedef enum {
 extern const char *vx_IrName_str[];
 
 vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen);
-static vx_IrName vx_IrName_parsec(const char * src) {
-    return vx_IrName_parse(src, strlen(src));
-}
+vx_IrName vx_IrName_parsec(const char * src);
 
 bool vx_IrOpType_parse(vx_IrOpType* dest, const char * name, size_t name_len);
-static bool vx_IrOpType_parsec(vx_IrOpType* dest, const char * name) {
-    return vx_IrOpType_parse(dest, name, strlen(name));
-}
+bool vx_IrOpType_parsec(vx_IrOpType* dest, const char * name);
 
 typedef struct {
     vx_IrName   name;
     vx_IrValue  val;
 } vx_IrNamedValue;
 
-static vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
-    return (vx_IrNamedValue) {
-        .name = name,
-        .val = v,
-    };
-}
+vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v);
 void vx_IrNamedValue_destroy(vx_IrNamedValue v);
 
 struct vx_IrOp_s {
@@ -505,9 +452,7 @@ vx_IrOp* vx_IrBlock_lastOfType(vx_IrBlock* block, vx_IrOpType type);
 #define FOR_INPUTS(op,inp,fn) FOR_INPUTS_REF(op, __ref, { vx_IrValue inp = *__ref; fn; });
 
 size_t vx_IrOp_countSuccessors(vx_IrOp *op);
-static size_t vx_IrBlock_countOps(vx_IrBlock *block) {
-    return block->first ? (vx_IrOp_countSuccessors(block->first) + 1) : 0;
-}
+size_t vx_IrBlock_countOps(vx_IrBlock *block);
 
 vx_IrOp *vx_IrOp_predecessor(vx_IrOp *op);
 void vx_IrOp_removeSuccessor(vx_IrOp *op);
@@ -539,11 +484,7 @@ void vx_IrOp_addOut(vx_IrOp *op, vx_IrVar v, vx_IrType *t);
 void vx_IrOp_addParam_s(vx_IrOp *op, vx_IrName name, vx_IrValue val);
 void vx_IrOp_addParam(vx_IrOp *op, vx_IrNamedValue p);
 void vx_IrOp_addArg(vx_IrOp *op, vx_IrValue val);
-static void vx_IrOp_stealParam(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
-    vx_IrValue* val = vx_IrOp_param(src, param);
-    assert(val);
-    vx_IrOp_addParam_s(dest, param, *val);
-}
+void vx_IrOp_stealParam(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param);
 void vx_IrOp_removeParams(vx_IrOp *op);
 void vx_IrOp_removeOutAt(vx_IrOp *op, size_t id);
 void vx_IrOp_removeParamAt(vx_IrOp *op, size_t id);
@@ -590,22 +531,8 @@ bool vx_IrBlock_nextOpListBetween(vx_IrBlock* block,
                                   vx_IrOpFilter matchBegin, void *data0,
                                   vx_IrOpFilter matchEnd, void *data1);
 
-static vx_IrOp* vx_IrOp_nextWhile(vx_IrOp* op, vx_IrOpFilter match, void *data0)
-{
-    while (op && match(op, data0)) {
-        op = op->next;
-    }
-    return op;
-}
-
-static void vx_IrOp_earlierFirst(vx_IrOp** earlier, vx_IrOp** later)
-{
-    if (vx_IrOp_after(*earlier, *later)) {
-        vx_IrOp* temp = *earlier;
-        *earlier = *later;
-        *later = temp;
-    }
-}
+vx_IrOp* vx_IrOp_nextWhile(vx_IrOp* op, vx_IrOpFilter match, void *data0);
+void vx_IrOp_earlierFirst(vx_IrOp** earlier, vx_IrOp** later);
 
 bool vx_IrBlock_allMatch(vx_IrOp* first, vx_IrOp* last,
                          vx_IrOpFilter fil, void* data);

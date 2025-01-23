@@ -4,6 +4,95 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+vx_IrType* vx_IrType_heap(void) {
+    vx_IrType* ptr = (vx_IrType*) malloc(sizeof(vx_IrType));
+    assert(ptr);
+    memset(ptr, 0, sizeof(vx_IrType));
+    return ptr;
+}
+
+bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
+    return a == b; // TODO (not used right now)
+}
+
+vx_IrOp* vx_IrOp_nextWhile(vx_IrOp* op, vx_IrOpFilter match, void *data0)
+{
+    while (op && match(op, data0)) {
+        op = op->next;
+    }
+    return op;
+}
+
+void vx_IrOp_earlierFirst(vx_IrOp** earlier, vx_IrOp** later)
+{
+    if (vx_IrOp_after(*earlier, *later)) {
+        vx_IrOp* temp = *earlier;
+        *earlier = *later;
+        *later = temp;
+    }
+}
+
+size_t vx_IrBlock_countOps(vx_IrBlock *block) {
+    return block->first ? (vx_IrOp_countSuccessors(block->first) + 1) : 0;
+}
+
+void vx_IrOp_stealParam(vx_IrOp *dest, const vx_IrOp *src, vx_IrName param) {
+    vx_IrValue* val = vx_IrOp_param(src, param);
+    assert(val);
+    vx_IrOp_addParam_s(dest, param, *val);
+}
+
+const char * vx_OptIrVar_debug(vx_OptIrVar var) {
+    if (var.present) {
+        static char c[8];
+        sprintf(c, "%zu", var.var);
+        return c;
+    }
+    return "none";
+}
+
+vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu) {
+    vx_cu->blocks = (vx_CUBlock*) realloc(vx_cu->blocks, sizeof(vx_CUBlock) * (vx_cu->blocks_len + 1));
+    if (vx_cu->blocks == NULL) return NULL;
+    return &vx_cu->blocks[vx_cu->blocks_len ++];
+}
+
+void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool doExport) {
+    vx_CUBlock* cb = vx_CU_addBlock(vx_cu);
+    assert(cb);
+    cb->type = VX_CU_BLOCK_IR;
+    cb->v.ir = block;
+    cb->do_export = doExport;
+}
+
+int vx_ir_verify(vx_CU* cu, vx_IrBlock *block) {
+    const vx_Errors errs = vx_IrBlock_verify(cu, block);
+    vx_Errors_print(errs, stderr);
+    vx_Errors_free(errs);
+    return errs.len > 0;
+}
+
+bool vx_IrBlock_empty(vx_IrBlock *block) {
+    if (!block)
+        return true;
+    return block->first == NULL;
+}
+
+vx_IrNamedValue vx_IrNamedValue_create(vx_IrName name, vx_IrValue v) {
+    return (vx_IrNamedValue) {
+        .name = name,
+        .val = v,
+    };
+}
+
+vx_IrName vx_IrName_parsec(const char * src) {
+    return vx_IrName_parse(src, strlen(src));
+}
+
+bool vx_IrOpType_parsec(vx_IrOpType* dest, const char * name) {
+    return vx_IrOpType_parse(dest, name, strlen(name));
+}
+
 void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar new)
 {
 	vx_IrBlock* root = vx_IrBlock_root(block);
