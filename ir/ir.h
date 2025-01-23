@@ -252,7 +252,11 @@ struct vx_CU {
     // TODO: rename to symbols 
     vx_CUBlock * blocks;
     size_t       blocks_len;
+
+	vx_IrType ** types;
+	size_t types_len;
 };
+
 /** targetStr is "arch:ext1,ext2" or "arch" */
 void vx_CU_init(vx_CU* dest, const char * targetStr);
 
@@ -269,6 +273,14 @@ static void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool doExport) {
     cb->v.ir = block;
     cb->do_export = doExport;
 }
+
+static void vx_CU_addType(vx_CU* cu, vx_IrType* type) {
+	cu->types = (vx_IrType**) realloc(cu->types, sizeof(vx_IrType*) * (cu->types_len + 1));
+	cu->types[cu->types_len ++] = type;
+}
+
+vx_IrType* vx_CU_typeByName(vx_CU* cu, char const* name);
+vx_IrBlock* vx_CU_blockByName(vx_CU* cu, char const* name);
 
 /** 0 if ok */
 int vx_CU_compile(vx_CU * cu,
@@ -319,7 +331,7 @@ struct vx_IrValue {
         size_t id;
 		const char * symref;
 
-		const char *x86_cc;
+		char x86_cc[4];
     };
 };
 
@@ -333,7 +345,12 @@ bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b);
 #define VX_IR_VALUE_TYPE(idin)  ((vx_IrValue) { .type = VX_IR_VAL_TYPE, .ty = idin })
 #define VX_IR_VALUE_BLK(blk)    ((vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = blk })
 #define VX_IR_VALUE_ID(idin)    ((vx_IrValue) { .type = VX_IR_VAL_ID, .id = idin })
-#define VX_IR_VALUE_X86_CC(cc)  ((vx_IrValue) { .type = VX_IR_VAL_X86_CC, .x86_cc = cc })
+static vx_IrValue VX_IR_VALUE_X86_CC(char const * cc) {
+	vx_IrValue res; res.type = VX_IR_VAL_X86_CC;
+	memcpy(res.x86_cc, cc, 4);
+	res.x86_cc[3] = '\0';
+	return res;
+}
 #define VX_IR_VALUE_SYMREF(sy)  ((vx_IrValue) { .type = VX_IR_VAL_SYMREF, .symref = sy })
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);

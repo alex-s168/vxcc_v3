@@ -173,6 +173,25 @@ void vx_IrBlock_verify_ssa_based(vx_CU* cu, vx_Errors *dest, vx_IrBlock *block) 
                 break;
         }
 
+		for (size_t i = 0; i < op->outs_len; i ++)
+		{
+			vx_IrType* ty = op->outs[i].type;
+			bool found = false;
+			for (size_t j = 0; j < cu->types_len; j ++) {
+				if (cu->types[j] == ty) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				const vx_Error error = {
+					.error = "Unregistered Type",
+					.additional = "Type is not stored in CU types list"
+				};
+				vx_Errors_add(dest, &error);
+			}
+		}
+
         FOR_INPUTS(op, val, ({
             if (val.type == VX_IR_VAL_BLOCK) {
                 if (val.block->parent != block) {
