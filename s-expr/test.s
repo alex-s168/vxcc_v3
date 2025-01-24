@@ -1,20 +1,21 @@
 (cu "amd64:cmov,sse"
-    (opt
+    (opt (
         (max_total_cmov_inline_cost 64)
         (consteval_iterations 5)
         (loop_simplify 1)
         (if_eval 1)
-    )
-
-    (type "int" (simple integer
-        (size 4)
-        (align 2)
     ))
 
-    (ir-block
+    (type ("int" simple (
+        (float 0)
+        (size 4)
+        (align 2)
+    )))
+
+    (cu-block (
         ((name "add")
          (export 1))
-        (block 
+        (block (
             (args (("int" 0) ("int" 1))) 
             (ops (
                 (
@@ -36,6 +37,6 @@
                 )
             ))
             (rets (3))
-        )
-    )
+        ))
+    ))
 )

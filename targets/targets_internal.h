@@ -9,7 +9,7 @@ static vx_IrType* name##_get_ptr_ty(vx_CU* cu, vx_IrBlock* root) { \
 	ptr->debugName = "ptr"; \
 	ptr->kind = VX_IR_TYPE_KIND_BASE; \
 	ptr->base = (vx_IrTypeBase) { \
-		.sizeless = false, .size = (ptrwbytes), .align = (ptralignbytes), \
+		.size = (ptrwbytes), .align = (ptralignbytes), \
 		.isfloat = false, \
 	}; \
 	return ptr;\

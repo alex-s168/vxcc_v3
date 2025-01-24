@@ -71,7 +71,6 @@ static const char * vx_OptIrVar_debug(vx_OptIrVar var) {
 typedef struct vx_IrType_s vx_IrType;
 
 typedef struct {
-    bool   sizeless;
     size_t size;
     size_t align;
     bool   isfloat;

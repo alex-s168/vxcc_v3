@@ -1,3 +1,4 @@
+#include <time.h>
 #include "../ir/ir.h"
 #include "sexpr.h"
 
@@ -173,13 +174,97 @@ vx_IrBlock* vx_IrBlock_parseS(vx_CU* cu, struct SNode* s)
 	return block;
 }
 
+bool vx_bool_parseS(vx_CU* cu, struct SNode* s)
+{
+	snode_expect(s, S_INTEGER);
+	char const* v = s->value;
+
+	char first = v[0];
+	if (first && !v[1]) {
+		if (first == '0')
+			return false;
+		if (first == '1')
+			return true;
+	}
+
+	fprintf(stderr, "booleans are eather `0` or `1`\n");
+	exit(1);
+}
+
+void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s)
+{
+	s = snode_expect(s, S_LIST)->list;
+
+	struct SNode* attribs = snode_expect(snode_geti_expect(s, 0), S_LIST)->list;
+	struct SNode* inner = snode_expect(snode_geti_expect(s, 1), S_LIST)->list;
+
+	if (strcmp(snode_expect(inner, S_SYMBOL)->value, "block")) {
+		fprintf(stderr, "that's not how cu-block works (1)\n");
+		exit(1);
+	}
+	inner = inner->next;
+
+	vx_IrBlock* block = vx_IrBlock_parseS(cu, inner);
+
+	char const* name = snode_expect(snode_kv_get_expect(attribs, "name"), S_STRING)->value;
+	bool export = vx_bool_parseS(cu, snode_kv_get_expect(attribs, "export"));
+
+	vx_CUBlock* cb = vx_CU_addBlock(cu);
+	cb->do_export = export;
+	cb->type = VX_CU_BLOCK_IR;
+	cb->v.ir = block;
+}
+
+vx_OptConfig vx_OptConfig_parseS(vx_CU* cu, struct SNode* s)
+{
+	s = snode_expect(s, S_LIST)->list;
+
+	vx_OptConfig res;
+	res.max_total_cmov_inline_cost = atoi(snode_expect(snode_kv_get_expect(s, "max_total_cmov_inline_cost"), S_INTEGER)->value);
+	res.consteval_iterations = atoi(snode_expect(snode_kv_get_expect(s, "consteval_iterations"), S_INTEGER)->value);
+    res.loop_simplify = vx_bool_parseS(cu, snode_kv_get_expect(s, "loop_simplify"));
+    res.if_eval = vx_bool_parseS(cu, snode_kv_get_expect(s, "if_eval"));
+	return res;
+}
+
+/** also adds type to cu */
+vx_IrType* vx_IrType_parseS(vx_CU* cu, struct SNode* s)
+{
+	s = snode_expect(s, S_LIST)->list;
+
+	char const* name = snode_expect(snode_geti_expect(s, 0), S_STRING)->value;
+	char const* kind = snode_expect(snode_geti_expect(s, 1), S_SYMBOL)->value;
+	struct SNode* inner = snode_expect(snode_geti_expect(s, 2), S_LIST)->list;
+
+	if (!strcmp(kind, "simple")) {
+		bool flt = vx_bool_parseS(cu, snode_kv_get_expect(inner, "float"));
+		size_t size;
+		sscanf(snode_expect(snode_kv_get_expect(inner, "size"), S_INTEGER)->value, "%zu", &size);
+		size_t align;
+		sscanf(snode_expect(snode_kv_get_expect(inner, "align"), S_INTEGER)->value, "%zu", &align);
+
+		vx_IrType* ty = fastalloc(sizeof(vx_IrType));
+		ty->debugName = name;
+		ty->kind = VX_IR_TYPE_KIND_BASE;
+		ty->base.size = size;
+		ty->base.align = align;
+		ty->base.isfloat = flt;
+		vx_CU_addType(cu, ty);
+		return ty;
+	} else {
+		fprintf(stderr, "invalid type kind\n");
+		exit(1);
+	}
+}
+
+//
+
 struct SNode* vx_IrVar_emitS(vx_CU* cu, vx_IrVar v)
 {
 	char buf[64];
 	sprintf(buf, "%zu", v);
 	return snode_mk(S_INTEGER, buf);
 }
-
 
 struct SNode* vx_IrTypedVar_emitS(vx_CU* cu, vx_IrTypedVar tv)
 {
@@ -284,5 +369,46 @@ struct SNode* vx_IrBlock_emitS(vx_CU* cu, vx_IrBlock* block)
 	nd = snode_cat(nd, snode_mk_kv("args", snode_mk_listx(block->ins, block->ins_len, vx_IrTypedVar_emitS, cu)));
 	nd = snode_cat(nd, snode_mk_kv("ops", snode_mk_listxli(block->first, next, vx_IrOp_emitS, cu)));
 	nd = snode_cat(nd, snode_mk_kv("rets", snode_mk_listx(block->outs, block->outs_len, vx_IrVar_emitS, cu)));
+	return snode_mk_list(nd);
+}
+
+struct SNode* vx_bool_emitS(vx_CU* cu, bool v)
+{
+	char str[2] = { v ? '1' : '0', '\0' };
+	return snode_mk(S_INTEGER, str);
+}
+
+struct SNode* vx_CUBlock_emitS(vx_CU* cu, vx_CUBlock* block)
+{
+	assert(block->type == VX_CU_BLOCK_IR);
+
+	struct SNode* attribs = NULL;
+	attribs = snode_cat(attribs, snode_mk_kv("name", snode_mk(S_STRING, block->v.ir->name)));
+	attribs = snode_cat(attribs, snode_mk_kv("export", vx_bool_emitS(cu, block->do_export)));
+
+	struct SNode* nd = NULL;
+	nd = snode_cat(nd, snode_mk_list(attribs));
+	nd = snode_cat(nd, snode_mk_list(
+				snode_cat(snode_mk(S_SYMBOL, "block"), 
+						  vx_IrBlock_emitS(cu, block->v.ir))));
+	return snode_mk_list(nd);
+}
+
+struct SNode* vx_OptConfig_emitS(vx_CU* cu, vx_OptConfig cfg)
+{
+	struct SNode* nd = NULL;
+
+	char buf[64];
+
+	sprintf(buf, "%zu", cfg.max_total_cmov_inline_cost);
+	nd = snode_cat(nd, snode_mk_kv("max_total_cmov_inline_cost", snode_mk(S_INTEGER, buf)));
+
+	sprintf(buf, "%zu", cfg.consteval_iterations);
+	nd = snode_cat(nd, snode_mk_kv("consteval_iterations", snode_mk(S_INTEGER, buf)));
+
+	nd = snode_cat(nd, snode_mk_kv("loop_simplify", vx_bool_emitS(cu, cfg.loop_simplify)));
+
+	nd = snode_cat(nd, snode_mk_kv("if_eval", vx_bool_emitS(cu, cfg.if_eval)));
+
 	return snode_mk_list(nd);
 }

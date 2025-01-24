@@ -53,6 +53,10 @@ struct CompileData ir_files[] = {
     SP(CT_C, "ir/ir.c"),
     SP(CT_C, "ir/eval.c"),
     SP(CT_C, "ir/analysis.c"),
+
+	DIR("build/s-expr"),
+    SP(CT_C, "s-expr/sexpr.c"),
+    SP(CT_C, "s-expr/ir_serial.c"),
 };
 
 struct CompileData ir_opt_files[] = {
