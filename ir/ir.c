@@ -11,10 +11,6 @@ vx_IrType* vx_IrType_heap(void) {
     return ptr;
 }
 
-bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b) {
-    return a == b; // TODO (not used right now)
-}
-
 vx_IrOp* vx_IrOp_nextWhile(vx_IrOp* op, vx_IrOpFilter match, void *data0)
 {
     while (op && match(op, data0)) {
@@ -193,8 +189,6 @@ vx_IrOp *vx_IrBlock_tail(vx_IrBlock *block) {
     return op;
 }
 
-// TODO: remove cir checks and make sure fn called after cir type expand
-
 size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty) {
     assert(ty != NULL);
 
@@ -206,13 +200,6 @@ size_t vx_IrType_size(vx_CU* cu, vx_IrBlock* inCtx, vx_IrType *ty) {
 
     case VX_IR_TYPE_FUNC:
         return vx_IrType_size(cu, inCtx, cu->info.get_ptr_ty(cu, inCtx));
-
-    default:
-		fprintf(stderr, "type %u doesn't have size\n", ty->kind);
-		fflush(stderr);
-		exit(1);
-		assert(false);
-		return 0;
     }
 }
 

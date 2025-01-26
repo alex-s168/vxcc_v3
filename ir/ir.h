@@ -21,10 +21,6 @@
 #include "../targets/targets.h"
 #include "../build/ir/ops.cdef.h"
 
-// TODO: use kollektions
-// TODO: add allocator similar to this to kallok (allibs) and use allocators here
-// TODO: make sure that all analysis functions iterate params AND args AND abstract away for future vector types
-
 typedef size_t vx_IrVar;
 
 /** alloc things that are not meant to be freed or reallocated before end of compilation */
@@ -96,14 +92,13 @@ struct vx_IrType_s {
 };
 
 vx_IrType* vx_IrType_heap(void);
-bool vx_IrType_compatible(vx_IrType *a, vx_IrType *b);
 
 typedef struct {
     vx_IrVar var;
     vx_IrType *type;
 } vx_IrTypedVar;
 
-// TODO: make bit vec and re-name to alive_in_op
+// TODO: re-name to alive_in_op
 typedef struct {
     bool * used_in_op;
 } lifetime;
