@@ -6,6 +6,7 @@
 #include "../build/targets/targets.cdef.h"
 #include "../build/targets/etca/etca.cdef.h"
 #include "../build/targets/x86/x86.cdef.h"
+#include "../build/targets/rv32/rv32.cdef.h"
 // add target (and create a cdef file)
 
 #define TARGET_FLAGS_GEN(tg) \
@@ -15,6 +16,7 @@ void vx_Target_##tg##__parseAdditionalFlag(vx_Target_##tg##__flags * dest, const
 
 TARGET_FLAGS_GEN(ETCA)
 TARGET_FLAGS_GEN(X86)
+TARGET_FLAGS_GEN(RV32)
 // add target
 
 #undef TARGET_FLAGS_GEN
@@ -30,6 +32,7 @@ typedef struct {
     union {
         vx_Target_ETCA__flags etca;
         vx_Target_X86__flags x86;
+		vx_Target_RV32__flags rv32;
         // add target
     } flags;
 } vx_Target;

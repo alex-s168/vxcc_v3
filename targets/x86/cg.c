@@ -68,6 +68,7 @@ RegType* RegLut[RegCount] = {
     &REG_XMM4, &REG_XMM5, &REG_XMM6, &REG_XMM7,
 };
 
+// TODO: remove globals to allow for threaded codegen!!!
 static vx_CU* cu;
 static vx_IrBlock* block;
 
@@ -1321,12 +1322,7 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
         }
     }
 
-    bool anyPlaced = false;
-    for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        if (block->as_root.vars[var].ever_placed) {
-            anyPlaced = true;
-        }
-    }
+    bool anyPlaced = vx_IrBlock_anyPlaced(block);
 
     // arguments 1-6 : RDI, RSI, RDX, RCX, R8, R9
     // always used   : RBP, RSP, R10 
@@ -1412,28 +1408,8 @@ void vx_cg_x86stupid_gen(vx_CU* _cu, vx_IrBlock* _block, FILE* out) {
 
     /* ======================== VAR ALLOC ===================== */ 
 
-    vx_IrVar* varsHotFirst = calloc(block->as_root.vars_len, sizeof(vx_IrVar));
-	bool* varsSorted = calloc(block->as_root.vars_len, sizeof(bool));
-    size_t highestHeat = 0;
-	for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-        size_t heat = block->as_root.vars[var].heat;
-        if (heat > highestHeat) {
-            highestHeat = heat;
-        }
-    }
-	size_t varsHotFirstLen = 0;
-	for (; highestHeat > 0 ; highestHeat --) {
-		for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
-			if (varsSorted[var]) continue;
-			size_t heat = block->as_root.vars[var].heat;
-			if (heat == 0) continue;
-			if (heat == highestHeat) {
-				varsHotFirst[varsHotFirstLen++] = var;
-				varsSorted[var] = true;
-			}
-		}
-	}
-	free(varsSorted);
+	size_t varsHotFirstLen;
+    vx_IrVar* varsHotFirst = vx_IrBlock_sortVarsHotFirst(block, &varsHotFirstLen);
 
     size_t varId = 0;
     for (size_t i = 0; i < availableRegistersCount; i ++) {

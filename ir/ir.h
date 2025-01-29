@@ -13,6 +13,8 @@
 #include "../targets/targets.h"
 #include "../build/ir/ops.cdef.h"
 
+// TODO: remove cond block in if and cmov
+
 // TODO: use kollektions
 // TODO: add allocator similar to this to kallok (allibs) and use allocators here
 // TODO: make sure that all analysis functions iterate params AND args AND abstract away for future vector types
@@ -641,5 +643,14 @@ void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar newv);
 
 void vx_IrBlock_root_varsHeat(vx_IrBlock* block);
 void vx_IrBlock_llir_varsHeat(vx_IrBlock* block);
+
+vx_IrVar* vx_IrBlock_sortVarsHotFirst(vx_IrBlock* block, size_t* len_out);
+
+typedef struct {
+	void* ud;
+	void (*writeBytes)(void* ud, void const* data, size_t len);
+	void (*putDeclNext)(void* ud, char const* symnam, bool export, bool weak);
+	void (*putRelocNext)(void* ud, char const* refsym, uint8_t elf_reloc_kind);
+} vx_ObjWriter;
 
 #endif //IR_H

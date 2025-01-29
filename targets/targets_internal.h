@@ -34,3 +34,4 @@ static void name##_intlikeptr(vx_TargetInfo* dest) { \
 
 void vx_Target_X86__info(vx_TargetInfo* dest, vx_Target const* target);
 void vx_Target_ETCA__info(vx_TargetInfo* dest, vx_Target const* target);
+void vx_Target_RV32__info(vx_TargetInfo* dest, vx_Target const* target);

@@ -26,15 +26,18 @@ int vx_Target_parse(vx_Target* dest, const char * str)
 
     switch (dest->arch)
     {
-        case vx_TargetArch_X86_64:
-            vx_Target_X86__parseAdditionalFlags(&dest->flags.x86, str);
+#define GEN(tg, fl) \
+        case vx_TargetArch_##tg: \
+            vx_Target_##tg##__parseAdditionalFlags(&dest->flags.fl, str); \
             break;
 
-        case vx_TargetArch_ETCA:
-            vx_Target_ETCA__parseAdditionalFlags(&dest->flags.etca, str);
-            break;
+		GEN(X86, x86)
+		GEN(ETCA, etca)
+		GEN(RV32, rv32)
 
         // add target
+
+#undef GEN
     }
 
     return 0;
@@ -46,13 +49,16 @@ void vx_Target_info(vx_TargetInfo* dest, vx_Target const* target)
     memset(dest, 0, sizeof(vx_TargetInfo));
     switch (target->arch)
     {
-        case vx_TargetArch_X86_64:
-        	vx_Target_X86__info(dest, target);
+#define GEN(tg) \
+		case vx_TargetArch_##tg:\
+        	vx_Target_##tg##__info(dest, target);
 			break;
 
-        case vx_TargetArch_ETCA:
-            vx_Target_ETCA__info(dest, target);
-			break;
+		GEN(X86)
+		GEN(ETCA)
+		GEN(RV32)
+
+#undef GEN
 
         // add target
     }
@@ -99,13 +105,17 @@ void vx_llir_emit_asm(vx_CU* cu, vx_IrBlock* llirblock, FILE* out)
 {
 	switch (cu->target.arch)
     {
-        case vx_TargetArch_X86_64:
+        case vx_TargetArch_X86:
 			vx_llir_x86(cu, llirblock);
         	vx_cg_x86stupid_gen(cu, llirblock, out);
 			break;
 
         case vx_TargetArch_ETCA:
             assert(false && "codegen for etca not yet implemented");
+			break;
+
+		case vx_TargetArch_RV32:
+			assert(false && "rv32 cg not yet implemented");
 			break;
 
         // add target

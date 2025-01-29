@@ -386,3 +386,32 @@ int vx_CU_compile(vx_CU * cu,
 
     return 0;
 }
+
+vx_IrVar* vx_IrBlock_sortVarsHotFirst(vx_IrBlock* block, size_t* len_out)
+{
+    vx_IrVar* varsHotFirst = calloc(block->as_root.vars_len, sizeof(vx_IrVar));
+	bool* varsSorted = calloc(block->as_root.vars_len, sizeof(bool));
+    size_t highestHeat = 0;
+	for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+        size_t heat = block->as_root.vars[var].heat;
+        if (heat > highestHeat) {
+            highestHeat = heat;
+        }
+    }
+	size_t varsHotFirstLen = 0;
+	for (; highestHeat > 0 ; highestHeat --) {
+		for (vx_IrVar var = 0; var < block->as_root.vars_len; var ++) {
+			if (varsSorted[var]) continue;
+			size_t heat = block->as_root.vars[var].heat;
+			if (heat == 0) continue;
+			if (heat == highestHeat) {
+				varsHotFirst[varsHotFirstLen++] = var;
+				varsSorted[var] = true;
+			}
+		}
+	}
+	free(varsSorted);
+
+	*len_out = varsHotFirstLen;
+	return varsHotFirst;
+}

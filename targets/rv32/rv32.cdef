@@ -1,0 +1,9 @@
+table vx_Target_RV32 (
+    id      str ;
+    name    str ;
+    infer ? str ;
+) {
+    entry mul id   "m"
+              name "mul"
+              ;
+}

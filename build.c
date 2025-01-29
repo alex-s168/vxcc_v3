@@ -18,6 +18,8 @@ struct CompileData target_gen_files[] = {
     SP(CT_CDEF, "targets/etca/etca.cdef"),
     DIR("build/targets/x86"),
     SP(CT_CDEF, "targets/x86/x86.cdef"),
+    DIR("build/targets/rv32"),
+    SP(CT_CDEF, "targets/rv32/rv32.cdef"),
     // add target (cdef file)
 
     DIR("build/ir"),
@@ -111,14 +113,18 @@ struct CompileData cg_files[] = {
     SP(CT_C, "targets/x86/x86.c"),
     SP(CT_C, "targets/x86/cg.c"),
     SP(CT_C, "targets/x86/llir_conditionals.c"),
+    DIR("build/targets/rv32"),
+    SP(CT_C, "targets/rv32/rv32.c"),
+    SP(CT_C, "targets/rv32/cg.c"),
     // add target
 };
 
 struct CompileData always_files[] = {
     DEP("build/targets/etca/etca.cdef.o"),
     DEP("build/targets/x86/x86.cdef.o"),
+    DEP("build/targets/rv32/rv32.cdef.o"),
+    // add target (cdef generated .o file)
     DEP("build/targets/targets.cdef.o"),
-    // add target (cdef file)
 
     DEP("build/ir/ops.cdef.o"),
     NOLD_DEP("ir/ir.h"),

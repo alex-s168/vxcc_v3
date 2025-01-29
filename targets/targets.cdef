@@ -1,10 +1,13 @@
 table vx_TargetArch (
     name str ;
 ) {
-    entry X86_64 name "amd64"
+    entry X86    name "amd64"
                  ;
 
     entry ETCA   name "etca"
+                 ;
+
+    entry RV32   name "riscv32"
                  ;
 
     # // add target
