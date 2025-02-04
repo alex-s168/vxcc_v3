@@ -23,8 +23,8 @@ void vx_CIrBlock_mksa_final(vx_CU* cu, vx_IrBlock *block)
             *var = new;
 
             vx_IrOp *oldstart = block->first;
-                block->first = op->next;
-                vx_IrBlock_renameVar(block, old, new, VX_RENAME_VAR_OUTPUTS);
+			block->first = op->next;
+			vx_IrBlock_renameVar(block, old, new, VX_RENAME_VAR_OUTPUTS);
             block->first = oldstart;
         }
     }

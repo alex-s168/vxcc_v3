@@ -285,11 +285,8 @@ vx_IrVar vx_IrBlock_newVar(vx_IrBlock *block, vx_IrOp *decl) {
     assert(block != NULL);
     vx_IrBlock *root = (vx_IrBlock *) vx_IrBlock_root(block);
     assert(root != NULL);
-    root->as_root.vars = realloc(root->as_root.vars, (root->as_root.vars_len + 1) * sizeof(*root->as_root.vars));
-    assert(root->as_root.vars);
-    vx_IrVar new = root->as_root.vars_len ++;
-    memset(&root->as_root.vars[new], 0, sizeof(*root->as_root.vars));
-    root->as_root.vars[new].decl = decl;
+    vx_IrVar new = root->as_root.vars_len;
+	vx_IrBlock_putVar(root, new, decl);
     return new;
 }
 
@@ -402,10 +399,14 @@ int vx_CU_compile(vx_CU * cu,
 
         vx_CIrBlock_fix(cu, block); // TODO: why...
         vx_CIrBlock_normalize(cu, block);
-        vx_CIrBlock_mksa_states(cu, block);
+		vx_IrBlock_dump(block, stdout, 0);
+		vx_CIrBlock_mksa_states(cu, block);
+		vx_IrBlock_dump(block, stdout, 0);
         vx_CIrBlock_mksa_final(cu, block);
+		vx_IrBlock_dump(block, stdout, 0);
         vx_CIrBlock_fix(cu, block); // TODO: why...
 
+		vx_IrBlock_dump(block, stdout, 0);
         if (vx_ir_verify(cu, block) != 0)
             return 1;
     });

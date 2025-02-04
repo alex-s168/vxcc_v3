@@ -100,6 +100,7 @@ void vx_llir_prep_lower(vx_CU* cu, vx_IrBlock *block) {
 
 void vx_CIrBlock_fix(vx_CU* cu, vx_IrBlock* block) {
     vx_IrBlock* root = vx_IrBlock_root(block);
+	assert(root);
 
     for (size_t i = 0; i < block->ins_len; i ++)
         vx_IrBlock_putVar(root, block->ins[i].var, NULL);

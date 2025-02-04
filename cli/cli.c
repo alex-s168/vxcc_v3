@@ -7,9 +7,10 @@
 #define lenof(x) (sizeof(x) / sizeof(x[0]))
 
 static const char *const usages[] = {
-    "sfmt   format an S-expression",
-	"vs2h   convert vxcc IR (as S-expression) to a human-readable IR representation",
-	"vs2vs  parse vxcc IR (as S-expression) and then emit it again (only useful for testing)",
+    "sfmt    format an S-expression",
+	"vs2h    convert vxcc IR (as S-expression) to a human-readable IR representation",
+	"vs2vs   parse vxcc IR (as S-expression) and then emit it again (only useful for testing)",
+	"vs2asm  optimize and codegen vxcc IR to assembly",
     NULL,
 };
 

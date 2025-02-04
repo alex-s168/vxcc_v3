@@ -127,8 +127,11 @@ void vx_IrBlock_addIn(vx_IrBlock *block,
 void vx_IrBlock_putVar(vx_IrBlock *root, vx_IrVar var, vx_IrOp *decl) {
     assert(root->is_root);
     if (var >= root->as_root.vars_len) {
-        root->as_root.vars = realloc(root->as_root.vars, sizeof(*root->as_root.vars) * (var + 1));
-	root->as_root.vars_len = var + 1;
+		void* new = calloc(var + 1, sizeof(*root->as_root.vars));
+		memcpy(new, root->as_root.vars, sizeof(*root->as_root.vars) * root->as_root.vars_len);
+		free(root->as_root.vars);
+		root->as_root.vars = new;
+		root->as_root.vars_len = var + 1;
     }
     memset(&root->as_root.vars[var], 0, sizeof(*root->as_root.vars));
     root->as_root.vars[var].decl = decl;

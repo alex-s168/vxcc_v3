@@ -1,5 +1,6 @@
 #include <time.h>
 #include "../ir/ir.h"
+#include "../ir/passes.h"
 #include "sexpr.h"
 
 vx_IrVar vx_IrVar_parseS(vx_CU* cu, struct SNode* nd)
@@ -206,6 +207,8 @@ void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s)
 	inner = inner->next;
 
 	vx_IrBlock* block = vx_IrBlock_parseS(cu, inner);
+	vx_IrBlock_makeRoot(block, 0);
+	vx_CIrBlock_fix(cu, block);
 
 	char const* name = snode_expect(snode_kv_get_expect(attribs, "name"), S_STRING)->value;
 	block->name = name;

@@ -78,6 +78,7 @@ please do not currently change anything related to:
 |  9. | lower mul/div pass. lowers {MUL, {U,S}DIV} that are not supported by backend                             |   100€   (~103$) |                     |
 | 10. | add ops for more float math operations. add pass that lowers unsupported ones to libm calls              | **200€** (~207$) |                     |
 | 11. | loop (and if statement) invariant code movement pass                                                     |    50€   (~ 51$) |                     |
+| 12. | loop unswitch pass: move if inside loop to outside if possible.                                          |    25€   (~ 26$) |                     |
 
 ## current optimizations
 - variable inlining
