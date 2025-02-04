@@ -28,19 +28,20 @@ VXCC is licenced under the [permissive Apache 2.0 license with LLVM Exceptions](
 - [C3](https://c3-lang.org/) compiler [fork](https://github.com/alex-s168/c3c)
 
 ## current status
-| goal                                    |   | progress |
-| --------------------------------------- | - | -------- |
-| x86 codegen                             | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done but will be re-made |
-| codegen of basic code involving loops   | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done    |
-| basic optimizations                     | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done    |
-| proper register allocator & ISEL rework | ![#ff9900](https://placehold.co/15x15/ff9900/ff9900.png) | soon    |
-| floating point numbers                  | ![#cc0000](https://placehold.co/15x15/cc0000/cc0000.png) | planned |
+| goal                                    |                                                          | progress       |
+| --------------------------------------- | -------------------------------------------------------- | -------------- |
+| amd64 codegen                           | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done (for now) |
+| codegen of basic code involving loops   | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done           |
+| basic optimizations                     | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done           |
+| rv32im codegen                          | ![#ff9900](https://placehold.co/15x15/ff9900/ff9900.png) | in progress    |
+| proper register allocator & ISEL rework | ![#ff9900](https://placehold.co/15x15/ff9900/cc0000.png) | planned        |
+| floating point numbers                  | ![#cc0000](https://placehold.co/15x15/cc0000/cc0000.png) | planned        |
 
 ## building
 use the `./build.sh build`
 
 ## compile dependencies 
-`clang`, `gcc`, or `tcc`: automatically detected. different C compiler can be used by doing `CC=someothercc ./build.sh [build|test]` (`test` can be executed after `build` to run all tests)
+one of `clang`, `gcc`, or `tcc`: automatically detected. different C compiler can be used by doing `CC=someothercc ./build.sh [build|test]` (`test` can be executed after `build` to run all tests)
 
 `python3`: it is recommended to create a venv in the repository root using `python -m venv venv`
 
@@ -60,7 +61,23 @@ all contributions are welcome! Don't hesitate to ask me if you have any question
 
 please do not currently change anything related to:
 - codegen system / isel & regalloc (because I want to re-do it in a specific way)
-- assembler (^^^)
+
+## BOUNTIES
+(if you want to do any of the following, please contact me first for exact details)
+
+| id  | task                                                                                                     | money            | dependencies        |
+| --- | -------------------------------------------------------------------------------------------------------- | ---------------- | ------------------- |
+|  1. | floats on amd64 using scalar sse ops                                                                     |   100€   (~103$) |                     |
+|  2. | refactor number data types to allow non-power-of-2 bit widths, and also add different float types        |    50€   (~ 51$) |                     |
+|  3. | lower ints pass. asks backend for supported types. lower arbitary-width integers                         |   100€   (~103$) | depends on 2        |
+|  4. | identify passes by names and use S-expr KV maps for config. describe pass pipeline using S-exprs instead |   100€   (~103$) |                     |
+|  5. | plugin system (ask me for details)                                                                       | **200€** (~207$) | depends on 4        |
+|  6. | lower IEEE 754 floats pass. asks backend for supported types. emulate F16,F32,F64 via what backend has   | **200€** (~207$) | depends on 2, 10    |
+|  7. | space-efficient binary (de-)serialization of SNode                                                       |   100€   (~103$) |                     |
+|  8. | lower fixed-point floats pass. configurable fixed-point floating point emulation                         |   100€   (~103$) | depends on 2, 9, 10 |
+|  9. | lower mul/div pass. lowers {MUL, {U,S}DIV} that are not supported by backend                             |   100€   (~103$) |                     |
+| 10. | add ops for more float math operations. add pass that lowers unsupported ones to libm calls              | **200€** (~207$) |                     |
+|  9. | loop (and if) - invariant code movement pass                                                             |    50€   (~ 51$) |                     |
 
 ## current optimizations
 - variable inlining
