@@ -31,7 +31,6 @@ VXCC is licenced under the [permissive Apache 2.0 license with LLVM Exceptions](
 | goal                                    |                                                          | progress       |
 | --------------------------------------- | -------------------------------------------------------- | -------------- |
 | amd64 codegen                           | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done (for now) |
-| codegen of basic code involving loops   | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done           |
 | basic optimizations                     | ![#33cc33](https://placehold.co/15x15/33cc33/33cc33.png) | done           |
 | rv32im codegen                          | ![#ff9900](https://placehold.co/15x15/ff9900/ff9900.png) | in progress    |
 | proper register allocator & ISEL rework | ![#ff9900](https://placehold.co/15x15/ff9900/cc0000.png) | planned        |
@@ -67,7 +66,7 @@ please do not currently change anything related to:
 
 | id  | task                                                                                                     | money            | dependencies        |
 | --- | -------------------------------------------------------------------------------------------------------- | ---------------- | ------------------- |
-|  1. |                                                                                                          |                  |                     |
+|  1. | target-independent nasm-style assembly __parser__ + conditional prefix like `{z} mov r0, 1`              |   100€   (~107$) |                     |
 |  2. | refactor number data types to allow non-power-of-2 bit widths, and also add different float types        |    50€   (~ 51$) |                     |
 |  3. | lower ints pass. asks backend for supported types. lower arbitary-width integers                         |   100€   (~103$) | depends on 2        |
 |  4. | identify passes by names and use S-expr KV maps for config. describe pass pipeline using S-exprs instead |   100€   (~103$) |                     |
@@ -76,7 +75,7 @@ please do not currently change anything related to:
 |  7. | space-efficient binary (de-)serialization of SNode                                                       |   100€   (~103$) |                     |
 |  8. | lower fixed-point floats pass. configurable fixed-point floating point emulation                         |   100€   (~103$) | depends on 2, 9, 10 |
 |  9. | lower mul/div pass. lowers {MUL, {U,S}DIV} that are not supported by backend                             |   100€   (~103$) |                     |
-| 10. | add ops for more float math operations. add pass that lowers unsupported ones to libm calls              | **200€** (~207$) |                     |
+| 10. | add ops for all common float math operations. add pass that lowers unsupported ones to libm calls        | **200€** (~207$) |                     |
 | 11. | loop (and if statement) invariant code movement pass                                                     |    50€   (~ 51$) |                     |
 | 12. | loop unswitch pass: move if inside loop to outside if possible.                                          |    25€   (~ 26$) |                     |
 
