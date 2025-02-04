@@ -237,7 +237,6 @@ struct SNode* snode_mk(enum SNodeType type, char const* value)
 	struct SNode* nd = malloc(sizeof(struct SNode));
 	nd->type = type;
 	nd->next = NULL;
-	nd->list = NULL;
 	nd->value = strdup(value);
 	return nd;
 }
@@ -248,7 +247,6 @@ struct SNode* snode_mk_list(struct SNode* inner)
 	nd->type = S_LIST;
 	nd->next = NULL;
 	nd->list = inner;
-	nd->value = NULL;
 	return nd;
 }
 

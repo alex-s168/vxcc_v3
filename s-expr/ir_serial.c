@@ -187,7 +187,7 @@ bool vx_bool_parseS(vx_CU* cu, struct SNode* s)
 			return true;
 	}
 
-	fprintf(stderr, "booleans are eather `0` or `1`\n");
+	fprintf(stderr, "booleans are either `0` or `1`\n");
 	exit(1);
 }
 
@@ -198,6 +198,7 @@ void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s)
 	struct SNode* attribs = snode_expect(snode_geti_expect(s, 0), S_LIST)->list;
 	struct SNode* inner = snode_expect(snode_geti_expect(s, 1), S_LIST)->list;
 
+	// TODO: other block types
 	if (strcmp(snode_expect(inner, S_SYMBOL)->value, "block")) {
 		fprintf(stderr, "that's not how cu-block works (1)\n");
 		exit(1);
@@ -254,6 +255,7 @@ vx_IrType* vx_IrType_parseS(vx_CU* cu, struct SNode* s)
 		vx_CU_addType(cu, ty);
 		return ty;
 	} else {
+		// TODO: add serialize support for fn types
 		fprintf(stderr, "invalid type kind\n");
 		exit(1);
 	}
@@ -425,6 +427,7 @@ struct SNode* vx_bool_emitS(vx_CU* cu, bool v)
 
 struct SNode* vx_CUBlock_emitS(vx_CU* cu, vx_CUBlock* block)
 {
+	// TODO: other block types
 	assert(block->type == VX_CU_BLOCK_IR);
 
 	struct SNode* attribs = NULL;
@@ -479,6 +482,7 @@ struct SNode* vx_IrType_emitS(vx_CU* cu, vx_IrType* type)
 
 		case VX_IR_TYPE_FUNC:
 		{
+			// TODO: add serialize support for fn types
 			kind = "func";
 			fprintf(stderr, "func types not yet support serialize\n");
 			exit(1);

@@ -45,6 +45,9 @@ cmd_sfmt(int argc, const char **argv)
         OPT_STRING('o', "out", &opath, "output file path", NULL, 0, 0),
         OPT_END(),
     };
+    struct argparse argparse;
+    argparse_init(&argparse, options, usages, 0);
+    argc = argparse_parse(&argparse, argc, argv);
 
 	FILE* in = openfile(ipath, "r");
 	struct SNode* nd = snode_parse(in);
@@ -77,6 +80,9 @@ cmd_vs2h(int argc, const char **argv)
         OPT_STRING('o', "out", &opath, "output file path", NULL, 0, 0),
         OPT_END(),
     };
+    struct argparse argparse;
+    argparse_init(&argparse, options, usages, 0);
+    argc = argparse_parse(&argparse, argc, argv);
 
 	FILE* in = openfile(ipath, "r");
 	struct SNode* nd = snode_parse(in);
@@ -117,6 +123,9 @@ cmd_vs2vs(int argc, const char **argv)
         OPT_STRING('o', "out", &opath, "output file path", NULL, 0, 0),
         OPT_END(),
     };
+    struct argparse argparse;
+    argparse_init(&argparse, options, usages, 0);
+    argc = argparse_parse(&argparse, argc, argv);
 
 	FILE* in = openfile(ipath, "r");
 	struct SNode* nd = snode_parse(in);
