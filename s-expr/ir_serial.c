@@ -207,6 +207,8 @@ void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s)
 	vx_IrBlock* block = vx_IrBlock_parseS(cu, inner);
 
 	char const* name = snode_expect(snode_kv_get_expect(attribs, "name"), S_STRING)->value;
+	block->name = name;
+
 	bool export = vx_bool_parseS(cu, snode_kv_get_expect(attribs, "export"));
 
 	vx_CUBlock* cb = vx_CU_addBlock(cu);
@@ -255,6 +257,49 @@ vx_IrType* vx_IrType_parseS(vx_CU* cu, struct SNode* s)
 		fprintf(stderr, "invalid type kind\n");
 		exit(1);
 	}
+}
+
+vx_CU* vx_CU_parseS(struct SNode* s)
+{
+	s = snode_expect(s, S_LIST)->list;
+	char const* target = snode_expect(s, S_STRING)->value;
+	s = s->next;
+
+	vx_CU* out = malloc(sizeof(vx_CU));
+	vx_CU_init(out, target);
+
+	bool did_set_opt = false;
+
+	for (; s; s = s->next)
+	{
+		struct SNode* kv = snode_expect(s, S_LIST)->list;
+		char const* k = snode_expect(snode_geti_expect(kv, 0), S_SYMBOL)->value;
+		struct SNode* v = snode_geti_expect(kv, 1);
+
+		if (!strcmp(k, "opt")) {
+			if (did_set_opt) {
+				fprintf(stderr, "opt config already set\n");
+				exit(1);
+			}
+
+			vx_OptConfig cfg = vx_OptConfig_parseS(out, v);
+			out->opt = cfg;
+
+			did_set_opt = true;
+		}
+		else if (!strcmp(k, "type")) {
+			(void) vx_IrType_parseS(out, v);
+		}
+		else if (!strcmp(k, "cu-block")) {
+			vx_CUBlock_parseS(out, v);
+		}
+		else {
+			fprintf(stderr, "no top level element of kind %s\n", k);
+			exit(1);
+		}
+	}
+
+	return out;
 }
 
 //
@@ -411,4 +456,56 @@ struct SNode* vx_OptConfig_emitS(vx_CU* cu, vx_OptConfig cfg)
 	nd = snode_cat(nd, snode_mk_kv("if_eval", vx_bool_emitS(cu, cfg.if_eval)));
 
 	return snode_mk_list(nd);
+}
+
+struct SNode* vx_IrType_emitS(vx_CU* cu, vx_IrType* type)
+{
+	char const* kind;
+	struct SNode* inner;
+	switch (type->kind)
+	{
+		case VX_IR_TYPE_KIND_BASE:
+		{
+			char buf[64];
+			kind = "simple";
+			inner = NULL;
+			inner = snode_cat(inner, snode_mk_kv("float", vx_bool_emitS(cu, type->base.isfloat)));
+			sprintf(buf, "%zu", type->base.size);
+			inner = snode_cat(inner, snode_mk_kv("size", snode_mk(S_INTEGER, buf)));
+			sprintf(buf, "%zu", type->base.align);
+			inner = snode_cat(inner, snode_mk_kv("align", snode_mk(S_INTEGER, buf)));
+		}
+		break;
+
+		case VX_IR_TYPE_FUNC:
+		{
+			kind = "func";
+			fprintf(stderr, "func types not yet support serialize\n");
+			exit(1);
+		}
+		break;
+	}
+
+	struct SNode* out = NULL;
+	out = snode_cat(out, snode_mk(S_STRING, type->debugName));
+	out = snode_cat(out, snode_mk(S_SYMBOL, kind));
+	out = snode_cat(out, snode_mk_list(inner));
+	return snode_mk_list(out);
+}
+
+struct SNode* vx_CU_emitS(vx_CU* cu)
+{
+	struct SNode* list = NULL;
+	list = snode_cat(list, snode_mk(S_STRING, cu->target.heap_whole));
+	list = snode_cat(list, snode_mk_kv("opt", vx_OptConfig_emitS(cu, cu->opt)));
+
+	for (size_t i = 0; i < cu->types_len; i ++) {
+		list = snode_cat(list, snode_mk_kv("type", vx_IrType_emitS(cu, cu->types[i])));
+	}
+
+	for (size_t i = 0; i < cu->blocks_len; i ++) {
+		list = snode_cat(list, snode_mk_kv("cu-block", vx_CUBlock_emitS(cu, &cu->blocks[i])));
+	}
+
+	return snode_mk_list(list);
 }

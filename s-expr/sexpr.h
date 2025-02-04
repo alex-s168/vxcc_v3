@@ -20,7 +20,9 @@ struct SNode {
   };
 };
 
+/** does NOT close file */
 struct SNode *snode_parse(FILE *fp);
+
 void snode_free(struct SNode *node);
 
 void snode_print(struct SNode *node, FILE* out);

@@ -1,4 +1,4 @@
-(cu "amd64:cmov,sse"
+("amd64:cmov"
     (opt (
         (max_total_cmov_inline_cost 64)
         (consteval_iterations 5)
@@ -23,8 +23,8 @@
                         ("int" 2)))
                     (name "add")
                     (params (
-                        ("operand_a" (var 0))
-                        ("operand_b" (var 1))))
+                        ("a" (var 0))
+                        ("b" (var 1))))
                     (args ())
                 )
                 (

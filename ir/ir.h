@@ -87,10 +87,11 @@ typedef struct {
 typedef enum {
     // present in: cir, ssa
     VX_IR_TYPE_KIND_BASE,
-    VX_IR_TYPE_FUNC,
+    VX_IR_TYPE_FUNC, // TODO: rename to VX_IR_TYPE_KIND_FUNC
 } vx_IrTypeKind;
 
 struct vx_IrType_s {
+	// TODO: rename to `name` and ensure that is unique
     const char *debugName;
 
     vx_IrTypeKind kind;
@@ -657,5 +658,32 @@ void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar newv);
 
 void vx_IrBlock_root_varsHeat(vx_IrBlock* block);
 void vx_IrBlock_llir_varsHeat(vx_IrBlock* block);
+
+
+#include "../s-expr/sexpr.h"
+
+vx_IrVar vx_IrVar_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrTypedVar vx_IrTypedVar_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrBlock* vx_IrBlock_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrValue vx_IrValue_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrOp* vx_IrOp_parseS(vx_CU* cu, struct SNode* s);
+void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s);
+vx_OptConfig vx_OptConfig_parseS(vx_CU* cu, struct SNode* s);
+/** also adds type to cu */
+vx_IrType* vx_IrType_parseS(vx_CU* cu, struct SNode* s);
+vx_CU* vx_CU_parseS(struct SNode* s);
+
+
+struct SNode* vx_IrVar_emitS(vx_CU* cu, vx_IrVar v);
+struct SNode* vx_IrTypedVar_emitS(vx_CU* cu, vx_IrTypedVar tv);
+struct SNode* vx_IrValue_emitS(vx_CU* cu, vx_IrValue val);
+struct SNode* vx_IrNamedValue_emitS(vx_CU* cu, vx_IrNamedValue v);
+struct SNode* vx_IrOp_emitS(vx_CU* cu, vx_IrOp* op);
+struct SNode* vx_IrBlock_emitS(vx_CU* cu, vx_IrBlock* block);
+struct SNode* vx_bool_emitS(vx_CU* cu, bool v);
+struct SNode* vx_CUBlock_emitS(vx_CU* cu, vx_CUBlock* block);
+struct SNode* vx_OptConfig_emitS(vx_CU* cu, vx_OptConfig cfg);
+struct SNode* vx_IrType_emitS(vx_CU* cu, vx_IrType* type);
+struct SNode* vx_CU_emitS(vx_CU* cu);
 
 #endif //IR_H

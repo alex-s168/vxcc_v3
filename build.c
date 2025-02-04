@@ -167,11 +167,21 @@ enum CompileResult target_lib() {
 
 /* ========================================================================= */
 
-enum CompileResult target_tests() {
-    START_TESTING;
-    test("", "test.c", 0, CT_C,
-            DEP("build/lib.a"));
-    END_TESTING;
+struct CompileData cli_files[] = {
+    DIR("build/cli"),
+	SP(CT_C, "cli/cli.c"),
+
+    DIR("build/cli/argparse"),
+	SP(CT_C, "cli/argparse/argparse.c"),
+
+    DEP("build/lib.a"),
+};
+
+enum CompileResult target_cli() {
+	START;
+	DO(compile(LI(cli_files)));
+	DO(link_exe(LI(cli_files), "build/vxcc.exe"));
+	END;
 }
 
 /* ========================================================================= */
@@ -180,7 +190,7 @@ struct Target targets[] = {
     { .name = "deps",  .run = target_deps },
     { .name = "gen",   .run = target_gen },
     { .name = "lib.a", .run = target_lib },
-    { .name = "tests", .run = target_tests },
+    { .name = "vxcc.exe", .run = target_cli },
 };
 
 automain(targets);

@@ -24,8 +24,8 @@ vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen)
             return i;
         }
     }
-    assert(false && "could not parse ir instr param name");
-    return VX_IR_NAME__LAST; // unreachable
+	fprintf(stderr, "could not parse ir instr param name: %s", src);
+    exit(1);
 }
 
 bool vx_IrOpType_parse(vx_IrOpType* dest, const char * name, size_t name_len)
