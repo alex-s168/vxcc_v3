@@ -22,7 +22,7 @@ void vx_IrBlock_ll_if_invert(vx_CU* cu, vx_IrBlock *block)
 		}
 
 		vx_IrValue cond_val = *vx_IrOp_param(op, VX_IR_NAME_COND);
-		assert(cond_val.type = VX_IR_VAL_BLOCK);
+		assert(cond_val.type != VX_IR_VAL_BLOCK);
 
 		if (then && !els)
 		{

@@ -116,9 +116,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
             }
 
             vx_IrValue cond_val = *vx_IrOp_param(op, VX_IR_NAME_COND);
-            assert(cond_val.type = VX_IR_VAL_BLOCK);
-
-            // lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
+            assert(cond_val.type != VX_IR_VAL_BLOCK);
 
             if (els && then) {
                 //   cond .then COND

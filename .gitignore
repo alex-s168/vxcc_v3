@@ -4,3 +4,4 @@ build.exe
 build.slowdb
 venv/
 *.plist
+tests/*.asm

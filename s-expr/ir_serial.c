@@ -155,6 +155,7 @@ vx_IrBlock* vx_IrBlock_parseS(vx_CU* cu, struct SNode* s)
 	struct SNode* rets = snode_expect(snode_kv_get_expect(s, "rets"), S_LIST)->list;
 
 	vx_IrBlock* block = vx_IrBlock_initHeap(NULL, NULL);
+    block->is_root = false;
 
 	for (; args; args = args->next) {
 		vx_IrTypedVar arg = vx_IrTypedVar_parseS(cu, args);
@@ -165,6 +166,12 @@ vx_IrBlock* vx_IrBlock_parseS(vx_CU* cu, struct SNode* s)
 		vx_IrOp* op = vx_IrOp_parseS(cu, ops);
 		op->parent = block;
 		vx_IrBlock_addOp(block, op);
+
+        FOR_INPUTS(op, inp, ({
+            if (inp.type == VX_IR_VAL_BLOCK) {
+                inp.block->parent = block;
+            }
+        }));
 	}
 
 	for (; rets; rets = rets->next) {
@@ -207,7 +214,7 @@ void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s)
 	inner = inner->next;
 
 	vx_IrBlock* block = vx_IrBlock_parseS(cu, inner);
-	vx_IrBlock_makeRoot(block, 0);
+	block->is_root = true;
 	vx_CIrBlock_fix(cu, block);
 
 	char const* name = snode_expect(snode_kv_get_expect(attribs, "name"), S_STRING)->value;
