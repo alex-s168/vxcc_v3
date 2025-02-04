@@ -10,13 +10,13 @@ void vx_opt_loop_simplify(vx_CU* cu, vx_IrBlock *block)
         const vx_IrVar condVar = cond->outs[0];
 
         // if it will always we 0, we optimize it out
-        if (vx_Irblock_alwaysIsVar(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
+        if (vx_Irblock_alwaysIs(cond, VX_IR_VALUE_VAR(condVar), (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             vx_IrOp_remove(op);
             continue;
         }
 
         // if it will never be 0 (not might be 0), it is always true => infinite loop
-        if (!vx_Irblock_mightbeVar(cond, condVar, (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
+        if (!vx_Irblock_mightbe(cond, VX_IR_VALUE_VAR(condVar), (vx_IrValue) { .type = VX_IR_VAL_IMM_INT, .imm_int = 0 })) {
             op->id = VX_IR_OP_INFINITE;
             vx_IrOp_removeParam(op, VX_IR_NAME_COND);
             continue;

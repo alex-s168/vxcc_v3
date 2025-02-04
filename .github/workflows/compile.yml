@@ -27,3 +27,6 @@ jobs:
           chmod +x build.sh
           ./build.sh build
         shell: bash
+      - name: Run tests
+        run: |
+          cd tests && ./run.sh

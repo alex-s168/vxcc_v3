@@ -67,7 +67,7 @@ please do not currently change anything related to:
 
 | id  | task                                                                                                     | money            | dependencies        |
 | --- | -------------------------------------------------------------------------------------------------------- | ---------------- | ------------------- |
-|  1. | floats on amd64 using scalar sse ops                                                                     |   100€   (~103$) |                     |
+|  1. |                                                                                                          |                  |                     |
 |  2. | refactor number data types to allow non-power-of-2 bit widths, and also add different float types        |    50€   (~ 51$) |                     |
 |  3. | lower ints pass. asks backend for supported types. lower arbitary-width integers                         |   100€   (~103$) | depends on 2        |
 |  4. | identify passes by names and use S-expr KV maps for config. describe pass pipeline using S-exprs instead |   100€   (~103$) |                     |

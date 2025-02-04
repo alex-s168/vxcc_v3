@@ -365,8 +365,8 @@ bool vx_IrBlock_varUsed(vx_IrBlock *block, vx_IrVar var);
 void vx_IrBlock_dump(vx_IrBlock *block, FILE *out, size_t indent);
 /** returns true if static eval ok; only touches dest if true */
 bool vx_IrBlock_evalVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest);
-bool vx_Irblock_mightbeVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
-bool vx_Irblock_alwaysIsVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v);
+bool vx_Irblock_mightbe(vx_IrBlock *block, vx_IrValue val, vx_IrValue v);
+bool vx_Irblock_alwaysIs(vx_IrBlock *block, vx_IrValue val, vx_IrValue v);
 void vx_Irblock_eval(vx_IrBlock *block, vx_IrValue *v);
 
 /** can be ored together */ 

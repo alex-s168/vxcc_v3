@@ -24,18 +24,19 @@ bool vx_IrBlock_eval_var(vx_IrBlock *block, vx_IrVar var, vx_IrValue *dest) {
     return false;
 }
 
-bool vx_Irblock_mightbeVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
-    vx_IrValue is;
-    if (vx_IrBlock_eval_var(block, var, &is)) {
-        return memcmp(&is, &v, sizeof(vx_IrValue)) == 0;
-    }
-    return true;
+bool vx_Irblock_mightbe(vx_IrBlock *block, vx_IrValue val, vx_IrValue v) {
+    vx_IrValue is = val;
+    if (val.type == VX_IR_VAL_VAR)
+		vx_IrBlock_eval_var(block, val.var, &is);
+    return memcmp(&is, &v, sizeof(vx_IrValue)) == 0;
 }
 
-bool vx_Irblock_alwaysIsVar(vx_IrBlock *block, vx_IrVar var, vx_IrValue v) {
-    vx_IrValue is;
-    if (!vx_IrBlock_eval_var(block, var, &is))
-        return false;
+bool vx_Irblock_alwaysIs(vx_IrBlock *block, vx_IrValue val, vx_IrValue v) {
+    vx_IrValue is = val;
+	if (val.type == VX_IR_VAL_VAR) {
+		if (!vx_IrBlock_eval_var(block, val.var, &is))
+			return false;
+	}
     return memcmp(&is, &v, sizeof(vx_IrValue)) == 0;
 }
 

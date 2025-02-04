@@ -252,9 +252,21 @@ enum_entry_prefix "VX_IR_OP_"
                          x86_affect_flags true
                          ;
 
-    entry MOD            args       "a: value, b: value"
-                         debug      "mod"
-                         descr      "modulus a % b ; both values have to have the same type as the output type"
+    entry UMOD           args       "a: value, b: value"
+                         debug      "umod"
+                         descr      "(unsigned) modulus a % b ; both values have to have the same type as the output type"
+                         inlineCost 1 
+                         execCost   2 
+                         endsFlow   false
+                         hasEffect  true
+                         volatile   false 
+                         sideEffect false 
+                         x86_affect_flags true
+                         ;
+
+    entry SMOD           args       "a: value, b: value"
+                         debug      "smod"
+                         descr      "(signed) modulus a % b ; both values have to have the same type as the output type"
                          inlineCost 1 
                          execCost   2 
                          endsFlow   false

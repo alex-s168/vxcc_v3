@@ -5,3 +5,4 @@ build.slowdb
 venv/
 *.plist
 tests/*.asm
+tests/*.o

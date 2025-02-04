@@ -836,6 +836,79 @@ static void emiti_bittest(Location* val, Location* idx, FILE* file) {
     end_as_primitive(idxv, idx, file);
 }
 
+static void emiti_push(Location* l, FILE* file) {
+	fputs("push ", file);
+	emit(l, file);
+	fputc('\n', file);
+}
+
+static void emiti_pop(Location* l, FILE* file) {
+	fputs("pop ", file);
+	emit(l, file);
+	fputc('\n', file);
+}
+
+static void emiti_moddiv(Location* o, Location* a, Location* b, bool sign, bool ismod, FILE* file) {
+	Location* need_pop_rax = NULL;
+	if (REG_RAX.stored && REG_RAX.stored != a) {
+		need_pop_rax = REG_RAX.stored;
+		emiti_push(REG_RAX.stored, file);
+	}
+	Location arax = LocReg(a->bytesWidth, REG_RAX.id);
+	emiti_move(a, &arax, false, file);
+
+	Location* need_pop_rdx = NULL;
+	if (REG_RDX.stored && REG_RDX.stored != o) {
+		need_pop_rdx = REG_RDX.stored;
+		emiti_push(REG_RDX.stored, file);
+	}
+
+	if (sign) {
+		if (a->bytesWidth == 4) {
+			fputs("cdq\n", file);
+		} else if (a->bytesWidth == 8) {
+			fputs("cqo\n", file);
+		} else {
+			assert(false && "x86 backend: unsupported operand a int width for mod/div");
+		}
+	}
+
+	fputs(sign ? "idiv " : "div ", file);
+	emit(b, file);
+	fputc('\n', file);
+
+	if (ismod) {
+		Location oo = LocReg(o->bytesWidth, REG_RDX.id);
+		emiti_move(&oo, o, false, file);
+	}
+
+	if (need_pop_rdx) {
+		emiti_pop(need_pop_rdx, file);
+	}
+
+	if (need_pop_rax) {
+		emiti_pop(need_pop_rax, file);
+	}
+}
+
+static void emiti_shift(Location* o, Location* a, Location* b, char const* op, FILE* file) {
+	Location* need_pop_rcx = NULL;
+	if (REG_RCX.stored && REG_RCX.stored != b) {
+		need_pop_rcx = REG_RCX.stored;
+		emiti_push(REG_RCX.stored, file);
+	}
+	Location cl = LocReg(1, REG_RCX.id);
+	emiti_move(b, &cl, false, file);
+
+	fprintf(file, "%s ", op);
+	emit(a, file);
+	fputs(", cl\n", file);
+
+	if (need_pop_rcx) {
+		emiti_pop(need_pop_rcx, file);
+	}
+}
+
 static void emiti_ret(vx_IrBlock* block, vx_IrValue* values, FILE* out) {
     if (block->ll_out_types_len >= 1) {
         VarData vd = varData[values[0].var];
@@ -1129,6 +1202,42 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 }
             } break;
 
+        case VX_IR_OP_UDIV: // "a", "b"
+        case VX_IR_OP_SDIV: // "a", "b"
+        case VX_IR_OP_UMOD: // "a", "b"
+        case VX_IR_OP_SMOD: // "a", "b"
+			{
+                Location* o = varData[op->outs[0].var].location;
+                assert(o);
+                Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+                Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+
+				bool sign = op->id == VX_IR_OP_SDIV || op->id == VX_IR_OP_SMOD;
+				bool mod = op->id == VX_IR_OP_SMOD || op->id == VX_IR_OP_UMOD;
+				emiti_moddiv(o, a, b, sign, mod, file);
+			} break;
+
+        case VX_IR_OP_SHL: // "a", "b"
+        case VX_IR_OP_SHR: // "a", "b"
+        case VX_IR_OP_ASHR: // "a", "b"
+			{
+                Location* o = varData[op->outs[0].var].location;
+                assert(o);
+                Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
+                Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
+
+                const char * bin;
+                switch (op->id) {
+                    case VX_IR_OP_SHL: bin = "shl"; break;
+                    case VX_IR_OP_SHR: bin = "shr"; break;
+                    case VX_IR_OP_ASHR: bin = "sar"; break;
+
+                    default: assert(false); break;
+                }
+
+				emiti_shift(o, a, b, bin, file);
+			} break;
+
         case VX_IR_OP_ADD: // "a", "b"
         case VX_IR_OP_SUB: // "a", "b"
             {
@@ -1137,7 +1246,7 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 Location* a = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_A));
                 Location* b = as_loc(o->bytesWidth, *vx_IrOp_param(op, VX_IR_NAME_OPERAND_B));
 
-                if (!equal(o, a) && a->type == LOC_REG) {
+                if (!equal(o, a) && a->type == LOC_REG && (op->id == VX_IR_OP_ADD || b->type != LOC_REG)) {
                     int sign = op->id == VX_IR_OP_ADD ? 1 : -1;
 
                     Location* ea = fastalloc(sizeof(Location));
@@ -1148,17 +1257,11 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 }
             } // no break 
 
-        case VX_IR_OP_MOD: // "a", "b"
         case VX_IR_OP_MUL: // "a", "b"
-        case VX_IR_OP_UDIV: // "a", "b"
-        case VX_IR_OP_SDIV: // "a", "b"
         case VX_IR_OP_AND: // "a", "b"
         case VX_IR_OP_BITWISE_AND: // "a", "b"
         case VX_IR_OP_OR:  // "a", "b"
         case VX_IR_OP_BITIWSE_OR:  // "a", "b"
-        case VX_IR_OP_SHL: // "a", "b"
-        case VX_IR_OP_SHR: // "a", "b"
-        case VX_IR_OP_ASHR: // "a", "b"
             {
                 Location* o = varData[op->outs[0].var].location;
                 assert(o);
@@ -1169,17 +1272,11 @@ static vx_IrOp* emiti(vx_IrOp *prev, vx_IrOp* op, FILE* file) {
                 switch (op->id) {
                     case VX_IR_OP_ADD: bin = "add"; break;
                     case VX_IR_OP_SUB: bin = "sub"; break;
-                    case VX_IR_OP_MOD: bin = "mod"; break;
                     case VX_IR_OP_MUL: bin = "imul"; break;
-                    case VX_IR_OP_UDIV: bin = "div"; break;
-                    case VX_IR_OP_SDIV: bin = "idiv"; break;
                     case VX_IR_OP_AND: 
                     case VX_IR_OP_BITWISE_AND: bin = "and"; break;
                     case VX_IR_OP_OR:
-                    case VX_IR_OP_BITIWSE_OR: bin = "orr"; break;
-                    case VX_IR_OP_SHL: bin = "shl"; break;
-                    case VX_IR_OP_SHR: bin = "shr"; break;
-                    case VX_IR_OP_ASHR: bin = "sar"; break;
+                    case VX_IR_OP_BITIWSE_OR: bin = "or"; break;
 
                     default: assert(false); break;
                 }

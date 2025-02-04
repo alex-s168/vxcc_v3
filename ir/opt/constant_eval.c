@@ -3,6 +3,7 @@
 
 void vx_opt_constant_eval(vx_CU* cu, vx_IrBlock *block)
 {
+	// TODO: only if arg type sizes < sizeof(long long)
     for (vx_IrOp *op = block->first; op; op = op->next) {
 #define BINARY(typedest, what) { \
         vx_IrValue *a = vx_IrOp_param(op, VX_IR_NAME_OPERAND_A); \
@@ -66,7 +67,11 @@ void vx_opt_constant_eval(vx_CU* cu, vx_IrBlock *block)
                 BINARY(unsigned long long, /);
                 break;
 
-            case VX_IR_OP_MOD:
+            case VX_IR_OP_UMOD:
+                BINARY(unsigned long long, %);
+                break;
+
+            case VX_IR_OP_SMOD:
                 BINARY(signed long long, %);
                 break;
 

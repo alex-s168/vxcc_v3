@@ -8,8 +8,8 @@ void vx_opt_reduce_if(vx_CU* cu, vx_IrBlock *block)
         if (op->id != VX_IR_OP_IF)
             continue;
 
-        vx_IrBlock *cond = vx_IrOp_param(op, VX_IR_NAME_COND)->block;
-        const vx_IrVar condVar = cond->outs[0];
+        vx_IrValue cond = *vx_IrOp_param(op, VX_IR_NAME_COND);
+		assert(cond.type != VX_IR_VAL_BLOCK);
 
         vx_IrValue *pthen = vx_IrOp_param(op, VX_IR_NAME_COND_THEN);
         vx_IrBlock *then = pthen ? pthen->block : NULL;
@@ -26,7 +26,7 @@ void vx_opt_reduce_if(vx_CU* cu, vx_IrBlock *block)
 
         if (then) {
             // if it will never be 0 (not might be 0), it is always true => only execute then block
-            if (!vx_Irblock_mightbeVar(cond, condVar, VX_IR_VALUE_IMM_INT(0))) {
+            if (!vx_Irblock_mightbe(block, cond, VX_IR_VALUE_IMM_INT(0))) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
                     const vx_IrVar out = op->outs[i].var;
                     vx_IrBlock_renameVar(block, out, then->outs[i], VX_RENAME_VAR_BOTH); // does all the bookkeeping for us
@@ -41,7 +41,7 @@ void vx_opt_reduce_if(vx_CU* cu, vx_IrBlock *block)
 
         if (els) {
             // if it will always we 0, only the else block will ever be executed
-            if (vx_Irblock_alwaysIsVar(cond, condVar, VX_IR_VALUE_IMM_INT(0))) {
+            if (vx_Irblock_alwaysIs(block, cond, VX_IR_VALUE_IMM_INT(0))) {
                 for (size_t i = 0; i < op->outs_len; i ++) {
                     const vx_IrVar out = op->outs[i].var;
                     vx_IrBlock_renameVar(block, out, els->outs[i], VX_RENAME_VAR_BOTH); // does all the bookkeeping for us
