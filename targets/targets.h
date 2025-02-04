@@ -27,6 +27,7 @@ typedef enum {
 
 typedef struct {
     vx_TargetArch arch;
+	char* heap_whole;
     union {
         vx_Target_ETCA__flags etca;
         vx_Target_X86__flags x86;

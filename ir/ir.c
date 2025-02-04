@@ -109,8 +109,8 @@ vx_IrName vx_IrName_parse(const char * src, uint32_t srcLen)
             return i;
         }
     }
-    assert(false && "could not parse ir instr param name");
-    return VX_IR_NAME__LAST; // unreachable
+	fprintf(stderr, "could not parse ir instr param name: %s", src);
+    exit(1);
 }
 
 bool vx_IrOpType_parse(vx_IrOpType* dest, const char * name, size_t name_len)
@@ -351,6 +351,33 @@ void vx_IrOp_updateParent(vx_IrOp* op, vx_IrBlock* to)
             inp.block->parent = to;
     }));
 }
+
+vx_IrType* vx_CU_typeByName(vx_CU* cu, char const* name)
+{
+	for (size_t i = 0; i < cu->types_len; i ++)
+	{
+		vx_IrType* ty = cu->types[i];
+		if (!strcmp(ty->debugName, name)) {
+			return ty;
+		}
+	}
+	return NULL;
+}
+
+vx_IrBlock* vx_CU_blockByName(vx_CU* cu, char const* name)
+{
+	for (size_t i = 0; i < cu->blocks_len; i ++)
+	{
+		vx_CUBlock b = cu->blocks[i];
+		if (b.type == VX_CU_BLOCK_IR) {
+			if (!strcmp(b.v.ir->name, name)) {
+				return b.v.ir;
+			}
+		}
+	}
+	return NULL;
+}
+
 
 #include "passes.h"
 

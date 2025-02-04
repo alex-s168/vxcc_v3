@@ -3,6 +3,8 @@
 
 int vx_Target_parse(vx_Target* dest, const char * str)
 {
+	dest->heap_whole = strdup(str);
+
     bool found = false;
     size_t strLen = strlen(str);
 	for (vx_TargetArch t = 0; t < vx_TargetArch__len; t ++)
@@ -93,13 +95,13 @@ void vx_Target_##tg##__parseAdditionalFlag(vx_Target_##tg##__flags * dest, const
 void vx_Target_##tg##__parseAdditionalFlags(vx_Target_##tg##__flags * dest, const char * c) { \
     while (c) { \
         size_t len = strchr(c, ',') ? (strchr(c, ',') - c) : strlen(c); \
-        char copy[32]; \
+        char copy[32] = {0}; \
         if (len > 31) \
             len = 31; \
-        memcpy(copy, c, len + 1); \
-        copy[31] = '\0'; \
+        memcpy(copy, c, len); \
         vx_Target_##tg##__parseAdditionalFlag(dest, copy); \
         c = strchr(c, ','); \
+		if (c) c ++; \
     } \
 }
 

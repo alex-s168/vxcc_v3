@@ -60,7 +60,6 @@ const char * vx_OptIrVar_debug(vx_OptIrVar var);
 typedef struct vx_IrType_s vx_IrType;
 
 typedef struct {
-    bool   sizeless;
     size_t size;
     size_t align;
     bool   isfloat;
@@ -77,10 +76,11 @@ typedef struct {
 typedef enum {
     // present in: cir, ssa
     VX_IR_TYPE_KIND_BASE,
-    VX_IR_TYPE_FUNC,
+    VX_IR_TYPE_FUNC, // TODO: rename to VX_IR_TYPE_KIND_FUNC
 } vx_IrTypeKind;
 
 struct vx_IrType_s {
+	// TODO: rename to `name` and ensure that is unique
     const char *debugName;
 
     vx_IrTypeKind kind;
@@ -232,13 +232,25 @@ struct vx_CU {
     // TODO: rename to symbols 
     vx_CUBlock * blocks;
     size_t       blocks_len;
+
+	vx_IrType ** types;
+	size_t types_len;
 };
+
 /** targetStr is "arch:ext1,ext2" or "arch" */
 void vx_CU_init(vx_CU* dest, const char * targetStr);
 
 vx_CUBlock* vx_CU_addBlock(vx_CU* vx_cu);
 
 void vx_CU_addIrBlock(vx_CU* vx_cu, vx_IrBlock* block, bool doExport);
+
+static void vx_CU_addType(vx_CU* cu, vx_IrType* type) {
+	cu->types = (vx_IrType**) realloc(cu->types, sizeof(vx_IrType*) * (cu->types_len + 1));
+	cu->types[cu->types_len ++] = type;
+}
+
+vx_IrType* vx_CU_typeByName(vx_CU* cu, char const* name);
+vx_IrBlock* vx_CU_blockByName(vx_CU* cu, char const* name);
 
 /** 0 if ok */
 int vx_CU_compile(vx_CU * cu,
@@ -284,7 +296,7 @@ struct vx_IrValue {
         size_t id;
 		const char * symref;
 
-		const char *x86_cc;
+		char x86_cc[4];
     };
 };
 
@@ -298,7 +310,12 @@ bool vx_IrValue_eq(vx_IrValue a, vx_IrValue b);
 #define VX_IR_VALUE_TYPE(idin)  ((vx_IrValue) { .type = VX_IR_VAL_TYPE, .ty = idin })
 #define VX_IR_VALUE_BLK(blk)    ((vx_IrValue) { .type = VX_IR_VAL_BLOCK, .block = blk })
 #define VX_IR_VALUE_ID(idin)    ((vx_IrValue) { .type = VX_IR_VAL_ID, .id = idin })
-#define VX_IR_VALUE_X86_CC(cc)  ((vx_IrValue) { .type = VX_IR_VAL_X86_CC, .x86_cc = cc })
+static vx_IrValue VX_IR_VALUE_X86_CC(char const * cc) {
+	vx_IrValue res; res.type = VX_IR_VAL_X86_CC;
+	memcpy(res.x86_cc, cc, 4);
+	res.x86_cc[3] = '\0';
+	return res;
+}
 #define VX_IR_VALUE_SYMREF(sy)  ((vx_IrValue) { .type = VX_IR_VAL_SYMREF, .symref = sy })
 
 void vx_IrValue_dump(vx_IrValue value, FILE *out, size_t indent);
@@ -571,5 +588,32 @@ void vx_IrBlock_markVarOrigin(vx_IrBlock* block, vx_IrVar old, vx_IrVar newv);
 
 void vx_IrBlock_root_varsHeat(vx_IrBlock* block);
 void vx_IrBlock_llir_varsHeat(vx_IrBlock* block);
+
+
+#include "../s-expr/sexpr.h"
+
+vx_IrVar vx_IrVar_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrTypedVar vx_IrTypedVar_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrBlock* vx_IrBlock_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrValue vx_IrValue_parseS(vx_CU* cu, struct SNode* nd);
+vx_IrOp* vx_IrOp_parseS(vx_CU* cu, struct SNode* s);
+void vx_CUBlock_parseS(vx_CU* cu, struct SNode* s);
+vx_OptConfig vx_OptConfig_parseS(vx_CU* cu, struct SNode* s);
+/** also adds type to cu */
+vx_IrType* vx_IrType_parseS(vx_CU* cu, struct SNode* s);
+vx_CU* vx_CU_parseS(struct SNode* s);
+
+
+struct SNode* vx_IrVar_emitS(vx_CU* cu, vx_IrVar v);
+struct SNode* vx_IrTypedVar_emitS(vx_CU* cu, vx_IrTypedVar tv);
+struct SNode* vx_IrValue_emitS(vx_CU* cu, vx_IrValue val);
+struct SNode* vx_IrNamedValue_emitS(vx_CU* cu, vx_IrNamedValue v);
+struct SNode* vx_IrOp_emitS(vx_CU* cu, vx_IrOp* op);
+struct SNode* vx_IrBlock_emitS(vx_CU* cu, vx_IrBlock* block);
+struct SNode* vx_bool_emitS(vx_CU* cu, bool v);
+struct SNode* vx_CUBlock_emitS(vx_CU* cu, vx_CUBlock* block);
+struct SNode* vx_OptConfig_emitS(vx_CU* cu, vx_OptConfig cfg);
+struct SNode* vx_IrType_emitS(vx_CU* cu, vx_IrType* type);
+struct SNode* vx_CU_emitS(vx_CU* cu);
 
 #endif //IR_H
