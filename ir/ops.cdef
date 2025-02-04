@@ -1,3 +1,5 @@
+# TODO: rewrite cdef in LSTS and make tables extensible (both extensible properties and extensible entries)
+
 table vx_IrOpType (
     debug      str  ;
     args       str  ;
@@ -666,7 +668,7 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect false
                          ;
 
-    entry IF             args       "cond: ()->bool, then: ()->R, (else: ()->R)"
+    entry IF             args       "cond: bool, then: ()->R, (else: ()->R)"
                          debug      "if"
                          descr      "if"
                          inlineCost 3
@@ -677,7 +679,7 @@ enum_entry_prefix "VX_IR_OP_"
                          sideEffect false 
                          ;
 
-    entry CMOV           args       "cond: ()->bool, then: value, else: value"
+    entry CMOV           args       "cond: bool, then: value, else: value"
                          debug      "cmov"
                          descr      "conditional move"
                          inlineCost 2

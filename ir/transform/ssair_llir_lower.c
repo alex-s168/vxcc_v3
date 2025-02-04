@@ -15,21 +15,7 @@ void vx_IrBlock_llir_preLower_ifs(vx_CU* cu, vx_IrBlock *block)
             continue;
 
         vx_IrValue* cond = vx_IrOp_param(op, VX_IR_NAME_COND);
-
-        vx_IrBlock* condbl = cond->block;
-        *cond = VX_IR_VALUE_VAR(condbl->outs[0]);
-
-        if (condbl->first) {
-            for (vx_IrOp* i = condbl->first; i; i = i->next)
-                vx_IrOp_updateParent(i, block);
-
-            vx_IrOp* pred = vx_IrOp_predecessor(op);
-            if (pred)
-                pred->next = condbl->first;
-            else 
-                block->first = condbl->first;
-            vx_IrBlock_tail(condbl)->next = op;
-        }
+		assert(cond->type != VX_IR_VAL_BLOCK);
     }
 }
 
@@ -129,8 +115,8 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
                 continue;
             }
 
-            vx_IrVar cond_var = vx_IrOp_param(op, VX_IR_NAME_COND)->var;
-            vx_IrType* cond_var_ty = vx_IrBlock_typeofVar(op->parent, cond_var);
+            vx_IrValue cond_val = *vx_IrOp_param(op, VX_IR_NAME_COND);
+            assert(cond_val.type = VX_IR_VAL_BLOCK);
 
             // lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
 
@@ -144,7 +130,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
 
                 vx_IrOp *jmp_cond = vx_IrBlock_addOpBuilding(dest);
                 vx_IrOp_init(jmp_cond, VX_IR_OP_COND, dest);
-                vx_IrOp_addParam_s(jmp_cond, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));
+                vx_IrOp_addParam_s(jmp_cond, VX_IR_NAME_COND, cond_val);
 
                 into(els, op, dest, continueLabel, breakLabel, loopOP);
 
@@ -162,24 +148,8 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
                 vx_IrOp_addParam_s(jmp_end, VX_IR_NAME_ID, VX_IR_VALUE_ID(label_end));
             } else {
                 if (then) {
-                    assert(!els);
-
-                    // we only have a then block
-
-                    // else <= then  and cond_var = !cond_var
-                    
-                    // TODO: move invert into higher level transform (because of constant eval and op opt)
-
-                    vx_IrOp *inv = vx_IrBlock_addOpBuilding(dest);
-                    vx_IrVar new = vx_IrBlock_newVar(dest, inv);
-					vx_IrBlock_markVarOrigin(dest, cond_var, new);
-                    vx_IrOp_init(inv, VX_IR_OP_NOT, dest);
-                    vx_IrOp_addOut(inv, new, cond_var_ty);
-                    vx_IrOp_addParam_s(inv, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));
-                    cond_var = new;
-
-                    els = then;
-                    then = NULL;
+					fprintf(stderr, "you forgot to run ll_if_invert");
+					exit(1);
                 }
 
                 assert(!then);
@@ -189,7 +159,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
 
                 vx_IrOp *jump = vx_IrBlock_addOpBuilding(dest);
                 vx_IrOp_init(jump, VX_IR_OP_COND, dest);
-                vx_IrOp_addParam_s(jump, VX_IR_NAME_COND, VX_IR_VALUE_VAR(cond_var));
+                vx_IrOp_addParam_s(jump, VX_IR_NAME_COND, cond_val);
 
                 into(els, op, dest, continueLabel, breakLabel, loopOP);
 
@@ -201,14 +171,7 @@ static void lower_into(vx_IrBlock *old, vx_IrBlock *dest, vx_IrBlock *newParent,
         else if (op->id == VX_IR_OP_CMOV) {
 
             vx_IrValue *pcond = vx_IrOp_param(op, VX_IR_NAME_COND);
-            vx_IrBlock *cond = pcond->block;
-
-            vx_IrVar cond_var = cond->outs[0];
-
-            lower_into(cond, dest, newParent, continueLabel, breakLabel, loopOP);
-
-            pcond->type = VX_IR_VAL_VAR;
-            pcond->var = cond_var;
+			assert(pcond->type != VX_IR_VAL_BLOCK);
 
             vx_IrBlock_addOp(dest, op);
         }

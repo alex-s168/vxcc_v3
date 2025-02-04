@@ -8,15 +8,13 @@
  * @param condOff the index of the assignment in conditional
  * @param ifOp the if op that contains the conditional block
  * @param var affected variable
- * @param manipIn 
  */
 static vx_IrVar megic(vx_IrBlock *outer,
                       vx_IrOp    *orig_assign,
                       vx_IrBlock *conditional,
                       vx_IrOp    *cond_op,
                       vx_IrOp    *ifOp,
-                      const vx_IrVar    var,
-                      const vx_OptIrVar manipIn)
+                      const vx_IrVar    var)
 {
     vx_IrType *type = NULL;
     for (size_t i = 0; i < orig_assign->outs_len; i ++) {
@@ -59,8 +57,6 @@ static vx_IrVar megic(vx_IrBlock *outer,
     return manipulate;
 }
 
-// TODO: I don't think we need manip 
-
 // call megic somehow
 // detect the patter from the inside out!!
 vx_OptIrVar vx_CIrBlock_mksa_states(vx_CU* cu, vx_IrBlock *block)
@@ -73,7 +69,6 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_CU* cu, vx_IrBlock *block)
             // inside out:
             FOR_PARAMS(op, MKARR(VX_IR_NAME_COND_THEN, VX_IR_NAME_COND_ELSE), param, {
                 vx_IrBlock *conditional = param.block;
-                vx_OptIrVar manip = vx_CIrBlock_mksa_states(cu, conditional);
 
                 // are we assigning any variable directly in that block that we also assign on the outside before the inst?
                 for (vx_IrOp *condAssignOp = conditional->first; condAssignOp; condAssignOp = condAssignOp->next) {
@@ -83,7 +78,7 @@ vx_OptIrVar vx_CIrBlock_mksa_states(vx_CU* cu, vx_IrBlock *block)
                         vx_IrOp *alwaysAssignOp = vx_IrBlock_vardeclOutBefore(block, var, op);
                         if (alwaysAssignOp == NULL)
                             continue;
-                        rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, op, var, manip));
+                        rvar = VX_IRVAR_OPT_SOME(megic(alwaysAssignOp->parent, alwaysAssignOp, conditional, condAssignOp, op, var));
                     }
                 }
             });

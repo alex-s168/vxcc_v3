@@ -95,6 +95,7 @@ struct CompileData ir_transform_files[] = {
     SP(CT_C, "ir/transform/cmov_expand.c"),
     SP(CT_C, "ir/transform/ll_finalize.c"),
     SP(CT_C, "ir/transform/lower_loops.c"),
+    SP(CT_C, "ir/transform/ll_if_invert.c"),
 };
 
 struct CompileData ir_verify_files[] = {

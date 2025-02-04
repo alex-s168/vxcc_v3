@@ -150,10 +150,49 @@ cmd_vs2vs(int argc, const char **argv)
     return 0;
 }
 
+int
+cmd_vs2asm(int argc, const char **argv)
+{
+    const char *opath = "-";
+	const char *ipath = "-";
+    struct argparse_option options[] = {
+        OPT_HELP(),
+        OPT_STRING('i', "in",  &ipath, "input file path", NULL, 0, 0),
+        OPT_STRING('o', "out", &opath, "output file path", NULL, 0, 0),
+        OPT_END(),
+    };
+    struct argparse argparse;
+    argparse_init(&argparse, options, usages, 0);
+    argc = argparse_parse(&argparse, argc, argv);
+
+	FILE* in = openfile(ipath, "r");
+	struct SNode* nd = snode_parse(in);
+	if (fgetc(in) != EOF && !feof(in)) {
+		fclose(in);
+		exit(1);
+	}
+	fclose(in);
+	if (!nd) {
+		exit(1);
+	}
+
+	vx_CU* cu = vx_CU_parseS(nd);
+	assert(cu);
+
+	FILE* out = openfile(opath, "w");
+	int cs = vx_CU_compile(cu, NULL, NULL, out, VX_BIN_ELF, NULL);
+	fclose(out);
+
+	snode_free(nd);
+
+    return cs;
+}
+
 static struct cmd_struct commands[] = {
     {"sfmt",  cmd_sfmt},
     {"vs2h",  cmd_vs2h},
     {"vs2vs", cmd_vs2vs},
+    {"vs2asm",cmd_vs2asm},
 };
 
 int

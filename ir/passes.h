@@ -36,6 +36,7 @@ void vx_IrBlock_lifetimes(vx_CU* cu,vx_IrBlock *block);
 // block needs to be 100% flat, decl of vars must be known, decl won't be known after this fn anymore; adds type info to vars
 void vx_IrBlock_ll_share_slots(vx_CU* cu,vx_IrBlock *block);
 void vx_IrBlock_ll_cmov_expand(vx_CU* cu,vx_IrBlock *block);
+void vx_IrBlock_ll_if_invert(vx_CU* cu, vx_IrBlock *block);
 // called by the codegen after it knows if it needs epilog
 void vx_IrBlock_ll_finalize(vx_CU* cu, vx_IrBlock *block, bool needEpilog);
 void vx_llir_prep_lower(vx_CU* cu, vx_IrBlock *block);

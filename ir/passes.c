@@ -60,6 +60,7 @@ void vx_opt_preLower(vx_CU* cu, vx_IrBlock *block)
     RecCallInOut(opt_pre, cu, block);
     RecCallInOut(vx_opt_join_compute, cu, block);
     RecCallInOut(vx_opt_if_swapCases, cu, block);
+    RecCallInOut(vx_IrBlock_ll_if_invert, cu, block);
     RecCallInOut(vx_opt_comparisions, cu, block);
     RecCallInOut(opt_pre, cu, block);
 }
