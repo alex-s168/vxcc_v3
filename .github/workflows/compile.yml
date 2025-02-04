@@ -21,11 +21,11 @@ jobs:
           chmod +x build.sh
           ./build.sh info
         shell: bash
-      - name: Try compile
+      - name: Compile
         run: |
           git submodule update --init
           chmod +x build.sh
-          ./build.sh build
+          ./build.sh exe
         shell: bash
       - name: Run tests
         run: |
