@@ -2,7 +2,11 @@ include_ref "../../ir/types.vxdef"
 
 scope vx.x86
 
-enum class X86CC(string asm)
+class X86CCValue(
+    string asm
+) : Value()
+
+enum X86CCs : X86CCValue
 {
     LT("lt"), LTE("lte"), GT("gt"), GTE("gte"),
     B("b"), BE("be"), A("a"), AE("ae"),
@@ -12,25 +16,21 @@ enum class X86CC(string asm)
     O("o"), NO("no")
 }
 
-class X86CCValue(
-    X86CC cc
-) : Value
-
 class X86RipRelEAValue(
     isize offset
-) : Value
+) : Value()
 
 class X86EA1Value(
     X86Register base,
     isize offset,
-) : Value
+) : Value()
 
 class X86EA2Value(
     X86Register base,
     X86Register idx,
     usize idx_scale, # one of: 1, 2, 4, 8
     isize offset,
-) : Value
+) : Value()
 
 include "ops.vxdef"
 
@@ -52,18 +52,18 @@ criteria IsCompareOp() for opkind [
 ]
 
 criteria IsIntReg() for value [oneOf(
-    [isSlot(X86Register::A)],
-    [isSlot(X86Register::B)],
-    [isSlot(X86Register::C)],
-    [isSlot(X86Register::D)],
-    [isSlot(X86Register::R8)],
-    [isSlot(X86Register::R9)],
-    [isSlot(X86Register::R10)],
-    [isSlot(X86Register::R11)],
-    [isSlot(X86Register::R12)],
-    [isSlot(X86Register::R13)],
-    [isSlot(X86Register::R14)],
-    [isSlot(X86Register::R15)],
+    [isSlot(X86Registers::A)],
+    [isSlot(X86Registers::B)],
+    [isSlot(X86Registers::C)],
+    [isSlot(X86Registers::D)],
+    [isSlot(X86Registers::R8)],
+    [isSlot(X86Registers::R9)],
+    [isSlot(X86Registers::R10)],
+    [isSlot(X86Registers::R11)],
+    [isSlot(X86Registers::R12)],
+    [isSlot(X86Registers::R13)],
+    [isSlot(X86Registers::R14)],
+    [isSlot(X86Registers::R15)],
 )]
 
 criteria IsImm() for value [
@@ -87,7 +87,7 @@ criteria IsR32() for value [
 
 criteria IsR64() for value [
     size(64),
-    hasTargetFlag(X86Flag::AMD64),
+    hasTargetFlag(X86Flags::AMD64),
     IsIntReg()
 ]
 
@@ -111,18 +111,18 @@ macro Is_R_R(a,b) {
 
 lookup CCLut(Op op) -> Value
 {
-    Ops::UGT -> X86CCValue(X86CC::A),
-    Ops::UGTE -> X86CCValue(X86CC::AE),
-    Ops::ULT -> X86CCValue(X86CC::B),
-    Ops::ULTE -> X86CCValue(X86CC::BE),
+    Ops::UGT -> X86CCValue(X86CCs::A),
+    Ops::UGTE -> X86CCValue(X86CCs::AE),
+    Ops::ULT -> X86CCValue(X86CCs::B),
+    Ops::ULTE -> X86CCValue(X86CCs::BE),
 
-    Ops::SGT -> X86CCValue(X86CC::G),
-    Ops::SGTE -> X86CCValue(X86CC::GE),
-    Ops::SLT -> X86CCValue(X86CC::L),
-    Ops::SLTE -> X86CCValue(X86CC::LE),
+    Ops::SGT -> X86CCValue(X86CCs::G),
+    Ops::SGTE -> X86CCValue(X86CCs::GE),
+    Ops::SLT -> X86CCValue(X86CCs::L),
+    Ops::SLTE -> X86CCValue(X86CCs::LE),
 
-    Ops::EQ -> X86CCValue(X86CC::E),
-    Ops::NEQ -> X86CCValue(X86CC::NE),
+    Ops::EQ -> X86CCValue(X86CCs::E),
+    Ops::NEQ -> X86CCValue(X86CCs::NE),
 
     _ => error
 }
@@ -130,7 +130,7 @@ lookup CCLut(Op op) -> Value
 include "lower/cmp_cond_jump.vxdef"
 include "lower/cmp.vxdef"
 
-pass Lower {
+replace_pattern_seq Lower {
     GenLea1Add,
     GenLea1Sub,
     GenLea2Simple,
@@ -143,10 +143,12 @@ pass Lower {
 
 include "flags.vxdef"
 
-enum class X86Register(
+class X86Register(
     string name,
     [SizedRegister] variants
 ) : Register(name, variants) 
+
+enum X86Registers : X86Register
 {
     FLAGS("flags", [
         SizedRegister(0, "flags", []),
@@ -156,139 +158,139 @@ enum class X86Register(
         SizedRegister(8,  "al",  []),
         SizedRegister(16, "ax",  []),
         SizedRegister(32, "eax", []),
-        SizedRegister(64, "rax", [X86Flag::AMD64]),
+        SizedRegister(64, "rax", [X86Flags::AMD64]),
     ]),
 
     B("b", [
         SizedRegister(8,  "bl",  []),
         SizedRegister(16, "bx",  []),
         SizedRegister(32, "ebx", []),
-        SizedRegister(64, "rbx", [X86Flag::AMD64]),
+        SizedRegister(64, "rbx", [X86Flags::AMD64]),
     ]),
 
     C("c", [
         SizedRegister(8,  "cl",  []),
         SizedRegister(16, "cx",  []),
         SizedRegister(32, "ecx", []),
-        SizedRegister(64, "rcx", [X86Flag::AMD64]),
+        SizedRegister(64, "rcx", [X86Flags::AMD64]),
     ]),
 
     D("d", [
         SizedRegister(8,  "dl",  []),
         SizedRegister(16, "dx",  []),
         SizedRegister(32, "edx", []),
-        SizedRegister(64, "rdx", [X86Flag::AMD64]),
+        SizedRegister(64, "rdx", [X86Flags::AMD64]),
     ]),
 
     R8("r8", [
-        SizedRegister(8,  "r8b", [X86Flag::AMD64]),
-        SizedRegister(16, "r8w", [X86Flag::AMD64]),
-        SizedRegister(32, "r8d", [X86Flag::AMD64]),
-        SizedRegister(64, "r8",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r8b", [X86Flags::AMD64]),
+        SizedRegister(16, "r8w", [X86Flags::AMD64]),
+        SizedRegister(32, "r8d", [X86Flags::AMD64]),
+        SizedRegister(64, "r8",  [X86Flags::AMD64]),
     ]),
 
     R9("r9", [
-        SizedRegister(8,  "r9b", [X86Flag::AMD64]),
-        SizedRegister(16, "r9w", [X86Flag::AMD64]),
-        SizedRegister(32, "r9d", [X86Flag::AMD64]),
-        SizedRegister(64, "r9",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r9b", [X86Flags::AMD64]),
+        SizedRegister(16, "r9w", [X86Flags::AMD64]),
+        SizedRegister(32, "r9d", [X86Flags::AMD64]),
+        SizedRegister(64, "r9",  [X86Flags::AMD64]),
     ]),
 
     R10("r10", [
-        SizedRegister(8,  "r10b", [X86Flag::AMD64]),
-        SizedRegister(16, "r10w", [X86Flag::AMD64]),
-        SizedRegister(32, "r10d", [X86Flag::AMD64]),
-        SizedRegister(64, "r10",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r10b", [X86Flags::AMD64]),
+        SizedRegister(16, "r10w", [X86Flags::AMD64]),
+        SizedRegister(32, "r10d", [X86Flags::AMD64]),
+        SizedRegister(64, "r10",  [X86Flags::AMD64]),
     ]),
 
     R11("r11", [
-        SizedRegister(8,  "r11b", [X86Flag::AMD64]),
-        SizedRegister(16, "r11w", [X86Flag::AMD64]),
-        SizedRegister(32, "r11d", [X86Flag::AMD64]),
-        SizedRegister(64, "r11",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r11b", [X86Flags::AMD64]),
+        SizedRegister(16, "r11w", [X86Flags::AMD64]),
+        SizedRegister(32, "r11d", [X86Flags::AMD64]),
+        SizedRegister(64, "r11",  [X86Flags::AMD64]),
     ]),
 
     R12("r12", [
-        SizedRegister(8,  "r12b", [X86Flag::AMD64]),
-        SizedRegister(16, "r12w", [X86Flag::AMD64]),
-        SizedRegister(32, "r12d", [X86Flag::AMD64]),
-        SizedRegister(64, "r12",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r12b", [X86Flags::AMD64]),
+        SizedRegister(16, "r12w", [X86Flags::AMD64]),
+        SizedRegister(32, "r12d", [X86Flags::AMD64]),
+        SizedRegister(64, "r12",  [X86Flags::AMD64]),
     ]),
 
     R13("r13", [
-        SizedRegister(8,  "r13b", [X86Flag::AMD64]),
-        SizedRegister(16, "r13w", [X86Flag::AMD64]),
-        SizedRegister(32, "r13d", [X86Flag::AMD64]),
-        SizedRegister(64, "r13",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r13b", [X86Flags::AMD64]),
+        SizedRegister(16, "r13w", [X86Flags::AMD64]),
+        SizedRegister(32, "r13d", [X86Flags::AMD64]),
+        SizedRegister(64, "r13",  [X86Flags::AMD64]),
     ]),
 
     R14("r14", [
-        SizedRegister(8,  "r14b", [X86Flag::AMD64]),
-        SizedRegister(16, "r14w", [X86Flag::AMD64]),
-        SizedRegister(32, "r14d", [X86Flag::AMD64]),
-        SizedRegister(64, "r14",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r14b", [X86Flags::AMD64]),
+        SizedRegister(16, "r14w", [X86Flags::AMD64]),
+        SizedRegister(32, "r14d", [X86Flags::AMD64]),
+        SizedRegister(64, "r14",  [X86Flags::AMD64]),
     ]),
 
     R15("r15", [
-        SizedRegister(8,  "r15b", [X86Flag::AMD64]),
-        SizedRegister(16, "r15w", [X86Flag::AMD64]),
-        SizedRegister(32, "r15d", [X86Flag::AMD64]),
-        SizedRegister(64, "r15",  [X86Flag::AMD64]),
+        SizedRegister(8,  "r15b", [X86Flags::AMD64]),
+        SizedRegister(16, "r15w", [X86Flags::AMD64]),
+        SizedRegister(32, "r15d", [X86Flags::AMD64]),
+        SizedRegister(64, "r15",  [X86Flags::AMD64]),
     ]),
 
     FP0("st(0)", [
-        SizedRegister(32, "st(0)", [X86Flag::FPU]),
-        SizedRegister(64, "st(0)", [X86Flag::FPU]),
-        SizedRegister(80, "st(0)", [X86Flag::FPU]),
-        SizedRegister(64, "mm0",   [X86Flag::MMX]),
+        SizedRegister(32, "st(0)", [X86Flags::FPU]),
+        SizedRegister(64, "st(0)", [X86Flags::FPU]),
+        SizedRegister(80, "st(0)", [X86Flags::FPU]),
+        SizedRegister(64, "mm0",   [X86Flags::MMX]),
     ]),
 
     FP1("st(1)", [
-        SizedRegister(32, "st(1)", [X86Flag::FPU]),
-        SizedRegister(64, "st(1)", [X86Flag::FPU]),
-        SizedRegister(80, "st(1)", [X86Flag::FPU]),
-        SizedRegister(64, "mm1",   [X86Flag::MMX]),
+        SizedRegister(32, "st(1)", [X86Flags::FPU]),
+        SizedRegister(64, "st(1)", [X86Flags::FPU]),
+        SizedRegister(80, "st(1)", [X86Flags::FPU]),
+        SizedRegister(64, "mm1",   [X86Flags::MMX]),
     ]),
 
     FP2("st(2)", [
-        SizedRegister(32, "st(2)", [X86Flag::FPU]),
-        SizedRegister(64, "st(2)", [X86Flag::FPU]),
-        SizedRegister(80, "st(2)", [X86Flag::FPU]),
-        SizedRegister(64, "mm2",   [X86Flag::MMX]),
+        SizedRegister(32, "st(2)", [X86Flags::FPU]),
+        SizedRegister(64, "st(2)", [X86Flags::FPU]),
+        SizedRegister(80, "st(2)", [X86Flags::FPU]),
+        SizedRegister(64, "mm2",   [X86Flags::MMX]),
     ]),
 
     FP3("st(3)", [
-        SizedRegister(32, "st(3)", [X86Flag::FPU]),
-        SizedRegister(64, "st(3)", [X86Flag::FPU]),
-        SizedRegister(80, "st(3)", [X86Flag::FPU]),
-        SizedRegister(64, "mm3",   [X86Flag::MMX]),
+        SizedRegister(32, "st(3)", [X86Flags::FPU]),
+        SizedRegister(64, "st(3)", [X86Flags::FPU]),
+        SizedRegister(80, "st(3)", [X86Flags::FPU]),
+        SizedRegister(64, "mm3",   [X86Flags::MMX]),
     ]),
 
     FP4("st(4)", [
-        SizedRegister(32, "st(4)", [X86Flag::FPU]),
-        SizedRegister(64, "st(4)", [X86Flag::FPU]),
-        SizedRegister(80, "st(4)", [X86Flag::FPU]),
-        SizedRegister(64, "mm4",   [X86Flag::MMX]),
+        SizedRegister(32, "st(4)", [X86Flags::FPU]),
+        SizedRegister(64, "st(4)", [X86Flags::FPU]),
+        SizedRegister(80, "st(4)", [X86Flags::FPU]),
+        SizedRegister(64, "mm4",   [X86Flags::MMX]),
     ]),
 
     FP5("st(5)", [
-        SizedRegister(32, "st(5)", [X86Flag::FPU]),
-        SizedRegister(64, "st(5)", [X86Flag::FPU]),
-        SizedRegister(80, "st(5)", [X86Flag::FPU]),
-        SizedRegister(64, "mm5",   [X86Flag::MMX]),
+        SizedRegister(32, "st(5)", [X86Flags::FPU]),
+        SizedRegister(64, "st(5)", [X86Flags::FPU]),
+        SizedRegister(80, "st(5)", [X86Flags::FPU]),
+        SizedRegister(64, "mm5",   [X86Flags::MMX]),
     ]),
 
     FP6("st(6)", [
-        SizedRegister(32, "st(6)", [X86Flag::FPU]),
-        SizedRegister(64, "st(6)", [X86Flag::FPU]),
-        SizedRegister(80, "st(6)", [X86Flag::FPU]),
-        SizedRegister(64, "mm6",   [X86Flag::MMX]),
+        SizedRegister(32, "st(6)", [X86Flags::FPU]),
+        SizedRegister(64, "st(6)", [X86Flags::FPU]),
+        SizedRegister(80, "st(6)", [X86Flags::FPU]),
+        SizedRegister(64, "mm6",   [X86Flags::MMX]),
     ]),
 
     FP7("st(7)", [
-        SizedRegister(32, "st(7)", [X86Flag::FPU]),
-        SizedRegister(64, "st(7)", [X86Flag::FPU]),
-        SizedRegister(80, "st(7)", [X86Flag::FPU]),
-        SizedRegister(64, "mm7",   [X86Flag::MMX]),
+        SizedRegister(32, "st(7)", [X86Flags::FPU]),
+        SizedRegister(64, "st(7)", [X86Flags::FPU]),
+        SizedRegister(80, "st(7)", [X86Flags::FPU]),
+        SizedRegister(64, "mm7",   [X86Flags::MMX]),
     ]),
 }

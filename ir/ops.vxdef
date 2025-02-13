@@ -19,7 +19,7 @@ extensible class Op(
     bool   commutative = false,
 )
 
-extensible enum(cname="VX_IR_OP_{}") Ops : Op
+extensible enum Ops : Op
 {
     IMM(args="val: variable",
         debug="imm",

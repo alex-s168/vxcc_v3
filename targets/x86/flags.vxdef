@@ -1,9 +1,11 @@
 included_only
 
-enum class X86Flag(
+class X86Flag(
     string name,
     [Flag] infer
 ) : Flag(name, infer)
+
+enum X86Flags : X86Flag
 {
     CMOV ("cmov",  []),
     FPU  ("fpu",   []),
