@@ -1,0 +1,58 @@
+included_only
+
+pattern GenLea1Add requires(
+    variable out     [IsIntReg()],
+    value    a       [IsIntReg()],
+    value    b       [is(ImmIntValue)],
+) creates(
+    value ea from X86EA1Value(
+        a.slot().as(X86Register),
+        b.value
+    )
+) {
+    out = Ops::ADD(a=a, b=b)[];
+} replace {
+    out = X86Ops::LEA(val=ea);
+}
+
+pattern GenLea1Sub requires(
+    variable out     [IsIntReg()],
+    value    a       [is(ImmIntValue)],
+    value    b       [IsImm()],
+) creates(
+    value ea from X86EA1Value(
+        a.slot().as(X86Register),
+        b.value.neg()
+    )
+) {
+    out = Ops::SUB(a=a, b=b)[];
+} replace {
+    out = X86Ops::LEA(val=ea);
+}
+
+# TODO: other combinations of lea
+
+pattern GenLea2Simple requires(
+    variable out     [IsIntReg()],
+    variable temp    [],
+    value    a       [is(ImmIntValue)],
+    value    b       [IsIntReg()],
+    value    c       [IsIntReg()]
+    opseq    between [doesNotMutate(temp), doesNotMutate(c), doesNotMutate(b)]
+) creates(
+    value ea from X86EA2Value(
+        c.slot().as(X86Register),
+        b.slot().as(X86Register),
+        1,
+        a.value
+    )
+) {
+    temp = Ops::ADD(a=c, b=b)[];
+    *between;
+    out = Ops::ADD(a=a, b=temp)[];
+} replace {
+    # keep temp even tough we don't need it anymore
+    temp = Ops::ADD(a=c, b=b)[];
+    *between;
+    out = X86Ops::LEA(val=ea);
+}

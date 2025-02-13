@@ -1,0 +1,31 @@
+included_only
+
+pattern LowerCmpCondJump requires(
+    opkind   op      [IsCompareOp()],
+    variable cond    [],
+    value    a       [],
+    value    b       [],
+    value    label   [],
+    opseq    between [doesNotMutate(cond), doesNotMutate(a), doesNotMutate(b)]
+) constraints[
+    oneOf(
+        Is_R_I(a,b),
+        Is_R_R(a,b),
+        Is_R_R(a,b),
+    )
+] creates(
+    variable flag from var_alloc(size=0, params=[inSlot(X86Register::FLAGS)]),
+    value    cc   from CCLut(opkind),
+) {
+    cond = op(a=a, b=b)[];
+    *between;
+    Ops::COND(id=label, cond=cond)[];
+} replace {
+    # keep op here because other ops might ref the result too
+    cond = op(a=a, b=b)[];
+    *between;
+    flag = X86Ops::CMP(a=a, b=b);
+    X86Ops::COND(id=label, cond=flag, x86_cc=cc);
+}
+
+

@@ -1,0 +1,54 @@
+scope vx
+
+class SizedRegister(
+    usize  bitsWidth,
+    string asm,
+    [Flag] requiredFlags
+)
+
+virt class Slot(
+    # if it is [0], then no data can be stored in it and it's a special slot, like the flags register
+    [usize] sizeAliases
+)
+
+virt class Register(
+    string name,
+    [SizedRegister] variants
+) : Slot(variants.*.bitsWidth)
+
+virt class Flag(
+    string name,
+    [Flag] infer
+)
+
+virt class Target(
+    [Flag] flags
+)
+
+virt class Value()
+
+class ImmIntValue(
+    u64 imm
+) : Value()
+
+class ImmFltValue(
+    f64 imm
+) : Value()
+
+class VarValue(
+    vx_IrVar var
+) : Value()
+
+class LabelValue(
+    usize label
+) : Value()
+
+class BlockValue(
+    vx_IrBlock* block
+) : Value()
+
+class BlockRefValue(
+    vx_IrBlock* block
+) : Value()
+
+include "ops.vxdef"

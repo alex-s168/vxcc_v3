@@ -1,0 +1,24 @@
+included_only
+
+pattern LowerCmp requires(
+    opkind   op      [IsCompareOp()],
+    variable cond    [],
+    value    a       [],
+    value    b       [],
+) constraints[
+    oneOf(
+        Is_R_I(a,b),
+        Is_R_R(a,b),
+        Is_R_R(a,b),
+    )
+] creates(
+    variable flag from var_alloc(size=0, params=[inSlot(X86Register::FLAGS)]),
+    variable temp from var_alloc(size=8, params=[IsIntReg()])
+    value    cc   from CCLut(opkind),
+) {
+    cond = op(a=a, b=b)[];
+} replace {
+    flag = X86Ops::CMP(a=a, b=b);
+    temp = X86Ops::SETCC(cond=flag, x86_cc=cc)[];
+    cond = imm(val=temp);
+}

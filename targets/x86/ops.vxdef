@@ -1,0 +1,79 @@
+included_only
+
+extension class X86Op(
+
+) : Op
+
+extension enum X86Ops : Ops
+{
+    CMP(args="a, b",
+        debug="_cmp",
+        descr="x86 compare op",
+        inlineCost=1,
+        execCost=1,
+        endsFlow=false,
+        hasEffect=true,
+        volatile=false,
+        sideEffect=false,
+    ),
+
+    TEST(
+        args="a, b",
+        debug="_test",
+        descr="x86 test op",
+        inlineCost=1,
+        execCost=1,
+        endsFlow=false,
+        hasEffect=true,
+        volatile=false,
+        sideEffect=false,
+    ),
+
+    COND(
+        args="id, cond: flags, cc: x86_cc",
+        debug="_cond",
+        descr="x86 conditional jump,
+        inlineCost=1,
+        execCost=2,
+        endsFlow=false,
+        hasEffect=true,
+        volatile=false,
+        sideEffect=true,
+    ),
+
+    SETCC(
+        args="cond: flags, cc: x86_cc",
+        debug="_setcc",
+        descr="x86 setcc op",
+        inlineCost=1,
+        execCost=1,
+        endsFlow=false,
+        hasEffect=true,
+        volatile=false,
+        sideEffect=false,
+    ),
+
+    SETCC_MEM(
+        args="cond: flags, cc: x86_cc, addr: addr",
+        debug="_setccm",
+        descr="x86 setcc into mem op",
+        inlineCost=1,
+        execCost=1,
+        endsFlow=false,
+        hasEffect=true,
+        volatile=false,
+        sideEffect=true,
+    ),
+
+    LEA(
+        args="val: x86_ea",
+        debug="_lea",
+        descr="x86 load effective address",
+        inlineCost=2,
+        execCost=1,
+        endsFlow=false,
+        hasEffect=true,
+        volatile=false,
+        sideEffect=false
+    )
+}
