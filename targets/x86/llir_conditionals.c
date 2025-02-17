@@ -78,7 +78,7 @@ void vx_llir_x86_conditionals(vx_CU* cu, vx_IrBlock* block)
 		}
 
 		vx_IrOp* test = vx_IrBlock_insertOpCreateAfter(block, vx_IrOp_predecessor(op), VX_IR_OP_X86_CMP);
-		vx_IrOp_stealParam(test, op, VX_IR_NAME_COND);
+		vx_IrOp_addParam_s(test, VX_IR_NAME_OPERAND_A, *vx_IrOp_param(op, VX_IR_NAME_COND));
 		vx_IrOp_addParam_s(test, VX_IR_NAME_OPERAND_B, VX_IR_VALUE_IMM_INT(0));
 
 		vx_IrOp_addParam_s(op, VX_IR_NAME_COND, VX_IR_VALUE_X86_CC("ne"));

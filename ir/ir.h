@@ -252,12 +252,19 @@ static void vx_CU_addType(vx_CU* cu, vx_IrType* type) {
 vx_IrType* vx_CU_typeByName(vx_CU* cu, char const* name);
 vx_IrBlock* vx_CU_blockByName(vx_CU* cu, char const* name);
 
+typedef enum { 
+    VX_CU_COMPILE_MODE_FROM_LLIR = 0,
+    VX_CU_COMPILE_MODE_FROM_IR,
+    VX_CU_COMPILE_MODE_FROM_CIR,
+} vx_CU_compile_Mode;
+
 /** 0 if ok */
 int vx_CU_compile(vx_CU * cu,
                   FILE* optionalOptimizedSsaIr,
                   FILE* optionalOptimizedLlIr,
                   FILE* optionalAsm,
-                  vx_BinFormat optionalBinFormat, FILE* optionalBinOut);
+                  vx_BinFormat optionalBinFormat, FILE* optionalBinOut,
+                  vx_CU_compile_Mode mode);
 
 vx_IrBlock *vx_IrBlock_root(vx_IrBlock *block);
 

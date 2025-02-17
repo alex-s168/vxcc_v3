@@ -1,4 +1,5 @@
 #include "../passes.h"
+#include <assert.h>
 
 // we go trough all ops between the jump and the label
 // if all of them have no effect (labels, nops), we can remove the jump instruction
@@ -13,6 +14,7 @@ static void part1(vx_IrBlock *block)
         size_t label_id = vx_IrOp_param(op, VX_IR_NAME_ID)->id;
 
         vx_IrOp *decl = root->as_root.labels[label_id].decl;
+        assert (decl);
         assert (decl->parent == op->parent);
 
         if (vx_IrOp_after(decl, op)) // can't optimize if label decl before this decl

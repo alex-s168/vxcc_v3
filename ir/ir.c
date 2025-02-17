@@ -383,7 +383,8 @@ int vx_CU_compile(vx_CU * cu,
                   FILE* optionalOptimizedSsaIr,
                   FILE* optionalOptimizedLlIr,
                   FILE* optionalAsm,
-                  vx_BinFormat optionalBinFormat, FILE* optionalBinOut)
+                  vx_BinFormat optionalBinFormat, FILE* optionalBinOut,
+                  vx_CU_compile_Mode mode)
 {
 
 #define FOR_BLOCK(code) \
@@ -396,46 +397,54 @@ int vx_CU_compile(vx_CU * cu,
 			fprintf(stderr, "only root blocks allowed in CU\n");
 			exit(1);
 		}
-
-        vx_CIrBlock_fix(cu, block); // TODO: why...
-        vx_CIrBlock_normalize(cu, block);
-		vx_CIrBlock_mksa_states(cu, block);
-        vx_CIrBlock_mksa_final(cu, block);
-        vx_CIrBlock_fix(cu, block); // TODO: why...
-
-        if (vx_ir_verify(cu, block) != 0)
-            return 1;
     });
 
-    FOR_BLOCK({
-        vx_opt(cu, block);
+    if (mode >= VX_CU_COMPILE_MODE_FROM_CIR) {
+        FOR_BLOCK({
+            vx_CIrBlock_fix(cu, block); // TODO: why...
+            vx_CIrBlock_normalize(cu, block);
+            vx_CIrBlock_mksa_states(cu, block);
+            vx_CIrBlock_mksa_final(cu, block);
+            vx_CIrBlock_fix(cu, block); // TODO: why...
 
-        if (optionalOptimizedSsaIr != NULL)
-            vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
+            if (vx_ir_verify(cu, block) != 0)
+                return 1;
+        });
+    }
 
-        if (vx_ir_verify(cu, block) != 0)
-            return 1;
-    });
+    if (mode >= VX_CU_COMPILE_MODE_FROM_IR) {
+        FOR_BLOCK({
+            vx_opt(cu, block);
 
-    FOR_BLOCK({
-		vx_IrBlock_root_varsHeat(block);
+            if (optionalOptimizedSsaIr != NULL)
+                vx_IrBlock_dump(block, optionalOptimizedSsaIr, 0);
 
-        vx_IrBlock_llir_preLower_loops(cu, block);
-        vx_IrBlock_llir_preLower_ifs(cu, block);
-        vx_opt_preLower(cu, block);
-        vx_IrBlock_llir_lower(cu, block);
-        vx_IrBlock_llir_fix_decl(cu, block);
-    });
+            if (vx_ir_verify(cu, block) != 0)
+                return 1;
+        });
 
-    FOR_BLOCK({
-        vx_opt_ll(cu, block);
+        FOR_BLOCK({
+            vx_IrBlock_root_varsHeat(block);
 
-        if (optionalOptimizedLlIr != NULL)
-            vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
+            vx_IrBlock_llir_preLower_loops(cu, block);
+            vx_IrBlock_llir_preLower_ifs(cu, block);
+            vx_opt_preLower(cu, block);
+            vx_IrBlock_llir_lower(cu, block);
+            vx_IrBlock_llir_fix_decl(cu, block);
+        });
+    }
 
-        vx_llir_prep_lower(cu, block);
-		vx_IrBlock_llir_varsHeat(block);
-    });
+    if (mode >= VX_CU_COMPILE_MODE_FROM_LLIR) {
+        FOR_BLOCK({
+            vx_opt_ll(cu, block);
+
+            if (optionalOptimizedLlIr != NULL)
+                vx_IrBlock_dump(block, optionalOptimizedLlIr, 0);
+
+            vx_llir_prep_lower(cu, block);
+            vx_IrBlock_llir_varsHeat(block);
+        });
+    }
 
     if (optionalAsm) {
         for (size_t i = 0; i < cu->blocks_len; i ++) {

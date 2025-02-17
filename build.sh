@@ -42,7 +42,7 @@ fi
 
 AUTO_CFLAGS="-Wall -Wextra -Wno-unused -Wno-unused-parameter -Wno-comment -Wno-format -Wno-sign-compare -Wno-char-subscripts -Wno-implicit-fallthrough -Wno-missing-braces -Werror"
 
-if [ -z $CFLAGS ]; then
+if [ -z "$CFLAGS" ]; then
     ANALYZER_FLAGS="$AUTO_CFLAGS"
 else 
     ANALYZER_FLAGS="$CFLAGS"
